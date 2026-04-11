@@ -1,23 +1,29 @@
 import os
 import json
 import re
+import shutil
 from pathlib import Path
 from datetime import datetime
 
 class ArchitectCompass:
     def __init__(self):
         self.script_dir = Path(__file__).parent.absolute()
-        self.config_path = self.script_dir / "mapper_config.json"
+        self.global_config_path = self.script_dir / "mapper_config.json"
         self.project_root = Path.cwd()
         self.map_dir = self.project_root / ".map"
+        self.local_config_path = self.project_root / ".map/mapper_config.json"
         
-        # Cargar configuración y extraer reglas basales
-        self.config = self.load_config()
+        # 1. Cargar configuración con jerarquía: Local > Global
+        self.config = self.load_config_hierarchy()
         self.rules = self.config.get("basal_rules", {})
         
-        # Parámetros configurables con fallbacks
+        # 2. Inicializar carpetas de mapa y generar template si es necesario
+        self.map_dir.mkdir(exist_ok=True)
+        self.ensure_local_template()
+        
+        # Parámetros configurables
         self.ignore_folders = set(self.rules.get("ignore_folders", ["__pycache__", "node_modules", ".git"]))
-        self.text_extensions = set(self.rules.get("text_extensions", [".py", ".php", ".js", ".json"]))
+        self.text_extensions = set(self.rules.get("text_extensions", [".py", ".php", ".js", ".json", ".ts", ".tsx"]))
         
         self.atlas = {
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -25,20 +31,28 @@ class ArchitectCompass:
             "identities": [],
             "summary": {"total_files": 0, "relevant_files": 0},
             "connectivity": {"inbound": [], "outbound": []},
-            "audit": {"structural_health": 100, "warnings": []},
+            "audit": {"structural_health": 100.0, "warnings": []},
             "anomalies": []
         }
         self.dot_edges = []
         self.found_files = []
 
-    def load_config(self):
-        if self.config_path.exists():
-            with open(self.config_path, 'r', encoding='utf-8') as f:
+    def load_config_hierarchy(self):
+        """Carga el config de la raíz si existe, sino usa el global del script."""
+        target_path = self.local_config_path if self.local_config_path.exists() else self.global_config_path
+        
+        if target_path.exists():
+            with open(target_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         return {"definitions": [], "basal_rules": {}}
 
+    def ensure_local_template(self):
+        """Si no existe un config local, crea un template en .map/ basado en el global."""
+        template_path = self.map_dir / "mapper_config.template.json"
+        if not self.local_config_path.exists() and self.global_config_path.exists():
+            shutil.copy(self.global_config_path, template_path)
+
     def should_ignore(self, path):
-        # Ahora usa la lista cargada desde el JSON
         for part in path.parts:
             if part.startswith('.') and part != '.map': return True
             if part in self.ignore_folders: return True
@@ -56,6 +70,7 @@ class ArchitectCompass:
         return all_files
 
     def run_audit(self):
+        # Auditoría de Ambigüedad
         basename_map = {}
         for f in self.found_files:
             rel_path = f.relative_to(self.project_root).as_posix()
@@ -72,6 +87,7 @@ class ArchitectCompass:
                 })
                 self.atlas["audit"]["structural_health"] -= 5
 
+        # Auditoría de Huérfanos
         connected_files = set()
         for conn in self.atlas["connectivity"]["inbound"] + self.atlas["connectivity"]["outbound"]:
             parts = conn.split(' ')
@@ -79,7 +95,6 @@ class ArchitectCompass:
 
         for f in self.found_files:
             rel_path = f.relative_to(self.project_root).as_posix()
-            # Solo auditamos archivos de código (no imágenes o carpetas)
             if f.suffix in {'.py', '.php', '.js', '.ts', '.jsx', '.tsx'} and rel_path not in connected_files:
                 if not any(x in f.name.lower() for x in ['index', 'main', 'app', 'wp-config']):
                     self.atlas["audit"]["warnings"].append({
@@ -89,7 +104,7 @@ class ArchitectCompass:
                     })
                     self.atlas["audit"]["structural_health"] -= 0.5
 
-        self.atlas["audit"]["structural_health"] = max(0, round(self.atlas["audit"]["structural_health"], 2))
+        self.atlas["audit"]["structural_health"] = max(0.0, round(float(self.atlas["audit"]["structural_health"]), 2))
 
     def analyze(self, files):
         tech_scores = {tech["name"]: 0 for tech in self.config.get("definitions", [])}
@@ -135,7 +150,9 @@ class ArchitectCompass:
         self.run_audit()
 
     def finalize(self):
-        self.map_dir.mkdir(exist_ok=True)
+        health = self.atlas["audit"]["structural_health"]
+        
+        # Guardar Atlas y DOT
         with open(self.map_dir / "atlas.json", "w", encoding="utf-8") as f:
             json.dump(self.atlas, f, indent=4, ensure_ascii=False)
         
@@ -145,20 +162,31 @@ class ArchitectCompass:
             f.writelines("\n".join(list(set(self.dot_edges))))
             f.write("\n}")
 
+        # Guardar Feedback Log
         log_path = self.map_dir / "feedback.log"
         new_entry = f"[{self.atlas['generated_at']}] COMPASS RUN\n"
-        new_entry += f"  - Salud Estructural: {self.atlas['audit']['structural_health']}%\n"
+        new_entry += f"  - Salud Estructural: {health}%\n"
         new_entry += f"  - Archivos: {self.atlas['summary']['total_files']} (Relevantes: {self.atlas['summary']['relevant_files']})\n"
         new_entry += "="*40 + "\n\n"
 
         old_content = ""
         if log_path.exists():
-            with open(log_path, "r", encoding="utf-8") as f:
-                old_content = f.read()
-        with open(log_path, "w", encoding="utf-8") as f:
-            f.write(new_entry + old_content)
+            with open(log_path, "r", encoding="utf-8") as f: old_content = f.read()
+        with open(log_path, "w", encoding="utf-8") as f: f.write(new_entry + old_content)
 
-        print(f"✨ Architect Compass finalizado. Salud: {self.atlas['audit']['structural_health']}%")
+        # Output final con sugerencia inteligente
+        print(f"\n✨ Architect Compass finalizado.")
+        print(f"📊 Salud Estructural: {health}%")
+        
+        if health < 80.0:
+            print(f"\n[!] AVISO: La salud detectada es baja ({health}%).")
+            print(f"    Esto puede deberse a un stack no reconocido o reglas de importación faltantes.")
+            print(f"    TIP: Edita el template en '.map/mapper_config.template.json' y muévelo a la raíz como 'mapper_config.json'.")
+        
+        if self.local_config_path.exists():
+            print(f"✅ Usando configuración local del proyecto.")
+        else:
+            print(f"🌐 Usando configuración global.")
 
 if __name__ == "__main__":
     compass = ArchitectCompass()
