@@ -1,6 +1,6 @@
 {
   "basal_rules": {
-    "ignore_folders": ["__pycache__", "node_modules", "dist", "build", "venv", ".git", ".map", "_archivo", "out", ".next"],
+    "ignore_folders": ["__pycache__", "node_modules", "dist", "build", "venv", ".venv", ".git", ".map", "_archivo", "out", ".next"],
     "text_extensions": [".py", ".js", ".jsx", ".ts", ".tsx", ".php", ".html", ".css", ".mjs", ".json", ".sql", ".env"],
     "network_triggers": ["http", "ws://", "api", "localhost", "fetch\\(", "wp_remote_", "requests\\.", "axios"],
     "persistence_triggers": ["global \\$wpdb", "get_option", "sql", "SELECT ", "INSERT INTO", "fs\\.", "localStorage", "sessionStorage", "ChromaDB", "prisma"],

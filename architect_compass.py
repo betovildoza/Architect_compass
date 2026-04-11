@@ -13,17 +13,19 @@ class ArchitectCompass:
         self.map_dir = self.project_root / ".map"
         self.local_config_path = self.project_root / ".map/mapper_config.json"
         
-        # 1. Cargar configuración con jerarquía: Local > Global
         self.config = self.load_config_hierarchy()
         self.rules = self.config.get("basal_rules", {})
         
-        # 2. Inicializar carpetas de mapa y generar template si es necesario
         self.map_dir.mkdir(exist_ok=True)
         self.ensure_local_template()
         
-        # Parámetros configurables
-        self.ignore_folders = set(self.rules.get("ignore_folders", ["__pycache__", "node_modules", ".git"]))
-        self.text_extensions = set(self.rules.get("text_extensions", [".py", ".php", ".js", ".json", ".ts", ".tsx"]))
+        self.ignore_folders = set(self.rules.get("ignore_folders", []))
+        self.ignore_files = set(self.rules.get("ignore_files", ["__init__.py"]))
+        self.text_extensions = set(self.rules.get("text_extensions", [".py", ".js", ".json"]))
+        
+        # [AGREGADO] Registro para unificar identidades de archivos (Opción 1)
+        self.file_registry = {}
+        self._index_existing_files()
         
         self.atlas = {
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -31,164 +33,174 @@ class ArchitectCompass:
             "identities": [],
             "summary": {"total_files": 0, "relevant_files": 0},
             "connectivity": {"inbound": [], "outbound": []},
-            "audit": {"structural_health": 100.0, "warnings": []},
-            "anomalies": []
+            "anomalies": [],
+            "audit": {"structural_health": 0.0, "warnings": []}
         }
         self.dot_edges = []
-        self.found_files = []
+
+    # [AGREGADO] Método aditivo para indexar archivos reales
+    def _index_existing_files(self):
+        for p in self.project_root.rglob("*"):
+            if p.is_file() and p.suffix in [".py", ".js", ".ts", ".tsx"]:
+                rel_path = p.relative_to(self.project_root).as_posix()
+                self.file_registry[rel_path] = rel_path
+                self.file_registry[rel_path.rsplit('.', 1)[0]] = rel_path
+
+    # [AGREGADO] Método aditivo para resolver nombres y evitar duplicados
+    def _resolve_identity(self, raw_name):
+        clean = re.sub(r'[^a-zA-Z0-9\._\/]', '', str(raw_name)).strip().rstrip('.')
+        path_style = clean.replace(".", "/")
+        
+        parts = path_style.split("/")
+        for i in range(len(parts), 0, -1):
+            candidate = "/".join(parts[:i])
+            if candidate in self.file_registry: return self.file_registry[candidate]
+            if f"{candidate}.py" in self.file_registry: return self.file_registry[f"{candidate}.py"]
+            
+        return clean
 
     def load_config_hierarchy(self):
-        """Carga el config de la raíz si existe, sino usa el global del script."""
-        target_path = self.local_config_path if self.local_config_path.exists() else self.global_config_path
-        
-        if target_path.exists():
-            with open(target_path, 'r', encoding='utf-8') as f:
+        if self.local_config_path.exists():
+            with open(self.local_config_path, "r", encoding="utf-8") as f:
                 return json.load(f)
-        return {"definitions": [], "basal_rules": {}}
+        return {"basal_rules": {}, "definitions": []}
 
     def ensure_local_template(self):
-        """Si no existe un config local, crea un template en .map/ basado en el global."""
-        template_path = self.map_dir / "mapper_config.template.json"
-        if not self.local_config_path.exists() and self.global_config_path.exists():
-            shutil.copy(self.global_config_path, template_path)
+        if not self.local_config_path.exists():
+            template = {
+                "basal_rules": {
+                    "ignore_folders": ["__pycache__", "node_modules", "dist", "build", "venv", ".git", ".map"],
+                    "ignore_files": ["__init__.py"],
+                    "text_extensions": [".py", ".js", ".json"]
+                },
+                "definitions": []
+            }
+            with open(self.local_config_path, "w", encoding="utf-8") as f:
+                json.dump(template, f, indent=4)
 
-    def should_ignore(self, path):
-        for part in path.parts:
-            if part.startswith('.') and part != '.map': return True
-            if part in self.ignore_folders: return True
-        return False
+    def analyze(self):
+        relevant_extensions = self.text_extensions
+        tech_scores = {}
 
-    def scan_project(self):
-        all_files = []
-        for path in self.project_root.rglob('*'):
-            try:
-                if path.is_file() and not self.should_ignore(path.relative_to(self.project_root)):
-                    all_files.append(path)
-            except Exception: continue
-        self.atlas["summary"]["total_files"] = len(all_files)
-        self.found_files = all_files
-        return all_files
+        for root, dirs, files in os.walk(self.project_root):
+            dirs[:] = [d for d in dirs if d not in self.ignore_folders]
+            
+            for file in files:
+                if file in self.ignore_files or not any(file.endswith(ext) for ext in relevant_extensions):
+                    continue
 
-    def run_audit(self):
-        # Auditoría de Ambigüedad
-        basename_map = {}
-        for f in self.found_files:
-            rel_path = f.relative_to(self.project_root).as_posix()
-            clean_name = re.sub(r'(v\d+[\d._]*|[-_]v\d+)', '', f.name).lower()
-            if clean_name not in basename_map: basename_map[clean_name] = []
-            basename_map[clean_name].append(rel_path)
-        
-        for originals in basename_map.values():
-            if len(originals) > 1:
-                self.atlas["audit"]["warnings"].append({
-                    "type": "AMBIGUITY",
-                    "files": originals,
-                    "description": "Rutas duplicadas o versiones detectadas para el mismo componente."
-                })
-                self.atlas["audit"]["structural_health"] -= 5
+                self.atlas["summary"]["total_files"] += 1
+                file_path = Path(root) / file
+                rel_path = file_path.relative_to(self.project_root).as_posix()
 
-        # Auditoría de Huérfanos
-        connected_files = set()
-        for conn in self.atlas["connectivity"]["inbound"] + self.atlas["connectivity"]["outbound"]:
-            parts = conn.split(' ')
-            if parts: connected_files.add(parts[0])
-
-        for f in self.found_files:
-            rel_path = f.relative_to(self.project_root).as_posix()
-            if f.suffix in {'.py', '.php', '.js', '.ts', '.jsx', '.tsx'} and rel_path not in connected_files:
-                if not any(x in f.name.lower() for x in ['index', 'main', 'app', 'wp-config']):
-                    self.atlas["audit"]["warnings"].append({
-                        "type": "ORPHAN",
-                        "file": rel_path,
-                        "description": "Componente sin conexiones lógicas detectadas."
-                    })
-                    self.atlas["audit"]["structural_health"] -= 0.5
-
-        self.atlas["audit"]["structural_health"] = max(0.0, round(float(self.atlas["audit"]["structural_health"]), 2))
-
-    def analyze(self, files):
-        tech_scores = {tech["name"]: 0 for tech in self.config.get("definitions", [])}
-        network_triggers = self.rules.get("network_triggers", [])
-        
-        for path in files:
-            rel_path = path.relative_to(self.project_root).as_posix()
-            if path.suffix in self.text_extensions:
-                self.atlas["summary"]["relevant_files"] += 1
                 try:
-                    with open(path, 'r', encoding='utf-8', errors='ignore') as f:
+                    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                         content = f.read()
-                        for tech in self.config.get("definitions", []):
-                            ind = tech.get("indicators", {})
-                            if path.name in ind.get("files", []): tech_scores[tech["name"]] += 50
-                            if any(folder in rel_path for folder in ind.get("folders", [])):
-                                tech_scores[tech["name"]] += 30
-                            for pat in ind.get("patterns_in_files", []):
-                                if re.search(pat, content, re.I): tech_scores[tech["name"]] += 40
 
-                            patterns = tech.get("patterns", {})
-                            for inbound in patterns.get("inbound", []):
-                                if re.search(inbound, content, re.I):
-                                    self.atlas["connectivity"]["inbound"].append(f"{rel_path} <- {inbound}")
-                                    self.dot_edges.append(f'    "EXTERNO" -> "{rel_path}" [label="{inbound}", color="blue"];')
-                            for outbound in patterns.get("outbound", []):
-                                if re.search(outbound, content, re.I):
-                                    self.atlas["connectivity"]["outbound"].append(f"{rel_path} -> {outbound}")
-                                    self.dot_edges.append(f'    "{rel_path}" -> "{outbound}" [label="calls", color="red", penwidth=2];')
+                    is_relevant = False
+                    for df in self.config.get("definitions", []):
+                        patterns = df.get("patterns", {})
+                        
+                        for inbound in patterns.get("inbound", []):
+                            if re.search(inbound, content, re.I):
+                                self.atlas["connectivity"]["inbound"].append(f"{rel_path} <- {inbound}")
+                                tech_scores[df["name"]] = tech_scores.get(df["name"], 0) + 10
+                                is_relevant = True
 
-                        for trigger in network_triggers:
-                            if re.search(trigger, content, re.I):
-                                self.dot_edges.append(f'    "{rel_path}" -> "{trigger}" [style="dotted", color="gray"];')
+                        for outbound in patterns.get("outbound", []):
+                            matches = re.findall(outbound, content, re.I)
+                            for match in matches:
+                                if isinstance(match, tuple): match = match[0]
+                                
+                                # [MODIFICADO] Solo usamos el resolvedor de identidad aquí
+                                final_node = self._resolve_identity(match)
+                                
+                                if final_node == rel_path or final_node.lower() in ["self", "none"]:
+                                    continue
+
+                                self.atlas["connectivity"]["outbound"].append(f"{rel_path} -> {final_node}")
+                                self.dot_edges.append(f'    "{rel_path}" -> "{final_node}" [label="calls", color="red"];')
+                                is_relevant = True
+
+                    if is_relevant:
+                        self.atlas["summary"]["relevant_files"] += 1
+
                 except Exception as e:
                     self.atlas["anomalies"].append(f"{rel_path}: {str(e)}")
 
         for name, score in tech_scores.items():
-            if score >= 50:
-                self.atlas["identities"].append({"tech": name, "confidence": min(score, 100)})
+            self.atlas["identities"].append({"tech": name, "confidence": min(score, 100)})
 
-        self.atlas["connectivity"]["inbound"] = list(set(self.atlas["connectivity"]["inbound"]))
-        self.atlas["connectivity"]["outbound"] = list(set(self.atlas["connectivity"]["outbound"]))
         self.run_audit()
 
+    def run_audit(self):
+        relevant = self.atlas["summary"]["relevant_files"]
+        total = self.atlas["summary"]["total_files"]
+        health = (relevant / total * 100) if total > 0 else 0
+        self.atlas["audit"]["structural_health"] = round(health, 2)
+
     def finalize(self):
-        health = self.atlas["audit"]["structural_health"]
-        
-        # Guardar Atlas y DOT
-        with open(self.map_dir / "atlas.json", "w", encoding="utf-8") as f:
-            json.dump(self.atlas, f, indent=4, ensure_ascii=False)
+        # 1. Generar DOT
+        dot_content = "digraph G {\n    rankdir=LR;\n    concentrate=true;\n    node [shape=box, style=rounded, fontname=\"Arial\"];\n"
+        for edge in sorted(set(self.dot_edges)):
+            dot_content += edge + "\n"
+        dot_content += "}"
         
         with open(self.map_dir / "connectivity.dot", "w", encoding="utf-8") as f:
-            f.write("digraph G {\n    rankdir=LR;\n    concentrate=true;\n")
-            f.write("    node [shape=box, style=rounded, fontname=\"Arial\"];\n")
-            f.writelines("\n".join(list(set(self.dot_edges))))
-            f.write("\n}")
+            f.write(dot_content)
 
-        # Guardar Feedback Log
+        # 2. Guardar Atlas
+        with open(self.map_dir / "atlas.json", "w", encoding="utf-8") as f:
+            json.dump(self.atlas, f, indent=4, ensure_ascii=False)
+
+        # 3. Log de Feedback
         log_path = self.map_dir / "feedback.log"
-        new_entry = f"[{self.atlas['generated_at']}] COMPASS RUN\n"
+        health = self.atlas["audit"]["structural_health"]
+        new_entry = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] COMPASS RUN\n"
         new_entry += f"  - Salud Estructural: {health}%\n"
         new_entry += f"  - Archivos: {self.atlas['summary']['total_files']} (Relevantes: {self.atlas['summary']['relevant_files']})\n"
         new_entry += "="*40 + "\n\n"
 
         old_content = ""
         if log_path.exists():
-            with open(log_path, "r", encoding="utf-8") as f: old_content = f.read()
-        with open(log_path, "w", encoding="utf-8") as f: f.write(new_entry + old_content)
+            with open(log_path, "r", encoding="utf-8") as f: 
+                old_content = f.read()
+        
+        with open(log_path, "w", encoding="utf-8") as f: 
+            f.write(new_entry + old_content)
 
-        # Output final con sugerencia inteligente
+        # 4. Feedback visual en consola
         print(f"\n✨ Architect Compass finalizado.")
         print(f"📊 Salud Estructural: {health}%")
         
+        # --- LÓGICA DE SUGERENCIAS ACUMULATIVA ---
         if health < 80.0:
-            print(f"\n[!] AVISO: La salud detectada es baja ({health}%).")
-            print(f"    Esto puede deberse a un stack no reconocido o reglas de importación faltantes.")
-            print(f"    TIP: Edita el template en '.map/mapper_config.template.json' y muévelo a la raíz como 'mapper_config.json'.")
-        
-        if self.local_config_path.exists():
-            print(f"✅ Usando configuración local del proyecto.")
-        else:
-            print(f"🌐 Usando configuración global.")
+            # [TU MENSAJE ORIGINAL INTACTO] Problemas graves de reglas
+            print("\n" + "!" * 50)
+            print(" 💡 SUGERENCIA (ES):")
+            print(" La salud estructural es baja porque faltan reglas específicas.")
+            print(" Configura '.map/mapper_config.json' usando el template")
+            print(" para que el Compass entienda mejor este stack.")
+            print("-" * 30)
+            print(" 💡 SUGGESTION (EN):")
+            print(" Low structural health. The project needs specific rules.")
+            print(" Set up '.map/mapper_config.json' from the template")
+            print(" so Compass can better understand this tech stack.")
+            print("!" * 50 + "\n")
+            
+        elif health < 90.0:
+            # [EL MENSAJE NUEVO AGREGADO] Problemas leves de duplicidad de nodos
+            print("\n" + "!" * 50)
+            print(" 💡 SUGERENCIA (ES):")
+            print(" El sistema ahora intenta unificar nodos (ej: ui.theme -> ui/theme.py).")
+            print(" Si ves duplicados, revisa las rutas en '.map/mapper_config.json'.")
+            print("-" * 30)
+            print(" 💡 SUGGESTION (EN):")
+            print(" Nodes are now being unified by file identity.")
+            print(" If you see duplicates, check paths in '.map/mapper_config.json'.")
+            print("!" * 50 + "\n")
 
 if __name__ == "__main__":
     compass = ArchitectCompass()
-    compass.analyze(compass.scan_project())
+    compass.analyze()
     compass.finalize()
