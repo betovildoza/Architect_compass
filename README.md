@@ -13,6 +13,9 @@ Detecta archivos muertos, mapea dependencias y genera un score de salud estructu
 
 ## Why Architect's Compass?
 
+
+> Todos tenemos esa carpeta v2_final_ahora_si_esta_es.php que nos da miedo borrar. La brújula te dice si realmente alguien la está llamando o si es solo nostalgia.
+
 Cuando gestionás múltiples proyectos simultáneamente — WordPress, Next.js, agentes de IA, APIs — es inevitable que el árbol de archivos se llene de versiones antiguas, backups y componentes sin conexión que nadie sabe si todavía importan.
 
 La respuesta usual es recorrer el proyecto a mano o confiar en la memoria. Ambas opciones escalan mal.
