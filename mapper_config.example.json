@@ -1,0 +1,47 @@
+{
+  "basal_rules": {
+    "ignore_folders": ["__pycache__", "node_modules", "dist", "build", "venv", ".git", ".map", "_archivo", "out", ".next"],
+    "text_extensions": [".py", ".js", ".jsx", ".ts", ".tsx", ".php", ".html", ".css", ".mjs", ".json", ".sql", ".env"],
+    "network_triggers": ["http", "ws://", "api", "localhost", "fetch\\(", "wp_remote_", "requests\\.", "axios"],
+    "persistence_triggers": ["global \\$wpdb", "get_option", "sql", "SELECT ", "INSERT INTO", "fs\\.", "localStorage", "sessionStorage", "ChromaDB", "prisma"],
+    "identity_triggers": ["Plugin Name:", "export default function", "def main", "class ", "register_rest_route", "index\\."]
+  },
+  "definitions": [
+        {
+        "name": "PHP-Backend-Service",
+        "priority": 10,
+        "indicators": {
+            "files": ["config.php", "index.php", "api.php"],
+            "folders": ["includes", "lib", "src/api"]
+        },
+        "patterns": {
+            "inbound": ["function (.*)\\(", "case '(.*)':"],
+            "outbound": ["mysqli_connect", "PDO", "json_encode", "header\\(", "curl_init"]
+        }
+        },
+        {
+        "name": "Vanilla-Frontend",
+        "priority": 10,
+        "indicators": {
+            "files": ["index.html", "script.js", "style.css"],
+            "folders": ["assets", "js", "css"]
+        },
+        "patterns": {
+            "inbound": ["addEventListener", "function init", "DOMContentLoaded"],
+            "outbound": ["fetch\\(", "XMLHttpRequest", "console\\.log", "document\\.querySelector"]
+        }
+        },
+        {
+        "name": "WordPress-Development",
+        "priority": 10,
+        "indicators": {
+            "files": ["style.css", "functions.php", "wp-config.php"],
+            "patterns_in_files": ["Plugin Name:", "Theme Name:"]
+        },
+        "patterns": {
+            "inbound": ["add_action\\(", "add_filter\\(", "register_rest_route"],
+            "outbound": ["global \\$wpdb", "get_option", "wp_remote_get"]
+        }
+        }
+    ]
+}
