@@ -41,6 +41,11 @@ A veces, lo más útil es también lo más invisible.
 | 🧩 Stack-Agnóstico | Motor basado en Regex — funciona con cualquier lenguaje o framework |
 | 🪟 Modo Invisible | No genera archivos en tu árbol de trabajo; todo va a `.map/` |
 
+![Captura de pantalla](/Captura%20de%20pantalla%202026-04-10.jpg)
+
+
+
+
 ---
 
 ## 📊 Outputs generados
