@@ -40,7 +40,11 @@
         },
         "patterns": {
             "inbound": ["add_action\\(", "add_filter\\(", "register_rest_route"],
-            "outbound": ["global \\$wpdb", "get_option", "wp_remote_get"]
+            "outbound": ["global \\$wpdb", "get_option", "wp_remote_get", "wp_enqueue_script\\s*\\(\\s*'[^']+'\\s*,\\s*[A-Z_]+\\s*\\.\\s*'([^']+)'",
+"wp_enqueue_style\\s*\\(\\s*'[^']+'\\s*,\\s*[A-Z_]+\\s*\\.\\s*'([^']+)'",
+"require_once\\s+[A-Z_]+\\s*\\.\\s*'([^']+)'"
+
+            ]
         }
         }
     ]

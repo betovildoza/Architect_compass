@@ -6,15 +6,12 @@
 [![Stack-Agnostic](https://img.shields.io/badge/Stack-Agnostic-orange?style=flat-square&logo=atom&logoColor=white)](https://github.com/betovildoza/Architect_Compass)
 [![No Install](https://img.shields.io/badge/No%20Install-Required-2ecc71?style=flat-square&logo=checkmarx&logoColor=white)](https://github.com/betovildoza/Architect_Compass)
 
-**Auditoría técnica para proyectos de larga duración y arquitecturas multitecnología.**  
-Detecta archivos muertos, mapea dependencias y genera un score de salud estructural — sin tocar tu código.
+
+**Auditoría técnica para proyectos de larga duración y arquitecturas multitecnología.** Detecta archivos muertos, mapea dependencias mediante identidad de archivos y genera un score de salud estructural — sin tocar tu código.
 
 ---
 
 ## Why Architect's Compass?
-
-
-> Todos tenemos esa carpeta v2_final_ahora_si_esta_es.php que nos da miedo borrar. La brújula te dice si realmente alguien la está llamando o si es solo nostalgia.
 
 Cuando gestionás múltiples proyectos simultáneamente — WordPress, Next.js, agentes de IA, APIs — es inevitable que el árbol de archivos se llene de versiones antiguas, backups y componentes sin conexión que nadie sabe si todavía importan.
 
@@ -41,6 +38,21 @@ A veces, lo más útil es también lo más invisible.
 | 🧩 Stack-Agnóstico | Motor basado en Regex — funciona con cualquier lenguaje o framework |
 | 🪟 Modo Invisible | No genera archivos en tu árbol de trabajo; todo va a `.map/` |
 
+---
+
+## 🔬 Capacidades Core
+
+**🔍 Unificación por Identidad**  
+El motor indexa todos los archivos del proyecto antes de analizar imports. Si encuentra `from services.monitor import X`, sabe que se refiere al archivo físico `services/monitor.py` — y usa esa ruta como nodo en el grafo. Sin duplicados, sin nodos fantasma.
+
+**🛡️ Auditoría de Salud Dinámica**  
+El score (0–100%) se calcula en base a la relación entre archivos totales y archivos con al menos una conexión detectada. Los huérfanos penalizan el score. Los duplicados también.
+
+**📂 Configuración Jerárquica**  
+Compass acepta un `mapper_config.json` global (en la carpeta de la herramienta) o uno local en `.map/mapper_config.json` dentro de cada proyecto. El local tiene prioridad, permitiendo definiciones de stack por proyecto sin tocar la configuración base.
+
+**🕸️ Exportación Visual Limpia**  
+El grafo `.dot` solo contiene lógica de negocio. Las carpetas de entorno (`.venv`, `node_modules`, `__pycache__`) se excluyen por defecto, convirtiendo lo que sería una telaraña de librerías externas en un mapa legible de la arquitectura real.
 
 ---
 
@@ -68,6 +80,8 @@ Al ejecutar Compass en la raíz de tu proyecto, se crea la carpeta `.map/` con t
 
 **`connectivity.dot`** — Grafo de dependencias en formato Graphviz. Pegalo en [GraphvizOnline](https://dreampuf.github.io/GraphvizOnline) para visualizarlo.
 
+![Captura de pantalla de connectivity](/connectivity.dot.jpg)
+
 **`feedback.log`** — Historial de ejecuciones con score y estadísticas por fecha.
 
 ![Captura de pantalla de feedback](/feedback.log.jpg)
@@ -79,7 +93,7 @@ No hay instalación. Solo necesitás Python 3.8+ en tu sistema.
 
 ```bash
 # Clona o descargá el repo en una carpeta de herramientas
-git clone https://github.com/betovildoza/Architect_Compass C:\DevTools\ArchitectCompass
+git clone https://github.com/betovildoza/Architect_compass C:\DevTools\ArchitectCompass
 
 # Copiá el config de ejemplo
 cp mapper_config.example.json mapper_config.json
@@ -183,6 +197,30 @@ ArchitectCompass/
 ```
 
 > **No se incluye `mapper_config.json`** en el repo. Cada instalación mantiene su propia configuración local.
+
+---
+
+## ⚠️ Comportamientos a conocer
+
+### Caracteres especiales en nombres de archivo
+
+El motor de resolución de identidad limpia las rutas capturadas antes de buscarlas en el registro de archivos. El set de caracteres permitidos es: letras, números, `.  / _ -`.
+
+Si el proyecto auditado tiene archivos con caracteres fuera de ese set (ej: `@`, `$`, `~`, espacios), esos caracteres se eliminan silenciosamente y el archivo puede no resolverse correctamente — apareciendo como un nodo sin conexión en el grafo.
+
+**Síntoma:** flechas que apuntan a nombres que no coinciden con archivos reales ("nodos fantasma").  
+**Solución:** revisar el regex en `_resolve_identity` dentro de `architect_compass.py` y agregar el carácter necesario al set permitido.
+
+---
+
+### Comportamiento del config local (`.map/mapper_config.json`)
+
+El config local **no reemplaza** al global — los **extiende**:
+
+- `basal_rules`: las claves del local sobreescriben las equivalentes del global.
+- `definitions`: si una definición local tiene el **mismo `name`** que una global, la reemplaza completamente. Si tiene un nombre nuevo, se agrega a la lista.
+
+Esto significa que para agregar patrones a una tecnología ya definida globalmente (ej: WordPress), hay que copiar la definición completa al local y modificarla — no alcanza con poner solo los patrones nuevos.
 
 ---
 

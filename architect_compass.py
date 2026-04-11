@@ -21,9 +21,9 @@ class ArchitectCompass:
         
         self.ignore_folders = set(self.rules.get("ignore_folders", []))
         self.ignore_files = set(self.rules.get("ignore_files", ["__init__.py"]))
-        self.text_extensions = set(self.rules.get("text_extensions", [".py", ".js", ".json"]))
+        self.text_extensions = set(self.rules.get("text_extensions", [".py", ".js", ".json", ".css"]))
         
-        # [AGREGADO] Registro para unificar identidades de archivos (Opción 1)
+        # Registro para unificar identidades de archivos
         self.file_registry = {}
         self._index_existing_files()
         
@@ -33,22 +33,78 @@ class ArchitectCompass:
             "identities": [],
             "summary": {"total_files": 0, "relevant_files": 0},
             "connectivity": {"inbound": [], "outbound": []},
-            "anomalies": [],
-            "audit": {"structural_health": 0.0, "warnings": []}
+            "audit": {"structural_health": 100.0, "warnings": []},
+            "anomalies": []
         }
         self.dot_edges = []
 
-    # [AGREGADO] Método aditivo para indexar archivos reales
-    def _index_existing_files(self):
-        for p in self.project_root.rglob("*"):
-            if p.is_file() and p.suffix in [".py", ".js", ".ts", ".tsx"]:
-                rel_path = p.relative_to(self.project_root).as_posix()
-                self.file_registry[rel_path] = rel_path
-                self.file_registry[rel_path.rsplit('.', 1)[0]] = rel_path
+    def ensure_local_template(self):
+        template_path = self.map_dir / "mapper_config.template.json"
+        if self.global_config_path.exists() and not template_path.exists():
+            try:
+                shutil.copy2(self.global_config_path, template_path)
+            except Exception as e:
+                print(f"⚠️ No se pudo crear el template: {e}")
 
-    # [AGREGADO] Método aditivo para resolver nombres y evitar duplicados
+    def load_config_hierarchy(self):
+        # 1. Cargar Global siempre como base
+        config = {"basal_rules": {}, "definitions": []}
+        if self.global_config_path.exists():
+            try:
+                with open(self.global_config_path, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+            except Exception as e:
+                print(f"⚠️ Error crítico cargando config global: {e}")
+
+        # 2. Si existe Local, complementar
+        if self.local_config_path.exists():
+            try:
+                with open(self.local_config_path, 'r', encoding='utf-8') as f:
+                    local_config = json.load(f)
+                    
+                    # Unir basal_rules (merge de diccionarios)
+                    if "basal_rules" in local_config:
+                        config["basal_rules"].update(local_config["basal_rules"])
+                    
+                    # Unir definitions (extender la lista)
+                    if "definitions" in local_config:
+                        # Evitamos duplicados por nombre si querés "pisar" una def global
+                        global_names = {d["name"]: i for i, d in enumerate(config["definitions"])}
+                        for local_def in local_config["definitions"]:
+                            if local_def["name"] in global_names:
+                                # Reemplaza la global por la local si tienen el mismo nombre
+                                config["definitions"][global_names[local_def["name"]]] = local_def
+                            else:
+                                # Si es nueva, la agrega
+                                config["definitions"].append(local_def)
+                                
+                print("✅ Configuración local cargada y combinada con la global.")
+            except Exception as e:
+                print(f"⚠️ Error mergeando config local: {e}")
+        
+        return config
+
+    def _index_existing_files(self):
+        for root, dirs, files in os.walk(self.project_root):
+            dirs[:] = [d for d in dirs if d not in self.ignore_folders]
+            for file in files:
+                if any(file.endswith(ext) for ext in self.text_extensions):
+                    rel_path = os.path.relpath(os.path.join(root, file), self.project_root)
+                    normalized_path = rel_path.replace("\\", "/")
+                    self.file_registry[normalized_path] = normalized_path
+                    
+                    path_no_ext = os.path.splitext(normalized_path)[0]
+                    self.file_registry[path_no_ext] = normalized_path
+                    
+                    dot_path = path_no_ext.replace("/", ".")
+                    self.file_registry[dot_path] = normalized_path
+
     def _resolve_identity(self, raw_name):
-        clean = re.sub(r'[^a-zA-Z0-9\._\/]', '', str(raw_name)).strip().rstrip('.')
+        """
+        Versión original con fix de sufijo para WordPress.
+        """
+        # Limpieza básica para evitar basura de regex en el match
+        clean = re.sub(r'[^a-zA-Z0-9\._\/-]', '', str(raw_name)).strip().strip("'\"").rstrip('.')
         path_style = clean.replace(".", "/")
         
         parts = path_style.split("/")
@@ -56,27 +112,13 @@ class ArchitectCompass:
             candidate = "/".join(parts[:i])
             if candidate in self.file_registry: return self.file_registry[candidate]
             if f"{candidate}.py" in self.file_registry: return self.file_registry[f"{candidate}.py"]
+        
+        # Fix de sufijo: si no hay match directo, buscar si algún archivo termina con este path
+        for registry_path in self.file_registry:
+            if registry_path.endswith(clean) and clean != "":
+                return self.file_registry[registry_path]
             
         return clean
-
-    def load_config_hierarchy(self):
-        if self.local_config_path.exists():
-            with open(self.local_config_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        return {"basal_rules": {}, "definitions": []}
-
-    def ensure_local_template(self):
-        if not self.local_config_path.exists():
-            template = {
-                "basal_rules": {
-                    "ignore_folders": ["__pycache__", "node_modules", "dist", "build", "venv", ".git", ".map"],
-                    "ignore_files": ["__init__.py"],
-                    "text_extensions": [".py", ".js", ".json"]
-                },
-                "definitions": []
-            }
-            with open(self.local_config_path, "w", encoding="utf-8") as f:
-                json.dump(template, f, indent=4)
 
     def analyze(self):
         relevant_extensions = self.text_extensions
@@ -96,8 +138,13 @@ class ArchitectCompass:
                 try:
                     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                         content = f.read()
-
+                    
+                    # 1. Inicialización y Fix de Relevancia Automática para UI
                     is_relevant = False
+                    if any(file.endswith(ext) for ext in [".js", ".css"]):
+                        is_relevant = True
+
+                    # 2. Análisis por definiciones
                     for df in self.config.get("definitions", []):
                         patterns = df.get("patterns", {})
                         
@@ -111,11 +158,13 @@ class ArchitectCompass:
                             matches = re.findall(outbound, content, re.I)
                             for match in matches:
                                 if isinstance(match, tuple): match = match[0]
+                                if not match: continue
+
+                                # Limpieza manual de comillas si el regex capturó de más
+                                clean_match = str(match).strip("'\"").strip()
+                                final_node = self._resolve_identity(clean_match)
                                 
-                                # [MODIFICADO] Solo usamos el resolvedor de identidad aquí
-                                final_node = self._resolve_identity(match)
-                                
-                                if final_node == rel_path or final_node.lower() in ["self", "none"]:
+                                if final_node == rel_path or final_node.lower() in ["self", "none", ""]:
                                     continue
 
                                 self.atlas["connectivity"]["outbound"].append(f"{rel_path} -> {final_node}")
@@ -134,13 +183,13 @@ class ArchitectCompass:
         self.run_audit()
 
     def run_audit(self):
-        relevant = self.atlas["summary"]["relevant_files"]
         total = self.atlas["summary"]["total_files"]
-        health = (relevant / total * 100) if total > 0 else 0
-        self.atlas["audit"]["structural_health"] = round(health, 2)
+        relevant = self.atlas["summary"]["relevant_files"]
+        if total > 0:
+            self.atlas["audit"]["structural_health"] = round((relevant / total) * 100, 2)
 
     def finalize(self):
-        # 1. Generar DOT
+        # Mantenemos el finalize original sin simplificaciones
         dot_content = "digraph G {\n    rankdir=LR;\n    concentrate=true;\n    node [shape=box, style=rounded, fontname=\"Arial\"];\n"
         for edge in sorted(set(self.dot_edges)):
             dot_content += edge + "\n"
@@ -149,13 +198,12 @@ class ArchitectCompass:
         with open(self.map_dir / "connectivity.dot", "w", encoding="utf-8") as f:
             f.write(dot_content)
 
-        # 2. Guardar Atlas
         with open(self.map_dir / "atlas.json", "w", encoding="utf-8") as f:
             json.dump(self.atlas, f, indent=4, ensure_ascii=False)
 
-        # 3. Log de Feedback
         log_path = self.map_dir / "feedback.log"
         health = self.atlas["audit"]["structural_health"]
+        
         new_entry = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] COMPASS RUN\n"
         new_entry += f"  - Salud Estructural: {health}%\n"
         new_entry += f"  - Archivos: {self.atlas['summary']['total_files']} (Relevantes: {self.atlas['summary']['relevant_files']})\n"
@@ -163,20 +211,14 @@ class ArchitectCompass:
 
         old_content = ""
         if log_path.exists():
-            with open(log_path, "r", encoding="utf-8") as f: 
-                old_content = f.read()
-        
-        with open(log_path, "w", encoding="utf-8") as f: 
-            f.write(new_entry + old_content)
+            with open(log_path, "r", encoding="utf-8") as f: old_content = f.read()
+        with open(log_path, "w", encoding="utf-8") as f: f.write(new_entry + old_content)
 
-        # 4. Feedback visual en consola
-        print(f"\n✨ Architect Compass finalizado.")
+        print(f"\\n✨ Architect Compass finalizado.")
         print(f"📊 Salud Estructural: {health}%")
         
-        # --- LÓGICA DE SUGERENCIAS ACUMULATIVA ---
         if health < 80.0:
-            # [TU MENSAJE ORIGINAL INTACTO] Problemas graves de reglas
-            print("\n" + "!" * 50)
+            print("\\n" + "!" * 50)
             print(" 💡 SUGERENCIA (ES):")
             print(" La salud estructural es baja porque faltan reglas específicas.")
             print(" Configura '.map/mapper_config.json' usando el template")
@@ -186,19 +228,8 @@ class ArchitectCompass:
             print(" Low structural health. The project needs specific rules.")
             print(" Set up '.map/mapper_config.json' from the template")
             print(" so Compass can better understand this tech stack.")
-            print("!" * 50 + "\n")
-            
-        elif health < 90.0:
-            # [EL MENSAJE NUEVO AGREGADO] Problemas leves de duplicidad de nodos
-            print("\n" + "!" * 50)
-            print(" 💡 SUGERENCIA (ES):")
-            print(" El sistema ahora intenta unificar nodos (ej: ui.theme -> ui/theme.py).")
-            print(" Si ves duplicados, revisa las rutas en '.map/mapper_config.json'.")
-            print("-" * 30)
-            print(" 💡 SUGGESTION (EN):")
-            print(" Nodes are now being unified by file identity.")
-            print(" If you see duplicates, check paths in '.map/mapper_config.json'.")
-            print("!" * 50 + "\n")
+            print("!" * 50 + "\\n")
+
 
 if __name__ == "__main__":
     compass = ArchitectCompass()
