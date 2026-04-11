@@ -62,9 +62,14 @@ class ArchitectCompass:
                 with open(self.local_config_path, 'r', encoding='utf-8') as f:
                     local_config = json.load(f)
                     
-                    # Unir basal_rules (merge de diccionarios)
+                    # Unir basal_rules: listas se extienden (dedup), scalars se pisan
                     if "basal_rules" in local_config:
-                        config["basal_rules"].update(local_config["basal_rules"])
+                        for key, val in local_config["basal_rules"].items():
+                            if isinstance(val, list) and isinstance(config["basal_rules"].get(key), list):
+                                merged = config["basal_rules"][key] + [v for v in val if v not in config["basal_rules"][key]]
+                                config["basal_rules"][key] = merged
+                            else:
+                                config["basal_rules"][key] = val
                     
                     # Unir definitions (extender la lista)
                     if "definitions" in local_config:
@@ -160,11 +165,28 @@ class ArchitectCompass:
                                 if isinstance(match, tuple): match = match[0]
                                 if not match: continue
 
-                                # Limpieza manual de comillas si el regex capturó de más
+                                # 1. Limpieza y Normalización
                                 clean_match = str(match).strip("'\"").strip()
-                                final_node = self._resolve_identity(clean_match)
+                                # Limpieza adicional para unify check: igual que _resolve_identity
+                                # Permite que "fetch(" → "fetch" matchee la unify_list correctamente
+                                clean_base = re.sub(r'[^a-zA-Z0-9\._\/-]', '', clean_match).rstrip('.')
+
+                                # 2. Lógica de Unificación (Nueva)
+                                # Verificamos si el match (en minúsculas) está en nuestra lista de unificables
+                                unify_list = self.rules.get("unify_external_nodes", [])
+                                if clean_base.lower() in [item.lower() for item in unify_list]:
+                                    # Forzamos el nombre a una versión estándar (ej: "anthropic")
+                                    final_node = clean_base.lower()
+                                else:
+                                    # Si no es externo, resolvemos la identidad normal del archivo
+                                    final_node = self._resolve_identity(clean_match)
                                 
-                                if final_node == rel_path or final_node.lower() in ["self", "none", ""]:
+                                # 3. Filtro de exclusión (Nueva)
+                                ignore_patterns = self.rules.get("ignore_outbound_patterns", [])
+                                if any(re.search(p, final_node, re.I) for p in ignore_patterns):
+                                    continue
+
+                                if final_node == rel_path:
                                     continue
 
                                 self.atlas["connectivity"]["outbound"].append(f"{rel_path} -> {final_node}")
@@ -218,17 +240,14 @@ class ArchitectCompass:
         print(f"📊 Salud Estructural: {health}%")
         
         if health < 80.0:
-            print("\\n" + "!" * 50)
             print(" 💡 SUGERENCIA (ES):")
             print(" La salud estructural es baja porque faltan reglas específicas.")
             print(" Configura '.map/mapper_config.json' usando el template")
-            print(" para que el Compass entienda mejor este stack.")
             print("-" * 30)
             print(" 💡 SUGGESTION (EN):")
             print(" Low structural health. The project needs specific rules.")
             print(" Set up '.map/mapper_config.json' from the template")
-            print(" so Compass can better understand this tech stack.")
-            print("!" * 50 + "\\n")
+            
 
 
 if __name__ == "__main__":

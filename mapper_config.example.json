@@ -1,10 +1,12 @@
 {
   "basal_rules": {
-    "ignore_folders": ["__pycache__", "node_modules", "dist", "build", "venv", ".venv", ".git", ".map", "_archivo", "out", ".next"],
+    "ignore_folders": ["__pycache__", "node_modules", "dist", "build", "venv", ".venv", ".git", ".map", ".claude", "_archivo", "out", ".next", "src-tauri/target", "target", "gen", "bin", "obj", "vendor"],
     "text_extensions": [".py", ".js", ".jsx", ".ts", ".tsx", ".php", ".html", ".css", ".mjs", ".json", ".sql", ".env"],
-    "network_triggers": ["http", "ws://", "api", "localhost", "fetch\\(", "wp_remote_", "requests\\.", "axios"],
-    "persistence_triggers": ["global \\$wpdb", "get_option", "sql", "SELECT ", "INSERT INTO", "fs\\.", "localStorage", "sessionStorage", "ChromaDB", "prisma"],
-    "identity_triggers": ["Plugin Name:", "export default function", "def main", "class ", "register_rest_route", "index\\."]
+    "network_triggers": ["http", "ws://", "api", "localhost", "fetch\\(", "wp_remote_", "requests\\.", "axios", "curl_init"],
+    "persistence_triggers": ["global \\$wpdb", "get_option", "sql", "SELECT ", "INSERT INTO", "fs\\.", "localStorage", "sessionStorage", "ChromaDB", "prisma", "PDO", "mysqli_"],
+    "identity_triggers": ["Plugin Name:", "export default function", "def main", "class ", "register_rest_route", "addEventListener", "index\\."],
+    "unify_external_nodes": ["fetch", "anthropic", "chromadb", "openai", "axios", "requests"],
+    "ignore_outbound_patterns": ["^self$", "^none$", "^$"]
   },
   "definitions": [
         {
