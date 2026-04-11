@@ -1,10 +1,10 @@
 # 🧭 Architect's Compass
 
 [![Python](https://img.shields.io/badge/Python-3.8+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=flat-square&logo=github&logoColor=white)](https://github.com/betovildoza/ArchitectCompass)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=flat-square&logo=github&logoColor=white)](https://github.com/betovildoza/Architect_Compass)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Stack-Agnostic](https://img.shields.io/badge/Stack-Agnostic-orange?style=flat-square&logo=atom&logoColor=white)](https://github.com/betovildoza/ArchitectCompass)
-[![No Install](https://img.shields.io/badge/No%20Install-Required-2ecc71?style=flat-square&logo=checkmarx&logoColor=white)](https://github.com/betovildoza/ArchitectCompass)
+[![Stack-Agnostic](https://img.shields.io/badge/Stack-Agnostic-orange?style=flat-square&logo=atom&logoColor=white)](https://github.com/betovildoza/Architect_Compass)
+[![No Install](https://img.shields.io/badge/No%20Install-Required-2ecc71?style=flat-square&logo=checkmarx&logoColor=white)](https://github.com/betovildoza/Architect_Compass)
 
 **Auditoría técnica para proyectos de larga duración y arquitecturas multitecnología.**  
 Detecta archivos muertos, mapea dependencias y genera un score de salud estructural — sin tocar tu código.
@@ -74,7 +74,7 @@ No hay instalación. Solo necesitás Python 3.8+ en tu sistema.
 
 ```bash
 # Clona o descargá el repo en una carpeta de herramientas
-git clone https://github.com/betovildoza/ArchitectCompass C:\DevTools\ArchitectCompass
+git clone https://github.com/betovildoza/Architect_Compass C:\DevTools\ArchitectCompass
 
 # Copiá el config de ejemplo
 cp mapper_config.example.json mapper_config.json
