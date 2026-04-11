@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoja de Ruta: Architect's Compass CLI</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --card: #161b22;
+            --accent: #58a6ff;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --highlight: #d29922;
+            --code-bg: #010409;
+        }
+
+        body {
+            font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container { max-width: 900px; width: 100%; }
+
+        header {
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        h1 { color: var(--accent); font-size: 2.2rem; margin: 0; }
+        .subtitle { opacity: 0.7; font-size: 1.1rem; margin-top: 10px; }
+
+        .step-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        h2 { color: var(--highlight); margin-top: 0; display: flex; align-items: center; }
+        h2::before {
+            content: attr(data-number);
+            background: var(--highlight);
+            color: var(--bg);
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 0.9rem;
+        }
+
+        p { margin-bottom: 15px; }
+        
+        ul { margin-bottom: 20px; }
+        li { margin-bottom: 10px; }
+
+        pre {
+            background: var(--code-bg);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        code { font-family: 'Consolas', 'Monaco', monospace; color: #79c0ff; }
+        .cmd { color: #ffa657; font-weight: bold; }
+
+        .feature-box {
+            background: rgba(88, 166, 255, 0.1);
+            border-left: 4px solid var(--accent);
+            padding: 15px;
+            margin: 15px 0;
+            font-style: italic;
+        }
+
+        footer { text-align: center; margin-top: 50px; opacity: 0.5; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Guía de Profesionalización: Compass CLI</h1>
+            <p class="subtitle">Transformación del motor Architect's Compass de script pasivo a herramienta de comandos profesional.</p>
+        </header>
+
+        <div class="step-card">
+            <h2 data-number="1">Reemplazar JSON por Argparse (o Typer)</h2>
+            <p>Actualmente, el script es "pasivo": se ejecuta y lee lo que encuentra en su propia carpeta. Para que sea una CLI real, debe aceptar <strong>parámetros</strong> que alteren su comportamiento sin editar el código.</p>
+            <div class="feature-box">
+                <strong>¿Qué ganamos?</strong> Flexibilidad total para automatizar auditorías.
+            </div>
+            <ul>
+                <li><code><span class="cmd">compass --config mi_config.json</span></code>: Permite usar reglas personalizadas para un proyecto específico.</li>
+                <li><code><span class="cmd">compass --path ./otro_proyecto</span></code>: Analiza cualquier carpeta del disco desde cualquier ubicación.</li>
+                <li><code><span class="cmd">compass --export</span></code>: Define si queremos la salida completa o solo un archivo específico (ej: solo el Atlas JSON).</li>
+            </ul>
+            <pre><code>import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--path", default=".")
+parser.add_argument("--config", help="Ruta al JSON")
+args = parser.parse_args()</code></pre>
+        </div>
+
+        <div class="step-card">
+            <h2 data-number="2">Definir Puntos de Entrada (Entry Points)</h2>
+            <p>Si querés publicar esto en <strong>PyPI</strong> (para instalar con <code>pip install architect-compass</code>), necesitás que el sistema reconozca el comando de forma nativa.</p>
+            <p>Configurando un archivo <code>pyproject.toml</code> o <code>setup.py</code>, le decís al sistema operativo: "Cuando el usuario escriba <span class="cmd">compass</span>, ejecutá la función <code>main()</code>".</p>
+            <div class="feature-box">
+                Esto elimina para siempre la necesidad de andar lidiando con archivos <strong>.bat</strong> o variables de entorno <strong>PATH</strong> manualmente.
+            </div>
+            <pre><code>[project.scripts]
+compass = "architect_compass:main"</code></pre>
+        </div>
+
+        <div class="step-card">
+            <h2 data-number="3">Manejo de Rutas Relativas y Absolutas</h2>
+            <p>Una CLI profesional no puede asumir que su configuración está "al lado". El binario vive en la carpeta de Python, pero el usuario está en su carpeta de proyecto.</p>
+            <p>La búsqueda del <code>mapper_config.json</code> debe tener esta prioridad (Jerarquía):</p>
+            <ol>
+                <li><strong>Argumento:</strong> La ruta explícita pasada con <code>--config</code>.</li>
+                <li><strong>Raíz del Proyecto:</strong> Si el proyecto que se analiza tiene su propio JSON, tiene prioridad.</li>
+                <li><strong>Global:</strong> Una carpeta fija en el usuario (ej: <code>~/.config/compass/</code>) para preferencias generales.</li>
+            </ol>
+        </div>
+
+        <div class="step-card">
+            <h2 data-number="4">Salida por Consola Atractiva (Rich)</h2>
+            <p>Las CLI modernas deben ser visuales. Usar la librería <strong>Rich</strong> permite que la terminal deje de ser una pared de texto aburrida.</p>
+            <ul>
+                <li><strong>Progress Bars:</strong> Visualizar el escaneo cuando hay miles de archivos.</li>
+                <li><strong>Tablas:</strong> Mostrar el resumen de salud estructural y archivos huérfanos directamente en pantalla sin abrir archivos externos.</li>
+                <li><strong>Colores:</strong> Semántica visual inmediata (Rojo para errores críticos, Verde para salud óptima).</li>
+            </ul>
+            <pre><code>from rich.console import Console
+console = Console()
+console.print("[bold green]Salud óptima detectada[/bold green] :compass:")</code></pre>
+        </div>
+
+        <div class="step-card">
+            <h2 data-number="5">Estructura de Comandos (Sub-commands)</h2>
+            <p>Organizar la lógica en acciones específicas mejora la experiencia de usuario. En lugar de una ejecución única, dividimos las tareas:</p>
+            <ul>
+                <li><code><span class="cmd">compass scan</span></code>: Ejecuta el análisis y auditoría completa.</li>
+                <li><code><span class="cmd">compass init</span></code>: Crea un archivo <code>mapper_config.json</code> por defecto en la carpeta actual (para que el usuario empiece rápido).</li>
+                <li><code><span class="cmd">compass graph</span></code>: Se enfoca solo en procesar y abrir la visualización del grafo .dot.</li>
+            </ul>
+        </div>
+
+        <footer>
+            Architect's Compass &copy; 2026 | Documento de Referencia para Alberto Vildoza
+        </footer>
+    </div>
+</body>
+</html>
