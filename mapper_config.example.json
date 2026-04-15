@@ -1,53 +1,111 @@
 {
-  "basal_rules": {
-    "ignore_folders": ["__pycache__", "node_modules", "dist", "build", "venv", ".venv", ".git", ".map", ".claude", "_archivo", "out", ".next", "src-tauri/target", "target", "gen", "bin", "obj", "vendor"],
-    "text_extensions": [".py", ".js", ".jsx", ".ts", ".tsx", ".php", ".html", ".css", ".mjs", ".json", ".sql", ".env"],
-    "network_triggers": ["http", "ws://", "api", "localhost", "fetch\\(", "wp_remote_", "requests\\.", "axios", "curl_init"],
-    "persistence_triggers": ["global \\$wpdb", "get_option", "sql", "SELECT ", "INSERT INTO", "fs\\.", "localStorage", "sessionStorage", "ChromaDB", "prisma", "PDO", "mysqli_"],
-    "identity_triggers": ["Plugin Name:", "export default function", "def main", "class ", "register_rest_route", "addEventListener", "index\\."],
-    "unify_external_nodes": ["fetch", "anthropic", "chromadb", "openai", "axios", "requests"],
-    "ignore_outbound_patterns": ["^self$", "^none$", "^$"]
-  },
-  "definitions": [
-        {
-        "name": "PHP-Backend-Service",
-        "priority": 10,
-        "indicators": {
-            "files": ["config.php", "index.php", "api.php"],
-            "folders": ["includes", "lib", "src/api"]
-        },
-        "patterns": {
-            "inbound": ["function (.*)\\(", "case '(.*)':"],
-            "outbound": ["mysqli_connect", "PDO", "json_encode", "header\\(", "curl_init"]
-        }
-        },
-        {
-        "name": "Vanilla-Frontend",
-        "priority": 10,
-        "indicators": {
-            "files": ["index.html", "script.js", "style.css"],
-            "folders": ["assets", "js", "css"]
-        },
-        "patterns": {
-            "inbound": ["addEventListener", "function init", "DOMContentLoaded"],
-            "outbound": ["fetch\\(", "XMLHttpRequest", "console\\.log", "document\\.querySelector"]
-        }
-        },
-        {
-        "name": "WordPress-Development",
-        "priority": 10,
-        "indicators": {
-            "files": ["style.css", "functions.php", "wp-config.php"],
-            "patterns_in_files": ["Plugin Name:", "Theme Name:"]
-        },
-        "patterns": {
-            "inbound": ["add_action\\(", "add_filter\\(", "register_rest_route"],
-            "outbound": ["global \\$wpdb", "get_option", "wp_remote_get", "wp_enqueue_script\\s*\\(\\s*'[^']+'\\s*,\\s*[A-Z_]+\\s*\\.\\s*'([^']+)'",
-"wp_enqueue_style\\s*\\(\\s*'[^']+'\\s*,\\s*[A-Z_]+\\s*\\.\\s*'([^']+)'",
-"require_once\\s+[A-Z_]+\\s*\\.\\s*'([^']+)'"
+  "_comment": "Architect's Compass — Config Schema v2 (CFG-005). Este archivo documenta el schema público completo. El `mapper_config.json` del repo es el config basal; cada proyecto puede generar un `[proyecto]/.map/compass.local.json` con overrides puntuales (no repitas el schema completo).",
 
-            ]
-        }
-        }
+  "basal_rules": {
+    "_comment": "Reglas estructurales básicas del scanner. Controlan QUÉ archivos se escanean, no cómo se interpretan.",
+    "ignore_folders": [
+      "node_modules",
+      "vendor",
+      ".git",
+      ".map"
+    ],
+    "text_extensions": [
+      ".py",
+      ".js",
+      ".php",
+      ".ts",
+      ".tsx",
+      ".css",
+      ".html"
+    ],
+    "ignore_files": [
+      "scripts/Search-Replace-DB-4.1.4/index.php"
+    ],
+    "ignore_patterns": [
+      "__init__.py",
+      "*.min.js",
+      "*.min.css",
+      "*.bundle.js"
     ]
+  },
+
+  "stack_markers": {
+    "_comment": "Cómo detectar el stack del proyecto (STK-001). Jerarquía: lock_files → framework_markers → content_markers. Cada stack key se referencia desde `definitions[].stack`.",
+    "WordPress-Development": {
+      "lock_files": ["composer.json"],
+      "framework_markers": ["wp-config.php", "functions.php"],
+      "content_markers": ["Plugin Name:", "Theme Name:"]
+    },
+    "Modern-Web-Stack": {
+      "lock_files": ["package-lock.json", "yarn.lock", "pnpm-lock.yaml"],
+      "framework_markers": ["next.config.js", "vite.config.ts", "tsconfig.json"],
+      "content_markers": ["\"use client\"", "export default function"]
+    }
+  },
+
+  "language_grammars": {
+    "_comment": "Mapa lenguaje → grammar para el scanner Tier 2 (SCN-003). `stdlib_ast` = Python nativo. Otros valores son nombres de packages tree-sitter instalables vía pip.",
+    "php": "tree_sitter_php",
+    "javascript": "tree_sitter_javascript",
+    "typescript": "tree_sitter_typescript",
+    "python": "stdlib_ast"
+  },
+
+  "scoring": {
+    "_comment": "Regex para clasificar archivos por rol arquitectónico. Usado por SCR-009 y reglas de relevancia.",
+    "network_triggers": [
+      "http",
+      "fetch\\(",
+      "axios",
+      "wp_remote_"
+    ],
+    "persistence_triggers": [
+      "SELECT ",
+      "INSERT INTO",
+      "localStorage",
+      "PDO"
+    ],
+    "identity_triggers": [
+      "Plugin Name:",
+      "export default function",
+      "def main",
+      "class "
+    ]
+  },
+
+  "graph": {
+    "_comment": "Reglas que afectan cómo se renderiza el grafo (aristas y nodos externos).",
+    "unify_external_nodes": [
+      "fetch",
+      "axios",
+      "anthropic",
+      "openai"
+    ],
+    "ignore_outbound_patterns": [
+      "^self$",
+      "^none$",
+      "^$"
+    ]
+  },
+
+  "definitions": [
+    {
+      "_comment": "Una `definition` es una receta de extracción regex (Tier 3, SCN-003). Cuando exista la grammar del lenguaje (language_grammars) el Tier 2 tiene prioridad y esta sección se ignora para ese lenguaje.",
+      "name": "WordPress-Development",
+      "stack": "WordPress-Development",
+      "tier": "regex_fallback",
+      "patterns": {
+        "inbound": [
+          "add_action\\(",
+          "add_filter\\(",
+          "register_rest_route"
+        ],
+        "outbound": [
+          "wp_remote_get",
+          "get_option",
+          "global \\$wpdb"
+        ]
+      }
+    }
+  ]
 }

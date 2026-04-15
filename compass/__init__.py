@@ -6,11 +6,20 @@ entry point delgado e importa `compass.core`.
 
 Submódulos:
     core            — clase ArchitectCompass (analyze, run_audit, finalize)
-    stack_detector  — placeholder; llenado en sesión STK-001
-    path_resolver   — placeholder; llenado en sesión RES-002
-    scanners/       — placeholders; llenado en sesión SCN-003
+    stack_detector  — StackDetector + resolve_file_stack (STK-001 + MST-006)
+    path_resolver   — PathResolver (RES-002)
+    scanners/       — dispatcher get_scanner + Scanner base + tiers (SCN-003)
 """
 
 from compass.core import ArchitectCompass
+from compass.stack_detector import StackDetector, resolve_file_stack
+from compass.path_resolver import PathResolver
+from compass.scanners import get_scanner
 
-__all__ = ["ArchitectCompass"]
+__all__ = [
+    "ArchitectCompass",
+    "StackDetector",
+    "resolve_file_stack",
+    "PathResolver",
+    "get_scanner",
+]

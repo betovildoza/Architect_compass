@@ -1,37 +1,50 @@
 {
-    "generated_at": "2026-04-15 17:35:43",
+    "generated_at": "2026-04-15 19:58:20",
     "project_name": "Architect_compass",
     "identities": [
         {
             "tech": "WordPress-Development",
-            "confidence": 20
+            "confidence": 20,
+            "source": "patterns"
         },
         {
-            "tech": "Modern-Web-Stack (Next.js/React/Tauri-Frontend)",
-            "confidence": 30
-        },
-        {
-            "tech": "Vanilla-Web-Stack (PHP/JS)",
-            "confidence": 20
+            "tech": "Modern-Web-Stack",
+            "confidence": 30,
+            "source": "patterns"
         },
         {
             "tech": "AI-Agent-Framework",
-            "confidence": 30
+            "confidence": 30,
+            "source": "patterns"
         },
         {
             "tech": "Tauri-Desktop-App",
-            "confidence": 10
+            "confidence": 10,
+            "source": "patterns"
+        },
+        {
+            "tech": "Vanilla-Web-Stack",
+            "confidence": 10,
+            "source": "patterns"
+        },
+        {
+            "tech": "Python",
+            "confidence": 11,
+            "files": 11,
+            "source": "stack_markers"
         }
     ],
+    "stack_map": {
+        "": "Python"
+    },
     "summary": {
         "total_files": 11,
-        "relevant_files": 3
+        "relevant_files": 9
     },
     "connectivity": {
         "inbound": [
             "mapper_config.example.json <- register_rest_route",
             "mapper_config.example.json <- export default function",
-            "mapper_config.example.json <- addEventListener",
             "mapper_config.json <- async def",
             "mapper_config.json <- def tool_",
             "mapper_config.json <- def skill_",
@@ -42,12 +55,11 @@
             "mapper_config.json <- addEventListener"
         ],
         "outbound": [
-            "mapper_config.example.json -> chromadb",
-            "mapper_config.example.json -> chromadb",
+            "architect_compass.py -> sys",
+            "architect_compass.py -> compass/core.py",
             "mapper_config.example.json -> openai",
             "mapper_config.example.json -> anthropic",
             "mapper_config.example.json -> wp_remote_get",
-            "mapper_config.example.json -> get_option",
             "mapper_config.example.json -> get_option",
             "mapper_config.example.json -> axios",
             "mapper_config.example.json -> axios",
@@ -60,27 +72,41 @@
             "mapper_config.json -> anthropic",
             "mapper_config.json -> anthropic",
             "mapper_config.json -> bridge_leer",
-            "mapper_config.json -> tauri-apps/api",
+            "mapper_config.json -> @tauri-apps/api",
             "mapper_config.json -> window.__TAURI__",
-            "mapper_config.json -> command",
-            "mapper_config.json -> manage",
+            "mapper_config.json -> window.__TAURI__",
             "mapper_config.json -> wp_remote_get",
             "mapper_config.json -> get_option",
             "mapper_config.json -> get_option",
             "mapper_config.json -> curl_exec",
             "mapper_config.json -> update_post_meta",
-            "mapper_config.json -> import.from",
             "mapper_config.json -> axios",
             "mapper_config.json -> axios",
             "mapper_config.json -> axios",
             "mapper_config.json -> document.querySelector",
-            "compass/core.py -> anthropic",
-            "compass/core.py -> fetch",
-            "compass/core.py -> fetch"
+            "compass/core.py -> os",
+            "compass/core.py -> json",
+            "compass/core.py -> re",
+            "compass/core.py -> fnmatch",
+            "compass/core.py -> compass/stack_detector.py",
+            "compass/core.py -> compass/stack_detector.py",
+            "compass/core.py -> compass/path_resolver.py",
+            "compass/core.py -> compass/scanners/__init__.py",
+            "compass/core.py -> compass/scanners/__init__.py",
+            "compass/path_resolver.py -> os",
+            "compass/path_resolver.py -> re",
+            "compass/stack_detector.py -> os",
+            "compass/stack_detector.py -> fnmatch",
+            "compass/scanners/python.py -> ast",
+            "compass/scanners/python.py -> compass/scanners/base.py",
+            "compass/scanners/regex_fallback.py -> re",
+            "compass/scanners/regex_fallback.py -> compass/scanners/base.py",
+            "compass/scanners/treesitter.py -> importlib",
+            "compass/scanners/treesitter.py -> compass/scanners/base.py"
         ]
     },
     "audit": {
-        "structural_health": 27.27,
+        "structural_health": 81.82,
         "warnings": []
     },
     "anomalies": []

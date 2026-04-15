@@ -1,48 +1,210 @@
 {
   "basal_rules": {
-    "ignore_folders": ["__pycache__", "node_modules", "dist", "build", "venv", ".venv", ".git", ".map", ".claude", "_archivo", "out", ".next", "src-tauri/target", "target", "gen", "bin", "obj", "vendor"],
-    "text_extensions": [".py", ".js", ".jsx", ".ts", ".tsx", ".php", ".html", ".css", ".mjs", ".json", ".sql", ".env"],
-    "network_triggers": ["http", "ws://", "api", "localhost", "fetch\\(", "wp_remote_", "requests\\.", "axios", "curl_init"],
-    "persistence_triggers": ["global \\$wpdb", "get_option", "sql", "SELECT ", "INSERT INTO", "fs\\.", "localStorage", "sessionStorage", "ChromaDB", "prisma", "PDO", "mysqli_"],
-    "identity_triggers": ["Plugin Name:", "export default function", "def main", "class ", "register_rest_route", "addEventListener", "index\\."],
-    "unify_external_nodes": ["fetch", "anthropic", "chromadb", "openai", "axios", "requests"],
-    "ignore_outbound_patterns": ["^self$", "^none$", "^$"]
+    "ignore_folders": [
+      "__pycache__",
+      "node_modules",
+      "dist",
+      "build",
+      "venv",
+      ".venv",
+      ".git",
+      ".map",
+      ".claude",
+      "_archivo",
+      "out",
+      ".next",
+      "src-tauri/target",
+      "target",
+      "gen",
+      "bin",
+      "obj",
+      "vendor"
+    ],
+    "text_extensions": [
+      ".py",
+      ".js",
+      ".jsx",
+      ".ts",
+      ".tsx",
+      ".php",
+      ".html",
+      ".css",
+      ".mjs",
+      ".json",
+      ".sql",
+      ".env"
+    ],
+    "ignore_files": [],
+    "ignore_patterns": [
+      "__init__.py",
+      "*.min.js",
+      "*.min.css",
+      "*.bundle.js"
+    ]
+  },
+  "stack_markers": {
+    "WordPress-Development": {
+      "lock_files": ["composer.json"],
+      "framework_markers": ["wp-config.php", "functions.php"],
+      "content_markers": ["Plugin Name:", "Theme Name:"]
+    },
+    "Modern-Web-Stack": {
+      "lock_files": ["package-lock.json", "yarn.lock", "pnpm-lock.yaml"],
+      "framework_markers": ["next.config.js", "vite.config.ts", "tsconfig.json"],
+      "content_markers": ["\"use client\"", "export default function"]
+    },
+    "Tauri-Desktop-App": {
+      "lock_files": ["Cargo.lock"],
+      "framework_markers": ["tauri.conf.json", "src-tauri/src/main.rs"],
+      "content_markers": ["tauri::command", "window.__TAURI__"]
+    },
+    "AI-Agent-Framework": {
+      "lock_files": ["requirements.txt", "pyproject.toml"],
+      "framework_markers": ["bridge_windows.py", "indexar_filters.json"],
+      "content_markers": ["def tool_", "def skill_"]
+    },
+    "Vanilla-Web-Stack": {
+      "lock_files": [],
+      "framework_markers": ["index.php", "index.html"],
+      "content_markers": ["<?php", "document.addEventListener"]
+    },
+    "Python": {
+      "extensions": [".py", ".pyi"]
+    },
+    "JavaScript": {
+      "extensions": [".js", ".mjs", ".cjs", ".jsx"]
+    },
+    "TypeScript": {
+      "extensions": [".ts", ".tsx"]
+    },
+    "PHP": {
+      "extensions": [".php"]
+    },
+    "Ruby": {
+      "extensions": [".rb"]
+    },
+    "Go": {
+      "extensions": [".go"]
+    },
+    "Rust": {
+      "extensions": [".rs"]
+    },
+    "Java": {
+      "extensions": [".java"]
+    },
+    "Web-Static": {
+      "extensions": [".html", ".css"]
+    }
+  },
+  "language_grammars": {
+    "php": "tree_sitter_php",
+    "javascript": "tree_sitter_javascript",
+    "typescript": "tree_sitter_typescript",
+    "python": "stdlib_ast"
+  },
+  "scoring": {
+    "network_triggers": [
+      "http",
+      "ws://",
+      "api",
+      "localhost",
+      "fetch\\(",
+      "wp_remote_",
+      "requests\\.",
+      "axios",
+      "curl_init"
+    ],
+    "persistence_triggers": [
+      "global \\$wpdb",
+      "get_option",
+      "sql",
+      "SELECT ",
+      "INSERT INTO",
+      "fs\\.",
+      "localStorage",
+      "sessionStorage",
+      "ChromaDB",
+      "prisma",
+      "PDO",
+      "mysqli_"
+    ],
+    "identity_triggers": [
+      "Plugin Name:",
+      "export default function",
+      "def main",
+      "class ",
+      "register_rest_route",
+      "addEventListener",
+      "index\\."
+    ]
+  },
+  "graph": {
+    "unify_external_nodes": [
+      "fetch",
+      "anthropic",
+      "chromadb",
+      "openai",
+      "axios",
+      "requests"
+    ],
+    "ignore_outbound_patterns": [
+      "^self$",
+      "^none$",
+      "^$"
+    ]
   },
   "definitions": [
     {
       "name": "AI-Agent-Framework",
-      "priority": 10,
-      "indicators": {
-        "files": ["bridge_windows.py", "requirements.txt", "indexar_filters.json"],
-        "folders": ["engine", "skills", "agents", "tools"]
-      },
+      "stack": "AI-Agent-Framework",
+      "tier": "regex_fallback",
       "patterns": {
-        "inbound": ["@app\\.route", "async def", "def tool_", "def skill_"],
-        "outbound": ["ChromaDB", "mcp_client", "openai", "anthropic", "requests\\.post", "bridge_leer"]
+        "inbound": [
+          "@app\\.route",
+          "async def",
+          "def tool_",
+          "def skill_"
+        ],
+        "outbound": [
+          "ChromaDB",
+          "mcp_client",
+          "openai",
+          "anthropic",
+          "requests\\.post",
+          "bridge_leer"
+        ]
       }
     },
-{
-  "name": "Tauri-Desktop-App",
-  "priority": 15,
-  "indicators": {
-    "files": ["tauri.conf.json", "Cargo.toml", "src-tauri/src/main.rs"],
-    "folders": ["src-tauri", "src-tauri/src"]
-  },
-  "patterns": {
-    "inbound": ["invoke\\(", "listen\\(", "emit\\(", "tauri::command"],
-    "outbound": ["@tauri-apps/api", "window.__TAURI__", "command!", "manage!"]
-  }
-},
+    {
+      "name": "Tauri-Desktop-App",
+      "stack": "Tauri-Desktop-App",
+      "tier": "regex_fallback",
+      "patterns": {
+        "inbound": [
+          "invoke\\(",
+          "listen\\(",
+          "emit\\(",
+          "tauri::command"
+        ],
+        "outbound": [
+          "@tauri-apps/api",
+          "window.__TAURI__",
+          "command!",
+          "manage!"
+        ]
+      }
+    },
     {
       "name": "WordPress-Development",
-      "priority": 10,
-      "indicators": {
-        "files": ["wp-config.php", "functions.php", "style.css"],
-        "folders": ["wp-content", "wp-includes", "wp-admin"],
-        "patterns_in_files": ["Plugin Name:", "Theme Name:", "Description:"]
-      },
+      "stack": "WordPress-Development",
+      "tier": "regex_fallback",
       "patterns": {
-        "inbound": ["add_action\\(", "add_filter\\(", "do_action\\(", "register_rest_route"],
+        "inbound": [
+          "add_action\\(",
+          "add_filter\\(",
+          "do_action\\(",
+          "register_rest_route"
+        ],
         "outbound": [
           "wp_remote_get",
           "get_option",
@@ -50,48 +212,46 @@
           "curl_exec",
           "update_post_meta",
           "wp_enqueue_script\\s*\\(\\s*'[^']+'\\s*,\\s*[A-Z_]+\\s*\\.\\s*'([^']+)'",
-"wp_enqueue_style\\s*\\(\\s*'[^']+'\\s*,\\s*[A-Z_]+\\s*\\.\\s*'([^']+)'",
-"require_once\\s+[A-Z_]+\\s*\\.\\s*'([^']+)'"
+          "wp_enqueue_style\\s*\\(\\s*'[^']+'\\s*,\\s*[A-Z_]+\\s*\\.\\s*'([^']+)'",
+          "require_once\\s+[A-Z_]+\\s*\\.\\s*'([^']+)'"
         ]
       }
     },
-{
-  "name": "Modern-Web-Stack (Next.js/React/Tauri-Frontend)",
-  "priority": 10,
-  "indicators": {
-    "files": ["next.config.js", "package.json", "vite.config.ts", "tsconfig.json"],
-    "folders": ["src", "app", "components", "hooks"]
-  },
-  "patterns": {
-    "inbound": ["\"use client\"", "export default function", "const (.*) = (.*) =>"],
-    "outbound": [
-      "import .* from", 
-      "fetch\\(", 
-      "invoke\\(", 
-      "supabase\\.", 
-      "axios", 
-      "from '@/(.*)'"
-    ]
-  }
-},
     {
-      "name": "Vanilla-Web-Stack (PHP/JS)",
-      "priority": 5,
-      "indicators": {
-        "files": ["index.php", "index.html", "script.js", "style.css"],
-        "patterns_in_files": ["<?php", "<script", "document.addEventListener"]
-      },
+      "name": "Modern-Web-Stack",
+      "stack": "Modern-Web-Stack",
+      "tier": "regex_fallback",
       "patterns": {
         "inbound": [
-          "function\\s+([\\w\\d_]+)\\s*\\(", 
+          "\"use client\"",
+          "export default function",
+          "const (.*) = (.*) =>"
+        ],
+        "outbound": [
+          "import .* from",
+          "fetch\\(",
+          "invoke\\(",
+          "supabase\\.",
+          "axios",
+          "from '@/(.*)'"
+        ]
+      }
+    },
+    {
+      "name": "Vanilla-Web-Stack",
+      "stack": "Vanilla-Web-Stack",
+      "tier": "regex_fallback",
+      "patterns": {
+        "inbound": [
+          "function\\s+([\\w\\d_]+)\\s*\\(",
           "(?:const|let|var)\\s+([\\w\\d_]+)\\s*=\\s*\\(",
           "addEventListener"
         ],
         "outbound": [
-          "include\\s*\\(?\\s*['\"]([^'\"]+)['\"]", 
-          "require(?:_once)?\\s*\\(?\\s*['\"]([^'\"]+)['\"]", 
-          "header\\(", 
-          "fetch\\(", 
+          "include\\s*\\(?\\s*['\"]([^'\"]+)['\"]",
+          "require(?:_once)?\\s*\\(?\\s*['\"]([^'\"]+)['\"]",
+          "header\\(",
+          "fetch\\(",
           "document.querySelector"
         ]
       }
