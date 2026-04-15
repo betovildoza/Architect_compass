@@ -1,4 +1,7 @@
-mapper_config.json
+# mapper_config.json
 compass.bat
 .claude/
+*.pyc
 README2.md
+plan.md
+session_log.md
