@@ -1,9 +1,0 @@
-{
-  "_comment": "Overrides locales para Architect's Compass. Solo incluí lo que quieras sumar o pisar respecto del mapper_config.json basal. Las listas se extienden (dedup); las definitions con el mismo 'name' pisan a las globales.",
-  "basal_rules": {
-    "ignore_folders": [],
-    "ignore_files": [],
-    "ignore_patterns": []
-  },
-  "definitions": []
-}

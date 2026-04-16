@@ -90,9 +90,10 @@
 
   "definitions": [
     {
-      "_comment": "Una `definition` es una receta de extracción regex (Tier 3, SCN-003). Cuando exista la grammar del lenguaje (language_grammars) el Tier 2 tiene prioridad y esta sección se ignora para ese lenguaje.",
+      "_comment": "Una `definition` es una receta de extracción regex (Tier 3, SCN-003). Cuando exista la grammar del lenguaje (language_grammars) el Tier 2 tiene prioridad y esta sección se ignora para ese lenguaje. DEF-017: el campo `language` (string) o `languages` (lista) restringe la definition a archivos de ese/esos lenguaje(s); si se omite, aplica a todos (backward-compat).",
       "name": "WordPress-Development",
       "stack": "WordPress-Development",
+      "language": "php",
       "tier": "regex_fallback",
       "patterns": {
         "inbound": [
@@ -105,6 +106,17 @@
           "get_option",
           "global \\$wpdb"
         ]
+      }
+    },
+    {
+      "_comment": "Ejemplo con `languages` (lista) — la misma definition aplica a JS y TS.",
+      "name": "Modern-Web-Stack",
+      "stack": "Modern-Web-Stack",
+      "languages": ["javascript", "typescript"],
+      "tier": "regex_fallback",
+      "patterns": {
+        "inbound": ["\"use client\"", "export default function"],
+        "outbound": ["import .* from", "axios", "supabase\\."]
       }
     }
   ]

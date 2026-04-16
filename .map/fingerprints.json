@@ -1,0 +1,163 @@
+{
+  "version": 1,
+  "generated_at": "2026-04-16 01:43:44",
+  "config_fingerprint": "e5be3e647dea3359b6a6aa947da8ca7942051fd761ac23b5d7d5df1a03167c0c",
+  "files": {
+    "architect_compass.py": {
+      "fingerprint": "5320e4205346dff59f23592bc2d3d7b358be1d51a4bc083883f855f764ae4dfd",
+      "outbound_targets": [
+        "compass/core.py"
+      ],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": true,
+      "stack": "Python",
+      "metadata_calls": [
+        "sys"
+      ]
+    },
+    "cli_roadmap.html": {
+      "fingerprint": "3abdcb393ef52294985ea1a46df98ff71a15da7361b664e443a6ab474a855a98",
+      "outbound_targets": [],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": false,
+      "stack": "Python",
+      "metadata_calls": []
+    },
+    "mapper_config.example.json": {
+      "fingerprint": "9e4565da42a97209ab73fcc73eefb4c8700c28db08c3246297a246045640a4b9",
+      "outbound_targets": [],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": false,
+      "stack": "Python",
+      "metadata_calls": []
+    },
+    "mapper_config.json": {
+      "fingerprint": "eb515f0c879e7dfd74c8619dc081d50c0bc88e0d0629a60f244ca6ec68fbea56",
+      "outbound_targets": [],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": false,
+      "stack": "Python",
+      "metadata_calls": []
+    },
+    "compass/core.py": {
+      "fingerprint": "563049c1e2d0f1a150433c28c1b7136d599cf99730699f2a3b6fdfabc8cd8d57",
+      "outbound_targets": [
+        "compass/stack_detector.py",
+        "compass/stack_detector.py",
+        "compass/path_resolver.py",
+        "compass/scanners/__init__.py",
+        "compass/scanners/__init__.py",
+        "compass/scanners/__init__.py",
+        "compass/scanners/__init__.py"
+      ],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": true,
+      "stack": "Python",
+      "metadata_calls": [
+        "os",
+        "json",
+        "re",
+        "fnmatch",
+        "hashlib",
+        "pathlib:Path",
+        "datetime:datetime"
+      ]
+    },
+    "compass/path_resolver.py": {
+      "fingerprint": "df20bc8815f7e6d1a7543a846ba7c39545d073e91b7e8b5c7927e8ac8358f15c",
+      "outbound_targets": [],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": false,
+      "stack": "Python",
+      "metadata_calls": [
+        "os",
+        "re",
+        "pathlib:Path"
+      ]
+    },
+    "compass/stack_detector.py": {
+      "fingerprint": "fa96711f8d125bb26557cbe0381e4035b12b5755d45394dfb466c8489d7b2f0d",
+      "outbound_targets": [],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": false,
+      "stack": "Python",
+      "metadata_calls": [
+        "os",
+        "fnmatch",
+        "collections:Counter",
+        "pathlib:Path"
+      ]
+    },
+    "compass/scanners/base.py": {
+      "fingerprint": "992420f620f89286adeba472b493a817d1e5cb7d48bce3e536985756051e5361",
+      "outbound_targets": [],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": false,
+      "stack": "Python",
+      "metadata_calls": [
+        "abc:ABC",
+        "abc:abstractmethod"
+      ]
+    },
+    "compass/scanners/html.py": {
+      "fingerprint": "09cd4a52653a5cea5d9b1be60e9e3956ba66a9e137b1aa0159f099d75a03e4fc",
+      "outbound_targets": [
+        "compass/scanners/base.py"
+      ],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": true,
+      "stack": "Python",
+      "metadata_calls": [
+        "re"
+      ]
+    },
+    "compass/scanners/python.py": {
+      "fingerprint": "57d494fc923ad0498443911608a6707b61779b920e6426f5e12f133b75f56819",
+      "outbound_targets": [
+        "compass/scanners/base.py"
+      ],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": true,
+      "stack": "Python",
+      "metadata_calls": [
+        "ast"
+      ]
+    },
+    "compass/scanners/regex_fallback.py": {
+      "fingerprint": "6695d70b5d1274bb9a3c444e83be1cc57b75794909ce49800ff3b6b58434f453",
+      "outbound_targets": [
+        "compass/scanners/base.py"
+      ],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": true,
+      "stack": "Python",
+      "metadata_calls": [
+        "re"
+      ]
+    },
+    "compass/scanners/treesitter.py": {
+      "fingerprint": "b5a9127cfdb958af7ed9cd89126d92ab1e09993ffd723767d6ebeeb1f8a9d587",
+      "outbound_targets": [
+        "compass/scanners/base.py"
+      ],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": true,
+      "stack": "Python",
+      "metadata_calls": [
+        "importlib"
+      ]
+    }
+  }
+}

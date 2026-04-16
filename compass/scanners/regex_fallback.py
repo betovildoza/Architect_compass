@@ -28,11 +28,21 @@ class RegexFallbackScanner(_BaseScanner):
         self._compiled = []
         for pat in raw_outbound:
             try:
-                self._compiled.append(re.compile(pat, re.I))
+                compiled = re.compile(pat, re.I)
             except re.error:
                 # Patrón inválido: lo saltamos silenciosamente para no
                 # abortar el run completo.
                 continue
+            # GRF-021 — ignorar patterns sin grupos de captura. Una regex
+            # outbound sin `(...)` solo confirma que el pattern aparece en
+            # el archivo, pero no extrae el path del target. Matchearlo
+            # emite un nodo fantasma con el texto del pattern (ej.
+            # `curl_exec`, `document.querySelector`). Mejor: descartar
+            # silenciosamente; si el usuario quiere ver esas llamadas,
+            # el `metadata.calls` del nodo fuente las va a listar.
+            if compiled.groups < 1:
+                continue
+            self._compiled.append(compiled)
 
     def extract_imports(self, file_path):
         if not self._compiled:

@@ -40,6 +40,17 @@ _JS_CANDIDATE_EXTS = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")
 # Extensiones Python candidatas para resolución.
 _PY_CANDIDATE_EXTS = (".py", ".pyi")
 
+# Schemes/atributos que nunca se resuelven contra el repo en HTML.
+# `javascript:`/`data:` son código inline, `mailto:`/`tel:` son protocolos
+# externos, `#anchor` es navegación intra-página.
+_HTML_UNRESOLVABLE_PREFIXES = (
+    "mailto:", "tel:", "javascript:", "data:", "sms:", "geo:",
+    "file:", "ftp:", "ftps:", "ws:", "wss:",
+)
+
+# Extensiones que HTML prueba cuando una ruta no trae extensión explícita.
+_HTML_EXTENSIONLESS_EXTS = (".html", ".htm", ".php")
+
 
 class PathResolver:
     """Resuelve imports crudos a paths absolutos dentro del proyecto."""
@@ -73,6 +84,8 @@ class PathResolver:
             return self._resolve_js(cleaned, src)
         if lang == "python":
             return self._resolve_python(cleaned, src)
+        if lang in ("html", "htm"):
+            return self._resolve_html(cleaned, src)
         # Lenguaje desconocido: tratamos el raw como path relativo simple
         # sólo si se parece a un path (tiene `/` o empieza con `.`).
         return self._resolve_generic(cleaned, src)
@@ -116,14 +129,21 @@ class PathResolver:
         if not candidate:
             return None
 
-        # Absoluto de filesystem.
+        # Absoluto de filesystem (Windows: 'C:/...'; Unix: raro en PHP).
         if os.path.isabs(candidate):
             p = Path(candidate)
             return self._to_posix_if_in_project(p)
 
+        # Leading-slash típico de `__DIR__ . '/sub/file.php'` — el outbound
+        # scanner capturó sólo el literal stripeando el `__DIR__`. En PHP
+        # esa barra es separador, no raíz del filesystem. Se interpreta
+        # primero como source-dir-relative, luego como project-root-relative
+        # (PHP-inbound-019).
+        probe = candidate.lstrip("/\\") if candidate[:1] in ("/", "\\") else candidate
+
         # Relativo al archivo fuente primero; si no, project_root.
         for base in (source_file.parent, self.project_root):
-            resolved = self._try_resolve(base, candidate, ())
+            resolved = self._try_resolve(base, probe, ())
             if resolved:
                 return resolved
         return None
@@ -132,12 +152,18 @@ class PathResolver:
     # JavaScript / TypeScript
     # ------------------------------------------------------------------
     def _resolve_js(self, raw, source_file):
-        """Resuelve imports/requires JS/TS.
+        """Resuelve imports/requires JS/TS + URLs de `fetch()`.
 
         Casos cubiertos:
             './utils', '../foo/bar'   → relativo al archivo, prueba
                                         extensiones y index.{js,ts,...}
-            '/abs/path'               → absoluto del FS
+            '/api/x.php'              → leading-slash → project-root-relative
+                                        (URL semántica del browser, no FS)
+            './api/x.php' que no
+            resuelve file-relative    → fallback project-root-relative
+                                        (FIX-026: fetch() en JS usa URL
+                                        semantics, no Node module resolution)
+            'C:/abs/path'             → absoluto del FS
             'react', 'lodash'         → bare specifier → None (externo)
             '@scope/pkg'              → bare scoped   → None (externo)
             '@/components/foo'        → alias común (Next/Vite). No podemos
@@ -160,17 +186,52 @@ class PathResolver:
         if not (raw.startswith(".") or raw.startswith("/") or raw.startswith("\\")):
             return None
 
-        # Absoluto.
-        if os.path.isabs(raw):
+        # Windows absoluto real (ej: 'C:/...', 'D:\\...').
+        if re.match(r"^[A-Za-z]:[\\/]", raw):
             p = Path(raw)
             if p.exists():
                 return self._to_posix_if_in_project(p)
             return None
 
-        # Relativo al archivo fuente.
-        return self._try_resolve(
+        # Leading-slash (`/api/x.php`) → root-relative del proyecto.
+        # FIX-026: Los `fetch('/api/x.php')` en JS son URLs relativas al
+        # root del sitio web, no paths de filesystem. Se interpretan como
+        # project-root-relative (cross-platform), no como FS absolutos.
+        if raw.startswith("/") and not raw.startswith("//"):
+            candidate = raw.lstrip("/\\")
+            resolved = self._try_resolve(
+                self.project_root, candidate, _JS_CANDIDATE_EXTS,
+                try_index=True,
+            )
+            if resolved:
+                return resolved
+            return None
+
+        # Relativo al archivo fuente (Node.js module resolution clásica).
+        resolved = self._try_resolve(
             source_file.parent, raw, _JS_CANDIDATE_EXTS, try_index=True,
         )
+        if resolved:
+            return resolved
+
+        # FIX-026: Fallback project-root-relative para `fetch('./api/x.php')`.
+        # En JS web, `./` dentro de un fetch() es URL-relative a la página,
+        # no al archivo JS. Si el resolve file-relative falla, intentar
+        # project_root como base — típico para endpoints en `<root>/api/`
+        # llamados desde `<root>/js/admin.js`.
+        if raw.startswith("./") or raw.startswith("../"):
+            # Colapsar secuencias iniciales de './' y '../' para probar
+            # root-relative (la URL base real la fija el browser según la
+            # página, no el archivo JS — mejor heurística disponible).
+            candidate = raw
+            while candidate.startswith("./") or candidate.startswith("../"):
+                candidate = candidate[2:] if candidate.startswith("./") else candidate[3:]
+            if candidate:
+                return self._try_resolve(
+                    self.project_root, candidate, _JS_CANDIDATE_EXTS,
+                    try_index=True,
+                )
+        return None
 
     # ------------------------------------------------------------------
     # Python
@@ -232,6 +293,108 @@ class PathResolver:
         init_path = (base / candidate_rel / "__init__.py").resolve()
         if init_path.is_file() and self._is_inside_project(init_path):
             return init_path.as_posix()
+        return None
+
+    # ------------------------------------------------------------------
+    # HTML (HTML-019)
+    # ------------------------------------------------------------------
+    def _resolve_html(self, raw, source_file):
+        """Resuelve referencias de atributos HTML (src/href/action).
+
+        Casos cubiertos:
+            'assets/css/main.css'        → relativo al archivo fuente
+            './img/logo.png'             → relativo al archivo fuente
+            '/assets/js/app.js'          → root-relative (project_root)
+            'sedes' (sin extensión)      → prueba sedes.html, sedes/index.html
+            'contacto.html'              → resolve directo
+            'foo.js?v=1' / 'foo.js#x'    → stripea query/fragment antes
+            '#anchor'                    → None (intra-page nav)
+            'mailto:…', 'tel:…', 'javascript:…' → None
+            'http://…', 'https://…', '//cdn.…' → raw crudo (external)
+              · el caller (GRF-021) lo clasifica: external declarado o descarte.
+
+        Devuelve:
+            - path posix absoluto dentro del proyecto, o
+            - el URL crudo si es absoluto (http/https/protocol-relative),
+              para que GRF-021 clasifique, o
+            - None si es intra-page o scheme no-resoluble.
+        """
+        if source_file is None:
+            return None
+
+        # 1. Strip whitespace + strip fragment + strip query.
+        candidate = raw.strip()
+        if not candidate:
+            return None
+
+        # 2. Schemes que nunca se resuelven.
+        lower = candidate.lower()
+        for prefix in _HTML_UNRESOLVABLE_PREFIXES:
+            if lower.startswith(prefix):
+                return None
+
+        # 3. Fragment-only → navegación dentro de la página, sin edge.
+        if candidate.startswith("#"):
+            return None
+
+        # 4. URLs absolutas/protocol-relative → devolvemos None. No son archivos
+        #    del repo. El caller (GRF-021 / _classify_outbound) examina el raw
+        #    original para decidir si son external services o descarte.
+        if (
+            candidate.startswith("http://")
+            or candidate.startswith("https://")
+            or candidate.startswith("//")
+        ):
+            return None
+
+        # 5. Stripear query y fragment (`foo.js?v=1#x` → `foo.js`).
+        for sep in ("?", "#"):
+            idx = candidate.find(sep)
+            if idx >= 0:
+                candidate = candidate[:idx]
+        candidate = candidate.strip()
+        if not candidate:
+            return None
+
+        # 6. Ruta normal. Determinar base según root-relative vs. file-relative.
+        if candidate.startswith("/") or candidate.startswith("\\"):
+            base = self.project_root
+            rel = candidate.lstrip("/\\")
+        else:
+            base = source_file.parent
+            rel = candidate
+        if not rel:
+            return None
+
+        # 7. Intento 1: path con extensión tal cual.
+        target = (base / rel).resolve()
+        if target.is_file():
+            return self._to_posix_if_in_project(target)
+
+        # 8. Sin extensión reconocida → probar .html/.htm/.php e index.*
+        has_known_ext = any(
+            rel.lower().endswith(ext) for ext in _HTML_EXTENSIONLESS_EXTS
+        ) or "." in rel.rsplit("/", 1)[-1]
+
+        if not has_known_ext:
+            for ext in _HTML_EXTENSIONLESS_EXTS:
+                candidate_path = (base / (rel + ext)).resolve()
+                if candidate_path.is_file():
+                    return self._to_posix_if_in_project(candidate_path)
+            # Directorio con index.html/.htm/.php
+            for ext in _HTML_EXTENSIONLESS_EXTS:
+                candidate_path = (base / rel / ("index" + ext)).resolve()
+                if candidate_path.is_file():
+                    return self._to_posix_if_in_project(candidate_path)
+
+        # 9. Último recurso: si `rel` apunta a un directorio existente, probar
+        #    index.html/.php dentro aunque tuviera extensión.
+        if target.is_dir():
+            for ext in _HTML_EXTENSIONLESS_EXTS:
+                candidate_path = target / ("index" + ext)
+                if candidate_path.is_file():
+                    return self._to_posix_if_in_project(candidate_path)
+
         return None
 
     # ------------------------------------------------------------------

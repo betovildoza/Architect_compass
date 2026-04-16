@@ -28,6 +28,7 @@
       ".tsx",
       ".php",
       ".html",
+      ".htm",
       ".css",
       ".mjs",
       ".json",
@@ -93,14 +94,15 @@
       "extensions": [".java"]
     },
     "Web-Static": {
-      "extensions": [".html", ".css"]
+      "extensions": [".html", ".htm", ".css"]
     }
   },
   "language_grammars": {
     "php": "tree_sitter_php",
     "javascript": "tree_sitter_javascript",
     "typescript": "tree_sitter_typescript",
-    "python": "stdlib_ast"
+    "python": "stdlib_ast",
+    "html": "regex_only"
   },
   "scoring": {
     "network_triggers": [
@@ -153,10 +155,41 @@
       "^$"
     ]
   },
+  "external_services": {
+    "anthropic": {
+      "match": ["anthropic", "@anthropic-ai/sdk", "Anthropic\\Anthropic"],
+      "label": "Anthropic"
+    },
+    "openai": {
+      "match": ["openai", "OpenAI\\OpenAI", "openai/openai-python"],
+      "label": "OpenAI"
+    },
+    "supabase": {
+      "match": ["supabase", "@supabase/supabase-js"],
+      "label": "Supabase"
+    },
+    "stripe": {
+      "match": ["stripe", "@stripe/stripe-js", "Stripe\\Stripe"],
+      "label": "Stripe"
+    },
+    "openrouter": {
+      "match": ["openrouter"],
+      "label": "OpenRouter"
+    },
+    "gemini": {
+      "match": ["@google/generative-ai", "google-generativeai"],
+      "label": "Gemini"
+    },
+    "chromadb": {
+      "match": ["chromadb"],
+      "label": "ChromaDB"
+    }
+  },
   "definitions": [
     {
       "name": "AI-Agent-Framework",
       "stack": "AI-Agent-Framework",
+      "language": "python",
       "tier": "regex_fallback",
       "patterns": {
         "inbound": [
@@ -176,19 +209,32 @@
       }
     },
     {
-      "name": "Tauri-Desktop-App",
+      "name": "Tauri-Desktop-App-JS",
       "stack": "Tauri-Desktop-App",
+      "language": "javascript",
       "tier": "regex_fallback",
       "patterns": {
         "inbound": [
           "invoke\\(",
           "listen\\(",
-          "emit\\(",
-          "tauri::command"
+          "emit\\("
         ],
         "outbound": [
           "@tauri-apps/api",
-          "window.__TAURI__",
+          "window.__TAURI__"
+        ]
+      }
+    },
+    {
+      "name": "Tauri-Desktop-App-Rust",
+      "stack": "Tauri-Desktop-App",
+      "language": "rust",
+      "tier": "regex_fallback",
+      "patterns": {
+        "inbound": [
+          "tauri::command"
+        ],
+        "outbound": [
           "command!",
           "manage!"
         ]
@@ -197,6 +243,7 @@
     {
       "name": "WordPress-Development",
       "stack": "WordPress-Development",
+      "language": "php",
       "tier": "regex_fallback",
       "patterns": {
         "inbound": [
@@ -206,11 +253,6 @@
           "register_rest_route"
         ],
         "outbound": [
-          "wp_remote_get",
-          "get_option",
-          "global \\$wpdb",
-          "curl_exec",
-          "update_post_meta",
           "wp_enqueue_script\\s*\\(\\s*'[^']+'\\s*,\\s*[A-Z_]+\\s*\\.\\s*'([^']+)'",
           "wp_enqueue_style\\s*\\(\\s*'[^']+'\\s*,\\s*[A-Z_]+\\s*\\.\\s*'([^']+)'",
           "require_once\\s+[A-Z_]+\\s*\\.\\s*'([^']+)'"
@@ -218,8 +260,9 @@
       }
     },
     {
-      "name": "Modern-Web-Stack",
+      "name": "Modern-Web-Stack-JS",
       "stack": "Modern-Web-Stack",
+      "language": "javascript",
       "tier": "regex_fallback",
       "patterns": {
         "inbound": [
@@ -238,8 +281,44 @@
       }
     },
     {
-      "name": "Vanilla-Web-Stack",
+      "name": "Modern-Web-Stack-TS",
+      "stack": "Modern-Web-Stack",
+      "language": "typescript",
+      "tier": "regex_fallback",
+      "patterns": {
+        "inbound": [
+          "\"use client\"",
+          "export default function",
+          "const (.*) = (.*) =>"
+        ],
+        "outbound": [
+          "import .* from",
+          "fetch\\(",
+          "invoke\\(",
+          "supabase\\.",
+          "axios",
+          "from '@/(.*)'"
+        ]
+      }
+    },
+    {
+      "name": "Vanilla-Web-Stack-PHP",
       "stack": "Vanilla-Web-Stack",
+      "language": "php",
+      "tier": "regex_fallback",
+      "patterns": {
+        "inbound": [],
+        "outbound": [
+          "include\\s*\\(?\\s*['\"]([^'\"]+)['\"]",
+          "require(?:_once)?\\s*\\(?\\s*['\"]([^'\"]+)['\"]",
+          "require(?:_once)?\\s+[A-Z_]+\\s*\\.\\s*'([^']+)'"
+        ]
+      }
+    },
+    {
+      "name": "Vanilla-Web-Stack-JS",
+      "stack": "Vanilla-Web-Stack",
+      "language": "javascript",
       "tier": "regex_fallback",
       "patterns": {
         "inbound": [
@@ -248,11 +327,8 @@
           "addEventListener"
         ],
         "outbound": [
-          "include\\s*\\(?\\s*['\"]([^'\"]+)['\"]",
-          "require(?:_once)?\\s*\\(?\\s*['\"]([^'\"]+)['\"]",
-          "header\\(",
-          "fetch\\(",
-          "document.querySelector"
+          "fetch\\s*\\(\\s*['\"]([^'\"]+)['\"]",
+          "import\\s+.+\\s+from\\s+['\"]([^'\"]+)['\"]"
         ]
       }
     }

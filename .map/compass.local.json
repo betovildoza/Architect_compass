@@ -1,0 +1,17 @@
+{
+  "_comment": "Overrides locales para Architect's Compass. Solo incluí lo que quieras sumar o pisar respecto del mapper_config.json basal. Las listas se extienden (dedup); las definitions con el mismo 'name' pisan a las globales.",
+  "_ignore_help": "ignore_folders: nombres exactos de carpetas a excluir (sin paths). Ej: ['node_modules', 'assets', '.serena'] ignora esas carpetas siempre que aparezcan en cualquier nivel. ignore_files y ignore_patterns funcionan igual (nombres exactos y patrones glob). Se mergean con el config basal (extienden, no lo reemplazan).",
+  "basal_rules": {
+    "ignore_folders": [],
+    "ignore_files": [],
+    "ignore_patterns": [
+      "*.min.js",
+      "*.min.css"
+    ]
+  },
+  "definitions": [],
+  "_dynamic_deps_help": "DYN-007: archivos cargados dinámicamente (autoloaders, hooks, requires variables) que el scanner estático no puede inferir. Los listados aquí NO se reportan como huérfanos — se marcan con orphan_reason: 'dynamic_declared'. Formato:   'path/to/owner.php': 'descripción libre (sin targets)' → []  'path/to/owner.php': ['target1.php', 'target2.php'] → lista explícita  'path/to/owner.php': {'targets': [...]} → dict completo",
+  "dynamic_deps": {
+    "_example.php": "Carga dinámicamente plugins desde plugins/ (ej: autoloader)"
+  }
+}

@@ -15,6 +15,7 @@ archivo en cada run.
 """
 
 from compass.scanners.base import Scanner, NullScanner
+from compass.scanners.html import HtmlScanner
 from compass.scanners.python import PythonScanner
 from compass.scanners.regex_fallback import RegexFallbackScanner
 
@@ -51,6 +52,8 @@ def get_scanner(language, config):
 def _build_scanner(language, config):
     if language == "python":
         return PythonScanner()
+    if language in ("html", "htm"):
+        return HtmlScanner()
 
     grammars = (config.get("language_grammars") or {}) if config else {}
     grammar_name = grammars.get(language)
@@ -74,19 +77,26 @@ def _build_scanner(language, config):
 
 
 def _collect_regex_patterns(language, config):
-    """Junta outbound patterns de todas las definitions del config.
+    """Junta outbound patterns de las definitions aplicables al `language`.
 
-    El schema v2 no asocia definitions a un language directo (sino a un
-    stack). Para mantener retrocompatibilidad con el scanner viejo,
-    incluimos TODAS las outbound patterns de definitions con
-    tier == 'regex_fallback'. Si en el futuro se quiere filtrar por
-    lenguaje, agregar un campo `language` a definitions[].
+    DEF-017 — language filter:
+      Cada entry de `definitions[]` puede declarar un campo `language`
+      (string) o `languages` (lista de strings). Si declara, sólo aplica
+      cuando coincide con el lenguaje del archivo escaneado. Si la
+      definition NO declara `language`/`languages`, se asume que aplica a
+      todos los lenguajes (backward-compat con configs pre-DEF-017).
+
+    Esto evita que una regex pensada para PHP matchee spuriamente sobre
+    un .js (origen del hallazgo Sesión 4 #4 — ver SESSION_LOG.md).
     """
     merged = {"inbound": [], "outbound": []}
     if not config:
         return merged
+    target_language = (language or "").lower()
     for df in config.get("definitions", []) or []:
         if df.get("tier") and df["tier"] != "regex_fallback":
+            continue
+        if not _definition_applies_to_language(df, target_language):
             continue
         patterns = df.get("patterns", {}) or {}
         for key in ("inbound", "outbound"):
@@ -94,6 +104,31 @@ def _collect_regex_patterns(language, config):
                 if pat and pat not in merged[key]:
                     merged[key].append(pat)
     return merged
+
+
+def _definition_applies_to_language(definition, target_language):
+    """True si la definition aplica al `target_language`.
+
+    Reglas:
+      - Si no declara `language` ni `languages` → aplica a todos
+        (backward-compat).
+      - Si declara `language` (string) → match case-insensitive.
+      - Si declara `languages` (lista) → cualquiera matchea.
+      - Si target_language es vacío y la definition restringe lenguaje,
+        no aplica (no podemos asegurar match).
+    """
+    declared_single = definition.get("language")
+    declared_list = definition.get("languages")
+    if not declared_single and not declared_list:
+        return True
+    declared = []
+    if declared_single:
+        declared.append(str(declared_single).lower())
+    if declared_list:
+        declared.extend(str(x).lower() for x in declared_list)
+    if not target_language:
+        return False
+    return target_language in declared
 
 
 def languages_without_scanner():
@@ -113,9 +148,11 @@ def reset_cache():
 __all__ = [
     "Scanner",
     "NullScanner",
+    "HtmlScanner",
     "PythonScanner",
     "RegexFallbackScanner",
     "get_scanner",
     "languages_without_scanner",
     "reset_cache",
+    "_definition_applies_to_language",
 ]

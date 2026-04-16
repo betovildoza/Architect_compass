@@ -1,36 +1,11 @@
 {
-    "generated_at": "2026-04-15 19:58:20",
+    "generated_at": "2026-04-16 01:43:44",
     "project_name": "Architect_compass",
     "identities": [
         {
-            "tech": "WordPress-Development",
-            "confidence": 20,
-            "source": "patterns"
-        },
-        {
-            "tech": "Modern-Web-Stack",
-            "confidence": 30,
-            "source": "patterns"
-        },
-        {
-            "tech": "AI-Agent-Framework",
-            "confidence": 30,
-            "source": "patterns"
-        },
-        {
-            "tech": "Tauri-Desktop-App",
-            "confidence": 10,
-            "source": "patterns"
-        },
-        {
-            "tech": "Vanilla-Web-Stack",
-            "confidence": 10,
-            "source": "patterns"
-        },
-        {
             "tech": "Python",
-            "confidence": 11,
-            "files": 11,
+            "confidence": 12,
+            "files": 12,
             "source": "stack_markers"
         }
     ],
@@ -38,76 +13,144 @@
         "": "Python"
     },
     "summary": {
-        "total_files": 11,
-        "relevant_files": 9
+        "total_files": 12,
+        "relevant_files": 6,
+        "scanned_files": 0,
+        "reused_from_cache": 12
     },
     "connectivity": {
-        "inbound": [
-            "mapper_config.example.json <- register_rest_route",
-            "mapper_config.example.json <- export default function",
-            "mapper_config.json <- async def",
-            "mapper_config.json <- def tool_",
-            "mapper_config.json <- def skill_",
-            "mapper_config.json <- tauri::command",
-            "mapper_config.json <- register_rest_route",
-            "mapper_config.json <- export default function",
-            "mapper_config.json <- const (.*) = (.*) =>",
-            "mapper_config.json <- addEventListener"
-        ],
+        "inbound": [],
         "outbound": [
-            "architect_compass.py -> sys",
             "architect_compass.py -> compass/core.py",
-            "mapper_config.example.json -> openai",
-            "mapper_config.example.json -> anthropic",
-            "mapper_config.example.json -> wp_remote_get",
-            "mapper_config.example.json -> get_option",
-            "mapper_config.example.json -> axios",
-            "mapper_config.example.json -> axios",
-            "mapper_config.json -> chromadb",
-            "mapper_config.json -> chromadb",
-            "mapper_config.json -> chromadb",
-            "mapper_config.json -> mcp_client",
-            "mapper_config.json -> openai",
-            "mapper_config.json -> openai",
-            "mapper_config.json -> anthropic",
-            "mapper_config.json -> anthropic",
-            "mapper_config.json -> bridge_leer",
-            "mapper_config.json -> @tauri-apps/api",
-            "mapper_config.json -> window.__TAURI__",
-            "mapper_config.json -> window.__TAURI__",
-            "mapper_config.json -> wp_remote_get",
-            "mapper_config.json -> get_option",
-            "mapper_config.json -> get_option",
-            "mapper_config.json -> curl_exec",
-            "mapper_config.json -> update_post_meta",
-            "mapper_config.json -> axios",
-            "mapper_config.json -> axios",
-            "mapper_config.json -> axios",
-            "mapper_config.json -> document.querySelector",
-            "compass/core.py -> os",
-            "compass/core.py -> json",
-            "compass/core.py -> re",
-            "compass/core.py -> fnmatch",
             "compass/core.py -> compass/stack_detector.py",
             "compass/core.py -> compass/stack_detector.py",
             "compass/core.py -> compass/path_resolver.py",
             "compass/core.py -> compass/scanners/__init__.py",
             "compass/core.py -> compass/scanners/__init__.py",
-            "compass/path_resolver.py -> os",
-            "compass/path_resolver.py -> re",
-            "compass/stack_detector.py -> os",
-            "compass/stack_detector.py -> fnmatch",
-            "compass/scanners/python.py -> ast",
+            "compass/core.py -> compass/scanners/__init__.py",
+            "compass/core.py -> compass/scanners/__init__.py",
+            "compass/scanners/html.py -> compass/scanners/base.py",
             "compass/scanners/python.py -> compass/scanners/base.py",
-            "compass/scanners/regex_fallback.py -> re",
             "compass/scanners/regex_fallback.py -> compass/scanners/base.py",
-            "compass/scanners/treesitter.py -> importlib",
             "compass/scanners/treesitter.py -> compass/scanners/base.py"
         ]
     },
     "audit": {
-        "structural_health": 81.82,
+        "structural_health": 50.0,
         "warnings": []
     },
-    "anomalies": []
+    "anomalies": [],
+    "files": {
+        "architect_compass.py": {
+            "stack": "Python",
+            "orphan_reason": "no_inbound",
+            "metadata": {
+                "calls": [
+                    "sys"
+                ]
+            }
+        },
+        "cli_roadmap.html": {
+            "stack": "Python",
+            "orphan_reason": "no_inbound"
+        },
+        "mapper_config.example.json": {
+            "stack": "Python",
+            "orphan_reason": "no_inbound"
+        },
+        "mapper_config.json": {
+            "stack": "Python",
+            "orphan_reason": "no_inbound"
+        },
+        "compass/core.py": {
+            "stack": "Python",
+            "metadata": {
+                "calls": [
+                    "os",
+                    "json",
+                    "re",
+                    "fnmatch",
+                    "hashlib",
+                    "pathlib:Path",
+                    "datetime:datetime"
+                ]
+            }
+        },
+        "compass/path_resolver.py": {
+            "stack": "Python",
+            "metadata": {
+                "calls": [
+                    "os",
+                    "re",
+                    "pathlib:Path"
+                ]
+            }
+        },
+        "compass/stack_detector.py": {
+            "stack": "Python",
+            "metadata": {
+                "calls": [
+                    "os",
+                    "fnmatch",
+                    "collections:Counter",
+                    "pathlib:Path"
+                ]
+            }
+        },
+        "compass/scanners/base.py": {
+            "stack": "Python",
+            "metadata": {
+                "calls": [
+                    "abc:ABC",
+                    "abc:abstractmethod"
+                ]
+            }
+        },
+        "compass/scanners/html.py": {
+            "stack": "Python",
+            "orphan_reason": "no_inbound",
+            "metadata": {
+                "calls": [
+                    "re"
+                ]
+            }
+        },
+        "compass/scanners/python.py": {
+            "stack": "Python",
+            "orphan_reason": "no_inbound",
+            "metadata": {
+                "calls": [
+                    "ast"
+                ]
+            }
+        },
+        "compass/scanners/regex_fallback.py": {
+            "stack": "Python",
+            "orphan_reason": "no_inbound",
+            "metadata": {
+                "calls": [
+                    "re"
+                ]
+            }
+        },
+        "compass/scanners/treesitter.py": {
+            "stack": "Python",
+            "orphan_reason": "no_inbound",
+            "metadata": {
+                "calls": [
+                    "importlib"
+                ]
+            }
+        }
+    },
+    "orphans": [
+        "architect_compass.py",
+        "cli_roadmap.html",
+        "mapper_config.example.json",
+        "mapper_config.json",
+        "compass/scanners/html.py",
+        "compass/scanners/python.py",
+        "compass/scanners/regex_fallback.py",
+        "compass/scanners/treesitter.py"
+    ]
 }
