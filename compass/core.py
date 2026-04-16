@@ -33,6 +33,7 @@ from compass.graph_emitter import (
     build_graph_html,
     validate_dot_syntax,
 )
+from compass.validation import validate_local_config
 
 
 # Mapping extensión → lenguaje. Autoritativo para decidir qué scanner usar:
@@ -116,6 +117,8 @@ def _definition_applies_to_stack(definition, file_stack):
 LOCAL_CONFIG_NAME = "compass.local.json"
 LEGACY_LOCAL_CONFIG_NAME = "mapper_config.json"
 LOCAL_TEMPLATE_NAME = "compass.local.json"
+LOCAL_HELP_NAME = "compass.local.md"
+LOCAL_HELP_TEMPLATE = "compass.local.md.tpl"
 FINGERPRINTS_NAME = "fingerprints.json"
 FINGERPRINTS_VERSION = 1
 
@@ -130,43 +133,39 @@ _SCHEMA_SECTIONS = (
     "external_services",
 )
 
-_LOCAL_TEMPLATE = {
-    "_README": [
-        "compass.local.json — Overrides por proyecto de Architect's Compass.",
-        "",
-        "Cómo leer este archivo:",
-        "  • Los campos REALES (basal_rules, dynamic_deps, definitions,",
-        "    external_services) arrancan vacíos ({} o []).",
-        "  • Al lado de cada campo real hay un '_example_<campo>' con datos",
-        "    FAKE pero realistas, mostrando el shape exacto que el tool espera.",
-        "  • Los '_how_to_<campo>' son tips cortos (una o dos líneas) sobre",
-        "    cuándo usar cada campo.",
-        "  • Todo lo que empiece con '_' es ignorado por Compass. Podés borrar",
-        "    los ejemplos sin afectar el análisis.",
-        "",
-        "Workflow típico:",
-        "  1. Corré `compass` sin tocar nada — ves los huérfanos y ruido.",
-        "  2. Si un huérfano es falso (lo carga un autoloader) → agregalo a",
-        "     dynamic_deps copiando el shape del '_example_dynamic_deps'.",
-        "  3. Si querés excluir ruido (vendor, minificados) → basal_rules.",
-        "  4. Si tu proyecto usa un framework custom → definitions.",
-        "  5. Si hablás con un SDK externo custom → external_services.",
-        "",
-        "Merge: tus entradas se SUMAN al mapper_config.json basal del tool",
-        "(dedup automático). En 'definitions', si repetís un 'name' pisás el",
-        "basal; si no, se agrega al final. Borrar un campo entero (o dejarlo",
-        "vacío) no saca nada del basal — solo omite tus overrides."
-    ],
+# ------------------------------------------------------------------
+# UX-031 + md-split (Sesión 7, pase 2) — shape del template por campo:
+#   1. <campo>             — el campo ACTIVO (vacío, para editar). PRIMERO.
+#   2. _example_<campo>    — shape de referencia con _WARNING banner
+#                            explícito. Va como APÉNDICE inmediatamente
+#                            después del activo.
+# La documentación larga ("cuándo usar", sintaxis, casos típicos, workflow)
+# se migró a un archivo paralelo `compass.local.md` al lado del JSON,
+# generado desde `compass/templates/compass.local.md.tpl`. El JSON queda
+# solo con datos + ejemplos; el user lee el MD una vez para entender el
+# shape y después solo toca el JSON.
+#
+# El _WARNING dentro de cada _example_<campo> es la señal redundante:
+# si alguien edita ahí, VAL-014 (warning 5) lo detecta al cierre del run
+# comparando con el default shipeado (pelando _WARNING antes de comparar).
+# ------------------------------------------------------------------
 
-    "_how_to_basal_rules": [
-        "Reglas de scanning — excluís carpetas/archivos/patterns del análisis.",
-        "  ignore_folders  → nombre EXACTO de carpeta (a cualquier profundidad).",
-        "                    NO es path. Ejemplo: 'vendor', no 'src/vendor'.",
-        "  ignore_files    → path relativo posix EXACTO desde la raíz del proyecto.",
-        "  ignore_patterns → globs fnmatch. Se prueban contra basename y rel_path.",
-        "                    Ejemplo: '*.min.js' matchea 'foo.min.js' en cualquier dir."
-    ],
+_EXAMPLE_WARNING = (
+    "⚠ ESTE ES UN EJEMPLO DE REFERENCIA. NO EDITAR AQUÍ. "
+    "Copiá la estructura al campo activo de arriba (mismo nombre sin "
+    "el prefijo '_example_'). Ediciones en '_example_*' NO tienen efecto "
+    "y Compass emite un warning al detectar drift vs el default shipeado."
+)
+
+_LOCAL_TEMPLATE = {
+    # ---- basal_rules ------------------------------------------------
+    "basal_rules": {
+        "ignore_folders": [],
+        "ignore_files": [],
+        "ignore_patterns": []
+    },
     "_example_basal_rules": {
+        "_WARNING": _EXAMPLE_WARNING,
         "ignore_folders": ["node_modules", "vendor", "dist", ".serena", "brandbook-legacy"],
         "ignore_files": [
             "scripts/Search-Replace-DB/index.php",
@@ -175,25 +174,11 @@ _LOCAL_TEMPLATE = {
         ],
         "ignore_patterns": ["*.min.js", "*.min.css", "*.bundle.js", "*.map", "*.backup.php"]
     },
-    "basal_rules": {
-        "ignore_folders": [],
-        "ignore_files": [],
-        "ignore_patterns": []
-    },
 
-    "_how_to_dynamic_deps": [
-        "Declarás archivos que el scanner NO puede resolver estáticamente",
-        "(autoloaders, hooks WP, includes con variables, plugins reflexivos).",
-        "Los marcados acá dejan de aparecer como huérfanos falsos.",
-        "",
-        "La KEY es el owner (el archivo que carga cosas). El VALUE puede ser:",
-        "  • string     → sólo declarar el owner con una nota (no sabés targets)",
-        "  • list       → lista de targets concretos que carga",
-        "  • dict       → { description, targets } si querés ambos",
-        "",
-        "Paths siempre relativos posix desde la raíz del proyecto."
-    ],
+    # ---- dynamic_deps -----------------------------------------------
+    "dynamic_deps": {},
     "_example_dynamic_deps": {
+        "_WARNING": _EXAMPLE_WARNING,
         "includes/autoload.php": "carga dinámicamente src/modules/*.php via spl_autoload_register",
         "src/hooks.php": [
             "src/handlers/save-post.php",
@@ -209,25 +194,13 @@ _LOCAL_TEMPLATE = {
             ]
         }
     },
-    "dynamic_deps": {},
 
-    "_how_to_definitions": [
-        "Recetas regex Tier 3 para scanning de patterns por lenguaje.",
-        "Cada entry representa un 'dialect' o framework: patterns inbound",
-        "(suman tech_score al archivo que matchea) y outbound (generan",
-        "edges del grafo). Copiá el shape de '_example_definitions' y editá.",
-        "",
-        "Campos por entry:",
-        "  name     — único. Si coincide con uno del basal, lo PISA.",
-        "  stack    — (opcional) nombre del stack al que pertenece (sólo doc).",
-        "  language — ('php'|'javascript'|'python'|'html'|...) OBLIGATORIO.",
-        "             Las patterns sólo corren contra archivos de ese lenguaje.",
-        "  tier     — 'regex_fallback' (por ahora el único soportado).",
-        "  patterns.inbound[]  → regex SIN capture group (string match → scoring).",
-        "  patterns.outbound[] → regex CON un capture group; el grupo 1 es el",
-        "                        target de la dependencia que se resuelve a path."
-    ],
+    # ---- definitions ------------------------------------------------
+    "definitions": [],
     "_example_definitions": [
+        {
+            "_WARNING": _EXAMPLE_WARNING
+        },
         {
             "name": "MyFramework-PHP-Endpoints",
             "stack": "MyFramework",
@@ -257,20 +230,22 @@ _LOCAL_TEMPLATE = {
             }
         }
     ],
-    "definitions": [],
 
-    "_how_to_external_services": [
-        "SDKs externos. Cuando el scanner captura un import/require que",
-        "matchea alguno de los 'match' strings, el grafo emite un nodo",
-        "'[EXTERNAL:<label>]' (cilindro rojo) en vez de buscar archivo del repo.",
-        "",
-        "Shape: dict { id: { label, match: [str, ...] } }.",
-        "El 'id' es interno (sólo para vos). El 'label' es lo que se muestra",
-        "en el grafo. 'match' es lista de needles case-insensitive — se",
-        "compara por igualdad, prefijo '<needle>/', o primer segmento de",
-        "paquete scoped."
-    ],
+    # ---- stack_markers ----------------------------------------------
+    "stack_markers": {},
+    "_example_stack_markers": {
+        "_WARNING": _EXAMPLE_WARNING,
+        "MiFramework-Custom": {
+            "files": ["mi-framework.lock", "mfw.config.js"],
+            "folders": ["mfw-core"],
+            "extensions": [".mfw"]
+        }
+    },
+
+    # ---- external_services ------------------------------------------
+    "external_services": {},
     "_example_external_services": {
+        "_WARNING": _EXAMPLE_WARNING,
         "my_internal_api": {
             "label": "Mi-API-Interna",
             "match": ["my-internal-sdk", "@mycompany/api-client"]
@@ -283,8 +258,7 @@ _LOCAL_TEMPLATE = {
             "label": "MercadoPago",
             "match": ["mercadopago", "@mercadopago/sdk-js", "MercadoPago\\\\SDK"]
         }
-    },
-    "external_services": {}
+    }
 }
 
 
@@ -418,13 +392,23 @@ class ArchitectCompass:
     # Config loading
     # ------------------------------------------------------------------
     def ensure_local_template(self):
-        """Crea un `compass.local.json` en `.map/` la primera vez.
+        """Crea `compass.local.json` + `compass.local.md` en `.map/` la primera vez.
 
-        Si el archivo no existe, lo genera con placeholders de overrides
-        (schema v2), incluyendo ejemplos de ignore_folders, ignore_files,
-        ignore_patterns y dynamic_deps. El usuario lo edita directamente.
-        Si ya existe, no lo sobrescribe (respeta edits previos).
+        Escribe AMBOS archivos en paralelo (md-split, Sesión 7 pase 2):
+          - `compass.local.json` → shape con campos activos vacíos + bloques
+            `_example_<campo>` de referencia (banner `_WARNING` interno).
+          - `compass.local.md`   → documentación user-facing (qué hace cada
+            campo, sintaxis, workflow de edición). Leída desde
+            `compass/templates/compass.local.md.tpl`.
+
+        Idempotente: si alguno ya existe, no lo pisa (el user puede haberlo
+        editado). Los dos archivos se manejan independientes — faltando uno,
+        solo se regenera ese.
         """
+        self._ensure_local_json()
+        self._ensure_local_help_md()
+
+    def _ensure_local_json(self):
         template_path = self.map_dir / LOCAL_TEMPLATE_NAME
         if template_path.exists():
             return
@@ -433,6 +417,22 @@ class ArchitectCompass:
                 json.dump(_LOCAL_TEMPLATE, f, indent=2, ensure_ascii=False)
         except Exception as e:
             print(f"⚠️ No se pudo crear el template local: {e}")
+
+    def _ensure_local_help_md(self):
+        help_path = self.map_dir / LOCAL_HELP_NAME
+        if help_path.exists():
+            return
+        source = self.script_dir / "compass" / "templates" / LOCAL_HELP_TEMPLATE
+        try:
+            content = source.read_text(encoding="utf-8")
+            help_path.write_text(content, encoding="utf-8")
+        except FileNotFoundError:
+            print(
+                f"⚠️ Template de ayuda no encontrado: {source} "
+                "(se omite compass.local.md)"
+            )
+        except Exception as e:
+            print(f"⚠️ No se pudo crear compass.local.md: {e}")
 
     def load_config_hierarchy(self):
         """Carga basal (repo) + overrides locales (proyecto) en ese orden.
@@ -445,9 +445,16 @@ class ArchitectCompass:
 
         Sesión 6C: post-merge aplica `*_remove` keys para permitir restar
         entries del basal (ej. `asset_extensions_remove: [".svg"]`).
+
+        Sesión 7 (VAL-014): guarda el local crudo en `self._raw_local_config`
+        para que la validación end-of-run pueda inspeccionarlo sin ambigüedad
+        (post-merge el shape cambia).
         """
         config = self._load_global_config()
         local_config, local_path_used = self._load_local_config()
+        # VAL-014 — referencia al local crudo para validación posterior.
+        self._raw_local_config = local_config or {}
+        self._raw_local_config_path = local_path_used
         if local_config:
             self._merge_local_into(config, local_config)
             self._apply_removal_directives(config, local_config)
@@ -1324,18 +1331,45 @@ class ArchitectCompass:
         ext = os.path.splitext(rel_path)[1].lower()
         return ext in self.asset_extensions
 
+    # FIX-030 — Dotfiles de config que NUNCA deben aparecer como targets
+    # del grafo, aunque el usuario haya overriden ignore_patterns vaciándolo.
+    # Defense-in-depth para el caso disparador 2026-04-16: cerbero-setup/.env
+    # apareciendo como nodo `AI-Agent-Framework` en level2agent-engine.
+    # Son archivos de config/metadata — nunca fuente ni target real de
+    # dependencias. El usuario puede editar ignore_patterns libremente;
+    # este set fija un piso mínimo para la emisión del grafo (NO afecta
+    # el walk: un archivo de config sigue pudiendo indexarse como source
+    # si el user lo necesita expresamente removiéndolo de ignore_patterns).
+    _DOTFILE_TARGET_PATTERNS = (
+        ".env", ".env.*",
+        ".gitignore", ".gitattributes",
+        ".editorconfig",
+        ".prettierrc", ".prettierrc.*",
+        ".eslintrc", ".eslintrc.*",
+    )
+
     def _is_ignored_target(self, rel_path):
         """AST-024 (scope extendido) — True si el target matchea ignore_*.
 
         Respeta `ignore_files` (path exacto) e `ignore_patterns` (globs
         fnmatch) también en la emisión de edges, no sólo en el índice de
         scan. Resuelve el hallazgo 2026-04-16 documentado en PLAN AST-024.
+
+        FIX-030 — defense-in-depth: dotfiles de config (`.env`, `.gitignore`,
+        `.eslintrc*`, etc.) SIEMPRE se filtran como targets del grafo,
+        incluso si el usuario vació `ignore_patterns`. Evita que aparezcan
+        como nodos con stack heredado del directorio (caso level2agent
+        `cerbero-setup/.env` etiquetado `AI-Agent-Framework`).
         """
         if rel_path in self.ignore_files:
             return True
         basename = os.path.basename(rel_path)
         for pattern in self.ignore_patterns:
             if fnmatch.fnmatch(basename, pattern) or fnmatch.fnmatch(rel_path, pattern):
+                return True
+        # FIX-030 — piso mínimo independiente de la config.
+        for pattern in self._DOTFILE_TARGET_PATTERNS:
+            if fnmatch.fnmatch(basename, pattern):
                 return True
         return False
 
@@ -1409,16 +1443,24 @@ class ArchitectCompass:
     # ------------------------------------------------------------------
     # Finalize
     # ------------------------------------------------------------------
-    # Estructura de finalize (Sesión 6B):
+    # Estructura de finalize (Sesión 7 · VAL-014 agregado al inicio):
+    #   0. _validate_local_config()       → atlas.audit.warnings + consola    (VAL-014, SES 7)
     #   1. _attach_metadata_calls()       → atlas.files[*].metadata.*         (GRF-021 + AST-024)
     #   2. _compute_metrics()             → health + cycles + delta           (SES 6A — SCR-009, CYC-011, DIF-010)
     #   3. _emit_dot_graph()              → connectivity.dot                  (GRF-013 + EDG-023 + AST-024)
-    #   4. _emit_graph_html()             → graph.html (Viz.js wrapper)       (GRF-013)
+    #   4. _emit_graph_html()             → graph.html (vis-network wrapper)  (GRF-013)
     #   5. _write_atlas()                 → atlas.json
     #   6. _rotate_history()              → .map/history/YYYYmmdd_HHMM_*.json (DIF-010)
     #   7. _persist_fingerprints()        → .map/fingerprints.json            (INC-008)
     #   8. _update_feedback_log()         → .map/feedback.log
     #   9. _print_summary()               → stdout
+    #
+    # VAL-014 corre al INICIO de finalize() (no al fin de analyze()) porque:
+    #   - Necesita el config ya merged (que sí construye `__init__`), pero
+    #     también el project_root ya walked para chequear existencia de
+    #     dynamic_deps.targets. Post-analyze() es el punto natural.
+    #   - Queremos que los warnings aparezcan en atlas.audit.warnings antes
+    #     de persistirlo (paso 5).
     #
     # Orden post-6B: los cycles (CYC-011) se computan ANTES de emitir el
     # `.dot` — GRF-013 colorea nodos en ciclos con su shape especial, así
@@ -1427,6 +1469,7 @@ class ArchitectCompass:
     # La emisión del `.dot` + `.html` se delega a compass/graph_emitter.py —
     # funciones puras stdlib que espejan el patrón de compass/metrics.py.
     def finalize(self):
+        self._run_config_validation()
         self._attach_metadata_calls()
         self._compute_metrics()
         self._emit_dot_graph()
@@ -1436,6 +1479,35 @@ class ArchitectCompass:
         self._persist_fingerprints()
         self._update_feedback_log()
         self._print_summary()
+
+    def _run_config_validation(self):
+        """VAL-014 (Sesión 7) — valida el compass.local.json del proyecto.
+
+        Warnings se acumulan SIN abortar. Se agregan a `atlas.audit.warnings`
+        y se guardan en `self._config_warnings` para que `_print_summary`
+        los muestre como sección `CONFIG WARNINGS:` (solo si hay ≥1).
+
+        Usa el `_LOCAL_TEMPLATE` module-level como default shipeado para
+        detectar drift en `_example_*` (warning 5).
+        """
+        try:
+            warnings = validate_local_config(
+                local_config=getattr(self, "_raw_local_config", {}) or {},
+                merged_config=self.config,
+                project_root=self.project_root,
+                map_dir=self.map_dir,
+                default_template=_LOCAL_TEMPLATE,
+            )
+        except Exception as e:
+            # Defensivo: si la validación tiene un bug, no queremos que
+            # tire el run entero. Log como warning y seguir.
+            warnings = [f"validation: error interno — {e}"]
+        self._config_warnings = list(warnings)
+        # Exponer en atlas.audit.warnings para consumidores programáticos
+        # (LLM-VIEW-028 futuro). Prefijo estable `config:` para que otros
+        # consumidores puedan filtrarlos aparte de los warnings de audit.
+        for w in warnings:
+            self.atlas["audit"]["warnings"].append(f"config: {w}")
 
     def _collect_graph_nodes(self):
         """Devuelve set de rel_paths que deben renderizarse en el grafo.
@@ -1695,6 +1767,13 @@ class ArchitectCompass:
                 f"orphans +{len(delta['orphans']['added'])}/"
                 f"-{len(delta['orphans']['removed'])})"
             )
+
+        # VAL-014 — CONFIG WARNINGS section. Solo imprimir si hay.
+        cw = getattr(self, "_config_warnings", None) or []
+        if cw:
+            print("\nCONFIG WARNINGS:")
+            for w in cw:
+                print(f"  ⚠ {w}")
 
         if structural < 80.0:
             print(" 💡 SUGERENCIA (ES):")

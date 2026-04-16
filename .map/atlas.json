@@ -1,11 +1,11 @@
 {
-    "generated_at": "2026-04-16 06:18:29",
+    "generated_at": "2026-04-16 17:09:56",
     "project_name": "Architect_compass",
     "identities": [
         {
             "tech": "Python",
-            "confidence": 14,
-            "files": 14,
+            "confidence": 15,
+            "files": 15,
             "source": "stack_markers"
         }
     ],
@@ -13,10 +13,10 @@
         "": "Python"
     },
     "summary": {
-        "total_files": 14,
+        "total_files": 15,
         "relevant_files": 6,
-        "scanned_files": 1,
-        "reused_from_cache": 13
+        "scanned_files": 15,
+        "reused_from_cache": 0
     },
     "connectivity": {
         "inbound": [],
@@ -38,6 +38,7 @@
             "compass/core.py -> compass/graph_emitter.py",
             "compass/core.py -> compass/graph_emitter.py",
             "compass/core.py -> compass/graph_emitter.py",
+            "compass/core.py -> compass/validation.py",
             "compass/scanners/html.py -> compass/scanners/base.py",
             "compass/scanners/python.py -> compass/scanners/base.py",
             "compass/scanners/regex_fallback.py -> compass/scanners/base.py",
@@ -47,7 +48,7 @@
         ]
     },
     "audit": {
-        "structural_health": 42.86,
+        "structural_health": 40.0,
         "warnings": []
     },
     "anomalies": [],
@@ -131,6 +132,16 @@
                 ]
             }
         },
+        "compass/validation.py": {
+            "stack": "Python",
+            "metadata": {
+                "calls": [
+                    "__future__:annotations",
+                    "json",
+                    "pathlib:Path"
+                ]
+            }
+        },
         "compass/scanners/base.py": {
             "stack": "Python",
             "metadata": {
@@ -189,7 +200,7 @@
     ],
     "cycles": [],
     "health": {
-        "total": 71.79,
+        "total": 73.67,
         "weights": {
             "orphans": 0.4,
             "connectivity": 0.3,
@@ -197,7 +208,7 @@
             "external_deps": 0.15
         },
         "orphans": {
-            "score": 42.86,
+            "score": 46.67,
             "count": 8,
             "files": [
                 "architect_compass.py",
@@ -212,11 +223,11 @@
         },
         "connectivity": {
             "score": 100.0,
-            "avg_inbound": 1.64,
-            "total_inbound_edges": 23
+            "avg_inbound": 1.6,
+            "total_inbound_edges": 24
         },
         "dead_exports": {
-            "score": 64.29,
+            "score": 66.67,
             "count": 5,
             "files": [
                 "architect_compass.py",
@@ -229,34 +240,67 @@
         "external_deps": {
             "score": 100.0,
             "external_targets": 0,
-            "total_targets": 23
+            "total_targets": 24
         }
     },
     "delta": {
-        "previous_generated_at": "2026-04-16 06:08:32",
+        "previous_generated_at": "2026-04-16 16:51:44",
         "files": {
             "added": [],
-            "removed": []
+            "removed": [
+                ".quarantine/.legacy-v1/core.v2-pre-ses-6a.py",
+                ".quarantine/.legacy-v1/core.v2-pre-ses-6b.py",
+                ".quarantine/.legacy-v1/core.v2-pre-ses-6c.py",
+                ".quarantine/.legacy-v1/graph_emitter.v2-pre-ses-6c.py",
+                ".quarantine/.legacy-v1/mapper_config.v2-pre-def-025.json",
+                ".quarantine/.legacy-v1/mapper_config.v2-pre-ses-6c.json",
+                ".quarantine/.legacy-v1/metrics.v2-pre-ses-6c.py",
+                ".quarantine/.legacy-v1/scanners_base.v2-pre-ses-6c.py",
+                ".quarantine/.legacy-v3/_LOCAL_TEMPLATE.pre-ux031.json",
+                ".quarantine/.legacy-v4/_LOCAL_TEMPLATE.pre-md-split.json"
+            ]
         },
         "edges": {
             "added": [],
-            "removed": [],
+            "removed": [
+                ".quarantine/.legacy-v1/core.v2-pre-ses-6a.py -> compass/path_resolver.py",
+                ".quarantine/.legacy-v1/core.v2-pre-ses-6a.py -> compass/stack_detector.py",
+                ".quarantine/.legacy-v1/core.v2-pre-ses-6b.py -> compass/metrics.py",
+                ".quarantine/.legacy-v1/core.v2-pre-ses-6b.py -> compass/path_resolver.py",
+                ".quarantine/.legacy-v1/core.v2-pre-ses-6b.py -> compass/stack_detector.py",
+                ".quarantine/.legacy-v1/core.v2-pre-ses-6c.py -> compass/graph_emitter.py",
+                ".quarantine/.legacy-v1/core.v2-pre-ses-6c.py -> compass/metrics.py",
+                ".quarantine/.legacy-v1/core.v2-pre-ses-6c.py -> compass/path_resolver.py",
+                ".quarantine/.legacy-v1/core.v2-pre-ses-6c.py -> compass/scanners/base.py",
+                ".quarantine/.legacy-v1/core.v2-pre-ses-6c.py -> compass/stack_detector.py"
+            ],
             "added_count": 0,
-            "removed_count": 0
+            "removed_count": 10
         },
         "orphans": {
             "added": [],
-            "removed": []
+            "removed": [
+                ".quarantine/.legacy-v1/core.v2-pre-ses-6a.py",
+                ".quarantine/.legacy-v1/core.v2-pre-ses-6b.py",
+                ".quarantine/.legacy-v1/core.v2-pre-ses-6c.py",
+                ".quarantine/.legacy-v1/graph_emitter.v2-pre-ses-6c.py",
+                ".quarantine/.legacy-v1/mapper_config.v2-pre-def-025.json",
+                ".quarantine/.legacy-v1/mapper_config.v2-pre-ses-6c.json",
+                ".quarantine/.legacy-v1/metrics.v2-pre-ses-6c.py",
+                ".quarantine/.legacy-v1/scanners_base.v2-pre-ses-6c.py",
+                ".quarantine/.legacy-v3/_LOCAL_TEMPLATE.pre-ux031.json",
+                ".quarantine/.legacy-v4/_LOCAL_TEMPLATE.pre-md-split.json"
+            ]
         },
         "cycles": {
             "added": [],
             "removed": []
         },
         "health_delta": {
-            "total": 0.0,
-            "orphans": 0.0,
+            "total": 7.27,
+            "orphans": 18.67,
             "connectivity": 0.0,
-            "dead_exports": 0.0,
+            "dead_exports": -1.33,
             "external_deps": 0.0
         }
     },
@@ -265,7 +309,7 @@
         "ignored": 1,
         "self_edge": 0,
         "ignore_outbound": 0,
-        "rendered_edges": 10,
-        "raw_edges": 23
+        "rendered_edges": 11,
+        "raw_edges": 24
     }
 }

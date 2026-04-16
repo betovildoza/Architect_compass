@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "generated_at": "2026-04-16 06:18:29",
-  "config_fingerprint": "73ee3cfd316dac9484f690a071784525f4a56d4837d8fda70f70a1a6f8fde1cc",
+  "generated_at": "2026-04-16 17:09:56",
+  "config_fingerprint": "2d2f21a0aabb26e8e26deadc52e342c34552b3011a4f1d6b264c5f960de13087",
   "files": {
     "architect_compass.py": {
       "fingerprint": "5320e4205346dff59f23592bc2d3d7b358be1d51a4bc083883f855f764ae4dfd",
@@ -46,7 +46,7 @@
       "metadata_filtered_refs": []
     },
     "mapper_config.json": {
-      "fingerprint": "7dffb83b5a3a2a332e7efddf3293adb06767845d5bbdd2d8e3e041b6ac10e674",
+      "fingerprint": "d65eecb3dc5434c7ba669e8d11f53075f4e53a79ff99feaf1e05167b8deaefba",
       "outbound_targets": [],
       "inbound_patterns": [],
       "tech_scores": {},
@@ -58,7 +58,7 @@
       "metadata_filtered_refs": []
     },
     "compass/core.py": {
-      "fingerprint": "fb6e746d941c41add7b52bebc203a087ae630e1e2d9a82446c8ec44be696a5c6",
+      "fingerprint": "fe1a6d451542a3353f1a53bdb1d5aaf822d8fd2d4cb3c77a7359ac67992ed245",
       "outbound_targets": [
         "compass/stack_detector.py",
         "compass/stack_detector.py",
@@ -75,7 +75,8 @@
         "compass/metrics.py",
         "compass/graph_emitter.py",
         "compass/graph_emitter.py",
-        "compass/graph_emitter.py"
+        "compass/graph_emitter.py",
+        "compass/validation.py"
       ],
       "inbound_patterns": [],
       "tech_scores": {},
@@ -95,7 +96,8 @@
         "compass/path_resolver.py": "import",
         "compass/scanners/base.py": "import",
         "compass/metrics.py": "import",
-        "compass/graph_emitter.py": "import"
+        "compass/graph_emitter.py": "import",
+        "compass/validation.py": "import"
       },
       "metadata_assets": [],
       "metadata_filtered_refs": [
@@ -161,6 +163,22 @@
         "os",
         "fnmatch",
         "collections:Counter",
+        "pathlib:Path"
+      ],
+      "edge_types": {},
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
+    },
+    "compass/validation.py": {
+      "fingerprint": "a41e8b7fe59f115bcb3e6ed9f28793f0d98d8051c90b1ac137a3e58aa231c592",
+      "outbound_targets": [],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": false,
+      "stack": "Python",
+      "metadata_calls": [
+        "__future__:annotations",
+        "json",
         "pathlib:Path"
       ],
       "edge_types": {},

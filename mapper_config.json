@@ -40,7 +40,16 @@
       "__init__.py",
       "*.min.js",
       "*.min.css",
-      "*.bundle.js"
+      "*.bundle.js",
+      ".env",
+      ".env.*",
+      ".gitignore",
+      ".gitattributes",
+      ".editorconfig",
+      ".prettierrc",
+      ".prettierrc.*",
+      ".eslintrc",
+      ".eslintrc.*"
     ],
     "asset_extensions": [
       ".jpg", ".jpeg", ".png", ".webp", ".svg", ".ico", ".gif", ".bmp",

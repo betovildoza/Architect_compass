@@ -29,6 +29,7 @@ digraph G {
         "compass/scanners/regex_fallback.py" [shape=box, fillcolor="#fff3cd", color="#b7791f"];
         "compass/scanners/treesitter.py" [shape=box, fillcolor="#fff3cd", color="#b7791f"];
         "compass/stack_detector.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
+        "compass/validation.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
     }
     "architect_compass.py" -> "compass/core.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/core.py" -> "compass/graph_emitter.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
@@ -36,6 +37,7 @@ digraph G {
     "compass/core.py" -> "compass/path_resolver.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/core.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/core.py" -> "compass/stack_detector.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/core.py" -> "compass/validation.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scanners/html.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scanners/python.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scanners/regex_fallback.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
