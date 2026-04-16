@@ -2,8 +2,9 @@
 compass.bat
 .claude/
 README2.md
-session_log.md
 .quarantine/
 
 *.pyc
 plan.md
+session_log.md
+history/

@@ -2,7 +2,7 @@
   "_comment": "Overrides locales para Architect's Compass. Solo incluí lo que quieras sumar o pisar respecto del mapper_config.json basal. Las listas se extienden (dedup); las definitions con el mismo 'name' pisan a las globales.",
   "_ignore_help": "ignore_folders: nombres exactos de carpetas a excluir (sin paths). Ej: ['node_modules', 'assets', '.serena'] ignora esas carpetas siempre que aparezcan en cualquier nivel. ignore_files y ignore_patterns funcionan igual (nombres exactos y patrones glob). Se mergean con el config basal (extienden, no lo reemplazan).",
   "basal_rules": {
-    "ignore_folders": [],
+    "ignore_folders": [".quarantine"],
     "ignore_files": [],
     "ignore_patterns": [
       "*.min.js",

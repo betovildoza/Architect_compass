@@ -1,13 +1,52 @@
 digraph G {
     rankdir=LR;
-    concentrate=true;
-    node [shape=box, style=rounded, fontname="Arial"];
-    "architect_compass.py" -> "compass/core.py" [label="calls", color="red"];
-    "compass/core.py" -> "compass/path_resolver.py" [label="calls", color="red"];
-    "compass/core.py" -> "compass/scanners/__init__.py" [label="calls", color="red"];
-    "compass/core.py" -> "compass/stack_detector.py" [label="calls", color="red"];
-    "compass/scanners/html.py" -> "compass/scanners/base.py" [label="calls", color="red"];
-    "compass/scanners/python.py" -> "compass/scanners/base.py" [label="calls", color="red"];
-    "compass/scanners/regex_fallback.py" -> "compass/scanners/base.py" [label="calls", color="red"];
-    "compass/scanners/treesitter.py" -> "compass/scanners/base.py" [label="calls", color="red"];
+    concentrate=false; compound=true;
+    graph [fontname="Arial", fontsize=12, labelloc="t", label="Architect's Compass — Connectivity Graph"];
+    node [style="rounded,filled", fontname="Arial", fontsize=10];
+    edge [arrowsize=0.7];
+    subgraph "cluster_<root>" {
+        label="<root>";
+        style="rounded,filled";
+        fillcolor="#fafafa"; color="#cccccc";
+        fontname="Arial"; fontsize=11;
+        "architect_compass.py" [shape=box, fillcolor="#fff3cd", color="#b7791f"];
+        "cli_roadmap.html" [shape=box, fillcolor="#fff3cd", color="#b7791f"];
+        "mapper_config.example.json" [shape=box, fillcolor="#fff3cd", color="#b7791f"];
+        "mapper_config.json" [shape=box, fillcolor="#fff3cd", color="#b7791f"];
+    }
+    subgraph "cluster_compass" {
+        label="compass";
+        style="rounded,filled";
+        fillcolor="#fafafa"; color="#cccccc";
+        fontname="Arial"; fontsize=11;
+        "compass/core.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
+        "compass/graph_emitter.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
+        "compass/metrics.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
+        "compass/path_resolver.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
+        "compass/scanners/base.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
+        "compass/scanners/html.py" [shape=box, fillcolor="#fff3cd", color="#b7791f"];
+        "compass/scanners/python.py" [shape=box, fillcolor="#fff3cd", color="#b7791f"];
+        "compass/scanners/regex_fallback.py" [shape=box, fillcolor="#fff3cd", color="#b7791f"];
+        "compass/scanners/treesitter.py" [shape=box, fillcolor="#fff3cd", color="#b7791f"];
+        "compass/stack_detector.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
+    }
+    "architect_compass.py" -> "compass/core.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/core.py" -> "compass/graph_emitter.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/core.py" -> "compass/metrics.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/core.py" -> "compass/path_resolver.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/core.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/core.py" -> "compass/stack_detector.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/scanners/html.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/scanners/python.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/scanners/regex_fallback.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/scanners/treesitter.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    subgraph "cluster_legend" {
+        label="Leyenda"; style="rounded,filled";
+        fillcolor="#ffffff"; color="#999999";
+        fontname="Arial"; fontsize=10; rank=sink;
+        "_legend_node_normal" [label="normal", fillcolor="#f5f5f5", color="#333333", shape=box, style="rounded,filled", fontname="Arial", fontsize=9];
+        "_legend_node_orphan" [label="orphan", fillcolor="#fff3cd", color="#b7791f", shape=box, style="rounded,filled", fontname="Arial", fontsize=9];
+        "_legend_node_cycle" [label="cycle", fillcolor="#fde0dc", color="#c0392b", shape=box, style="rounded,filled", fontname="Arial", fontsize=9];
+        "_legend_edge_import" [label="import", shape=plaintext, fontname="Arial", fontsize=9, fontcolor="#1f7a1f"];
+    }
 }

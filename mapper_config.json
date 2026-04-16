@@ -41,6 +41,13 @@
       "*.min.js",
       "*.min.css",
       "*.bundle.js"
+    ],
+    "asset_extensions": [
+      ".jpg", ".jpeg", ".png", ".webp", ".svg", ".ico", ".gif", ".bmp",
+      ".woff", ".woff2", ".ttf", ".otf", ".eot",
+      ".mp4", ".webm", ".mov", ".avi",
+      ".mp3", ".wav", ".ogg",
+      ".pdf", ".zip", ".tar", ".gz"
     ]
   },
   "stack_markers": {
@@ -153,7 +160,41 @@
       "^self$",
       "^none$",
       "^$"
-    ]
+    ],
+    "rankdir": "LR",
+    "vis_network_cdn_url": "https://unpkg.com/vis-network/standalone/umd/vis-network.min.js",
+    "default_edge_type": "use",
+    "edge_colors": {
+      "import":  "#1f7a1f",
+      "require": "#333333",
+      "include": "#555555",
+      "src":     "#1f5fbf",
+      "href":    "#2e86de",
+      "action":  "#8e44ad",
+      "fetch":   "#c0392b",
+      "enqueue": "#7d3c98",
+      "use":     "#888888"
+    },
+    "node_colors": {
+      "normal":   { "fillcolor": "#f5f5f5", "color": "#333333" },
+      "orphan":   { "fillcolor": "#fff3cd", "color": "#b7791f" },
+      "cycle":    { "fillcolor": "#fde0dc", "color": "#c0392b" },
+      "external": { "fillcolor": "#ffcccc", "color": "#cc0000" }
+    },
+    "node_shapes": {
+      "normal":   "box",
+      "orphan":   "box",
+      "cycle":    "box",
+      "external": "cylinder"
+    }
+  },
+  "scoring_weights": {
+    "health_weights": {
+      "orphans":       0.40,
+      "connectivity":  0.30,
+      "dead_exports":  0.15,
+      "external_deps": 0.15
+    }
   },
   "external_services": {
     "anthropic": {
@@ -200,15 +241,15 @@
       "name": "PHP-Patterns",
       "language": "php",
       "tier": "regex_fallback",
-      "_comment": "Outbound consolida patterns de WordPress-Development + Vanilla-Web-Stack-PHP (pre-DEF-025). Cubre: include/require literales, require __DIR__ . '/path' (PHP-inbound-019), wp_enqueue_script/style con ABSPATH/TEMPLATEPATH concatenado. Inbound vacío: WP hooks (add_action, register_rest_route) ya no generan identity — la identidad WordPress viene de stack_markers (DEF-025).",
+      "_comment": "Outbound consolida patterns de WordPress-Development + Vanilla-Web-Stack-PHP (pre-DEF-025). Cubre: include/require literales, require __DIR__ . '/path' (PHP-inbound-019), wp_enqueue_script/style con ABSPATH/TEMPLATEPATH concatenado. EDG-023: cada pattern declara su edge_type para el label del .dot.",
       "patterns": {
         "inbound": [],
         "outbound": [
-          "include\\s*\\(?\\s*['\"]([^'\"]+)['\"]",
-          "require(?:_once)?\\s*\\(?\\s*['\"]([^'\"]+)['\"]",
-          "require(?:_once)?\\s+[A-Z_]+\\s*\\.\\s*'([^']+)'",
-          "wp_enqueue_script\\s*\\(\\s*'[^']+'\\s*,\\s*[A-Z_]+\\s*\\.\\s*'([^']+)'",
-          "wp_enqueue_style\\s*\\(\\s*'[^']+'\\s*,\\s*[A-Z_]+\\s*\\.\\s*'([^']+)'"
+          { "regex": "include\\s*\\(?\\s*['\"]([^'\"]+)['\"]", "edge_type": "include" },
+          { "regex": "require(?:_once)?\\s*\\(?\\s*['\"]([^'\"]+)['\"]", "edge_type": "require" },
+          { "regex": "require(?:_once)?\\s+[A-Z_]+\\s*\\.\\s*'([^']+)'", "edge_type": "require" },
+          { "regex": "wp_enqueue_script\\s*\\(\\s*'[^']+'\\s*,\\s*[A-Z_]+\\s*\\.\\s*'([^']+)'", "edge_type": "enqueue" },
+          { "regex": "wp_enqueue_style\\s*\\(\\s*'[^']+'\\s*,\\s*[A-Z_]+\\s*\\.\\s*'([^']+)'", "edge_type": "enqueue" }
         ]
       }
     },
@@ -216,13 +257,13 @@
       "name": "JavaScript-Patterns",
       "language": "javascript",
       "tier": "regex_fallback",
-      "_comment": "Outbound consolida patterns de Modern-Web-Stack-JS + Vanilla-Web-Stack-JS + Tauri-Desktop-App-JS (pre-DEF-025). Cubre: import from, fetch literal, alias Next.js (from '@/...'). Inbound vacío: patterns como 'invoke(', 'listen(', 'export default function', 'addEventListener' generaban identities falsas ('Tauri', 'Modern-Web') en proyectos que no usan esos stacks — la identidad correcta viene de stack_markers (DEF-025).",
+      "_comment": "Outbound consolida patterns de Modern-Web-Stack-JS + Vanilla-Web-Stack-JS + Tauri-Desktop-App-JS (pre-DEF-025). EDG-023: edge_type por pattern. fetch→fetch, import→import, alias Next.js→import.",
       "patterns": {
         "inbound": [],
         "outbound": [
-          "import\\s+.+\\s+from\\s+['\"]([^'\"]+)['\"]",
-          "fetch\\s*\\(\\s*['\"]([^'\"]+)['\"]",
-          "from\\s+['\"]@/([^'\"]+)['\"]"
+          { "regex": "import\\s+.+\\s+from\\s+['\"]([^'\"]+)['\"]", "edge_type": "import" },
+          { "regex": "fetch\\s*\\(\\s*['\"]([^'\"]+)['\"]", "edge_type": "fetch" },
+          { "regex": "from\\s+['\"]@/([^'\"]+)['\"]", "edge_type": "import" }
         ]
       }
     },
@@ -230,13 +271,13 @@
       "name": "TypeScript-Patterns",
       "language": "typescript",
       "tier": "regex_fallback",
-      "_comment": "TypeScript usa tree-sitter-typescript cuando la grammar está disponible. Patterns regex idénticas a JavaScript-Patterns como fallback Tier 3 si tree-sitter no está instalado. Misma consolidación que JS post-DEF-025.",
+      "_comment": "TypeScript usa tree-sitter-typescript cuando la grammar está disponible. Patterns regex idénticas a JavaScript-Patterns como fallback Tier 3. EDG-023: edge_type por pattern.",
       "patterns": {
         "inbound": [],
         "outbound": [
-          "import\\s+.+\\s+from\\s+['\"]([^'\"]+)['\"]",
-          "fetch\\s*\\(\\s*['\"]([^'\"]+)['\"]",
-          "from\\s+['\"]@/([^'\"]+)['\"]"
+          { "regex": "import\\s+.+\\s+from\\s+['\"]([^'\"]+)['\"]", "edge_type": "import" },
+          { "regex": "fetch\\s*\\(\\s*['\"]([^'\"]+)['\"]", "edge_type": "fetch" },
+          { "regex": "from\\s+['\"]@/([^'\"]+)['\"]", "edge_type": "import" }
         ]
       }
     },

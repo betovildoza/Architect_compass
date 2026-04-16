@@ -28,12 +28,13 @@ class PythonScanner(_BaseScanner):
         except (OSError, SyntaxError, ValueError):
             return []
 
+        # EDG-023 — todas las edges de Python se etiquetan "import".
         out = []
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
                     if alias.name:
-                        out.append(alias.name)
+                        out.append((alias.name, "import"))
             elif isinstance(node, ast.ImportFrom):
                 # level = 0 → import absoluto.
                 # level = 1 → from . import x
@@ -46,6 +47,7 @@ class PythonScanner(_BaseScanner):
                     # "x.y" no existe como módulo (submódulo).
                     name = alias.name or ""
                     left = prefix + module
-                    out.append(f"{left}:{name}" if name else left)
+                    target = f"{left}:{name}" if name else left
+                    out.append((target, "import"))
         return out
 

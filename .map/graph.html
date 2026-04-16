@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Architect's Compass — Architect_compass</title>
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; background: #1e1e1e;
+                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; }
+    #graph { width: 100vw; height: 100vh; }
+    #legend {
+      position: fixed; top: 12px; left: 12px;
+      background: rgba(0,0,0,0.75); color: #ccc;
+      padding: 12px 16px; border-radius: 6px; font-size: 12px; line-height: 1.9;
+      z-index: 10; max-width: 280px;
+    }
+    #legend strong { color: #fff; display: block; margin-bottom: 4px; }
+    #legend .meta { color: #888; font-size: 11px; margin-top: 6px; border-top: 1px solid #333; padding-top: 6px; }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+           margin-right: 6px; vertical-align: middle; }
+    .swatch { display: inline-block; width: 20px; height: 3px; margin-right: 6px;
+              vertical-align: middle; }
+    #controls {
+      position: fixed; top: 12px; right: 12px;
+      background: rgba(0,0,0,0.75); color: #ccc;
+      padding: 8px 12px; border-radius: 6px; font-size: 12px; z-index: 10;
+      display: flex; gap: 6px;
+    }
+    #controls button {
+      background: #333; color: #eee; border: 1px solid #555;
+      padding: 4px 10px; border-radius: 3px; cursor: pointer; font-size: 11px;
+      font-family: inherit;
+    }
+    #controls button:hover { background: #444; }
+    #status {
+      position: fixed; bottom: 12px; left: 12px;
+      color: #666; font-size: 11px; z-index: 10;
+    }
+  </style>
+</head>
+<body>
+<div id="legend">
+  <strong>Architect's Compass — Architect_compass</strong>
+  <span class="dot" style="background:#4fc3f7"></span>Archivo interno<br>
+  <span class="dot" style="background:#ef5350"></span>Servicio externo ([EXTERNAL:*])<br>
+  <span class="dot" style="background:#ffb300"></span>Hub (≥5 inbound)<br>
+  <span class="dot" style="background:#fff3cd;border:1px solid #b7791f"></span>Huérfano<br>
+  <span class="dot" style="background:#fde0dc;border:1px solid #c0392b"></span>En ciclo<br>
+  <div class="meta">
+    2026-04-16 06:18:29<br>
+    nodes=14 · edges=23 · cycles=0
+  </div>
+</div>
+<div id="controls">
+  <button onclick="fitGraph()">Fit</button>
+  <button onclick="togglePhysics()">Toggle Physics</button>
+  <button onclick="exportPng()">PNG</button>
+</div>
+<div id="graph"></div>
+<div id="status"></div>
+<script>
+  // Datos inyectados por graph_emitter.build_graph_html()
+  const EDGES_RAW = [["architect_compass.py", "compass/core.py", "import"], ["compass/core.py", "compass/stack_detector.py", "import"], ["compass/core.py", "compass/stack_detector.py", "import"], ["compass/core.py", "compass/path_resolver.py", "import"], ["compass/core.py", "compass/scanners/base.py", "import"], ["compass/core.py", "compass/scanners/base.py", "import"], ["compass/core.py", "compass/scanners/base.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/graph_emitter.py", "import"], ["compass/core.py", "compass/graph_emitter.py", "import"], ["compass/core.py", "compass/graph_emitter.py", "import"], ["compass/scanners/html.py", "compass/scanners/base.py", "import"], ["compass/scanners/python.py", "compass/scanners/base.py", "import"], ["compass/scanners/regex_fallback.py", "compass/scanners/base.py", "import"], ["compass/scanners/regex_fallback.py", "compass/scanners/base.py", "import"], ["compass/scanners/treesitter.py", "compass/scanners/base.py", "import"], ["compass/scanners/treesitter.py", "compass/scanners/base.py", "import"]];
+  const EXTERNALS = new Set([]);
+  const ORPHANS = new Set(["architect_compass.py", "cli_roadmap.html", "compass/scanners/html.py", "compass/scanners/python.py", "compass/scanners/regex_fallback.py", "compass/scanners/treesitter.py", "mapper_config.example.json", "mapper_config.json"]);
+  const CYCLES_NODES = new Set([]);
+  const EDGE_COLORS = {"import": "#1f7a1f", "require": "#333333", "include": "#555555", "src": "#1f5fbf", "href": "#2e86de", "action": "#8e44ad", "fetch": "#c0392b", "enqueue": "#7d3c98", "use": "#888888"};
+
+  // contar inbound por nodo
+  const inbound = {};
+  EDGES_RAW.forEach(e => { inbound[e[1]] = (inbound[e[1]]||0) + 1; });
+
+  // construir nodos únicos
+  const nodeMap = {};
+  let idSeq = 1;
+  EDGES_RAW.forEach(e => {
+    [e[0], e[1]].forEach(name => {
+      if (!nodeMap[name]) {
+        const isExternal = EXTERNALS.has(name);
+        const isOrphan  = ORPHANS.has(name);
+        const isCycle   = CYCLES_NODES.has(name);
+        const isHub     = (inbound[name]||0) >= 5;
+        let color = "#4fc3f7";
+        let borderColor = "#2a7ca8";
+        if (isExternal)      { color = "#ef5350"; borderColor = "#a03030"; }
+        else if (isCycle)    { color = "#fde0dc"; borderColor = "#c0392b"; }
+        else if (isOrphan)   { color = "#fff3cd"; borderColor = "#b7791f"; }
+        else if (isHub)      { color = "#ffb300"; borderColor = "#a07700"; }
+        nodeMap[name] = {
+          id: idSeq++,
+          label: name.length > 34 ? "…" + name.slice(-32) : name,
+          title: name + "\ninbound: " + (inbound[name]||0),
+          color: { background: color, border: borderColor,
+                   highlight: { background: color, border: "#fff" } },
+          font: { color: "#000", size: 11, face: "Arial" },
+          shape: isExternal ? "ellipse" : "box",
+          size: isHub ? 22 : 14,
+        };
+      }
+    });
+  });
+
+  const nodes = Object.values(nodeMap);
+  const edges = EDGES_RAW.map(e => {
+    const src = e[0], tgt = e[1], etype = e[2] || "use";
+    const ecolor = EDGE_COLORS[etype] || "#666";
+    return {
+      from: nodeMap[src].id,
+      to: nodeMap[tgt].id,
+      arrows: "to",
+      label: etype,
+      font: { color: "#888", size: 9, align: "middle",
+              background: "rgba(30,30,30,0.7)", strokeWidth: 0 },
+      color: { color: ecolor, highlight: "#fff", opacity: 0.7 },
+      width: 1,
+      smooth: { type: "continuous" },
+    };
+  });
+
+  const container = document.getElementById("graph");
+  const data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
+  const options = {
+    physics: {
+      enabled: true,
+      stabilization: { iterations: 200, updateInterval: 25 },
+      barnesHut: { gravitationalConstant: -9000, springLength: 140,
+                   springConstant: 0.04, damping: 0.3 },
+    },
+    interaction: { hover: true, tooltipDelay: 120, zoomView: true,
+                   dragView: true, navigationButtons: false },
+    edges: { smooth: { type: "continuous" } },
+    nodes: { borderWidth: 1, font: { color: "#000000" } },
+  };
+  const network = new vis.Network(container, data, options);
+
+  const status = document.getElementById("status");
+  network.on("stabilizationProgress", p => {
+    status.textContent = "Stabilizing… " + Math.round(100 * p.iterations / p.total) + "%";
+  });
+  network.on("stabilizationIterationsDone", () => {
+    status.textContent = "Ready · scroll=zoom · drag=pan · click=highlight";
+    setTimeout(() => { status.textContent = ""; }, 4000);
+  });
+
+  function fitGraph() { network.fit({ animation: { duration: 400 } }); }
+  let physicsOn = true;
+  function togglePhysics() {
+    physicsOn = !physicsOn;
+    network.setOptions({ physics: { enabled: physicsOn } });
+  }
+  function exportPng() {
+    const canvas = container.getElementsByTagName("canvas")[0];
+    if (!canvas) return;
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = "Architect_compass-graph.png";
+    a.click();
+  }
+</script>
+</body>
+</html>

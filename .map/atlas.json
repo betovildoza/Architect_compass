@@ -1,11 +1,11 @@
 {
-    "generated_at": "2026-04-16 03:11:56",
+    "generated_at": "2026-04-16 06:18:29",
     "project_name": "Architect_compass",
     "identities": [
         {
             "tech": "Python",
-            "confidence": 13,
-            "files": 13,
+            "confidence": 14,
+            "files": 14,
             "source": "stack_markers"
         }
     ],
@@ -13,9 +13,9 @@
         "": "Python"
     },
     "summary": {
-        "total_files": 13,
+        "total_files": 14,
         "relevant_files": 6,
-        "scanned_files": 0,
+        "scanned_files": 1,
         "reused_from_cache": 13
     },
     "connectivity": {
@@ -25,18 +25,29 @@
             "compass/core.py -> compass/stack_detector.py",
             "compass/core.py -> compass/stack_detector.py",
             "compass/core.py -> compass/path_resolver.py",
-            "compass/core.py -> compass/scanners/__init__.py",
-            "compass/core.py -> compass/scanners/__init__.py",
-            "compass/core.py -> compass/scanners/__init__.py",
-            "compass/core.py -> compass/scanners/__init__.py",
+            "compass/core.py -> compass/scanners/base.py",
+            "compass/core.py -> compass/scanners/base.py",
+            "compass/core.py -> compass/scanners/base.py",
+            "compass/core.py -> compass/metrics.py",
+            "compass/core.py -> compass/metrics.py",
+            "compass/core.py -> compass/metrics.py",
+            "compass/core.py -> compass/metrics.py",
+            "compass/core.py -> compass/metrics.py",
+            "compass/core.py -> compass/metrics.py",
+            "compass/core.py -> compass/metrics.py",
+            "compass/core.py -> compass/graph_emitter.py",
+            "compass/core.py -> compass/graph_emitter.py",
+            "compass/core.py -> compass/graph_emitter.py",
             "compass/scanners/html.py -> compass/scanners/base.py",
             "compass/scanners/python.py -> compass/scanners/base.py",
             "compass/scanners/regex_fallback.py -> compass/scanners/base.py",
+            "compass/scanners/regex_fallback.py -> compass/scanners/base.py",
+            "compass/scanners/treesitter.py -> compass/scanners/base.py",
             "compass/scanners/treesitter.py -> compass/scanners/base.py"
         ]
     },
     "audit": {
-        "structural_health": 46.15,
+        "structural_health": 42.86,
         "warnings": []
     },
     "anomalies": [],
@@ -62,10 +73,6 @@
             "stack": "Python",
             "orphan_reason": "no_inbound"
         },
-        ".quarantine/.legacy-v1/mapper_config.v2-pre-def-025.json": {
-            "stack": "Python",
-            "orphan_reason": "no_inbound"
-        },
         "compass/core.py": {
             "stack": "Python",
             "metadata": {
@@ -77,6 +84,29 @@
                     "hashlib",
                     "pathlib:Path",
                     "datetime:datetime"
+                ],
+                "filtered_refs": [
+                    "compass/scanners/__init__.py"
+                ]
+            }
+        },
+        "compass/graph_emitter.py": {
+            "stack": "Python",
+            "metadata": {
+                "calls": [
+                    "__future__:annotations",
+                    "json",
+                    "pathlib:Path"
+                ]
+            }
+        },
+        "compass/metrics.py": {
+            "stack": "Python",
+            "metadata": {
+                "calls": [
+                    "__future__:annotations",
+                    "json",
+                    "pathlib:Path"
                 ]
             }
         },
@@ -152,10 +182,90 @@
         "cli_roadmap.html",
         "mapper_config.example.json",
         "mapper_config.json",
-        ".quarantine/.legacy-v1/mapper_config.v2-pre-def-025.json",
         "compass/scanners/html.py",
         "compass/scanners/python.py",
         "compass/scanners/regex_fallback.py",
         "compass/scanners/treesitter.py"
-    ]
+    ],
+    "cycles": [],
+    "health": {
+        "total": 71.79,
+        "weights": {
+            "orphans": 0.4,
+            "connectivity": 0.3,
+            "dead_exports": 0.15,
+            "external_deps": 0.15
+        },
+        "orphans": {
+            "score": 42.86,
+            "count": 8,
+            "files": [
+                "architect_compass.py",
+                "cli_roadmap.html",
+                "mapper_config.example.json",
+                "mapper_config.json",
+                "compass/scanners/html.py",
+                "compass/scanners/python.py",
+                "compass/scanners/regex_fallback.py",
+                "compass/scanners/treesitter.py"
+            ]
+        },
+        "connectivity": {
+            "score": 100.0,
+            "avg_inbound": 1.64,
+            "total_inbound_edges": 23
+        },
+        "dead_exports": {
+            "score": 64.29,
+            "count": 5,
+            "files": [
+                "architect_compass.py",
+                "compass/scanners/html.py",
+                "compass/scanners/python.py",
+                "compass/scanners/regex_fallback.py",
+                "compass/scanners/treesitter.py"
+            ]
+        },
+        "external_deps": {
+            "score": 100.0,
+            "external_targets": 0,
+            "total_targets": 23
+        }
+    },
+    "delta": {
+        "previous_generated_at": "2026-04-16 06:08:32",
+        "files": {
+            "added": [],
+            "removed": []
+        },
+        "edges": {
+            "added": [],
+            "removed": [],
+            "added_count": 0,
+            "removed_count": 0
+        },
+        "orphans": {
+            "added": [],
+            "removed": []
+        },
+        "cycles": {
+            "added": [],
+            "removed": []
+        },
+        "health_delta": {
+            "total": 0.0,
+            "orphans": 0.0,
+            "connectivity": 0.0,
+            "dead_exports": 0.0,
+            "external_deps": 0.0
+        }
+    },
+    "graph_filters": {
+        "asset": 0,
+        "ignored": 1,
+        "self_edge": 0,
+        "ignore_outbound": 0,
+        "rendered_edges": 10,
+        "raw_edges": 23
+    }
 }

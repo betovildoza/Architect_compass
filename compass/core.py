@@ -14,6 +14,25 @@ from compass.scanners import (
     reset_cache as reset_scanner_cache,
     _definition_applies_to_language,
 )
+from compass.scanners.base import (
+    normalize_edge_item,
+    DEFAULT_EDGE_TYPE,
+    resolve_default_edge_type,
+)
+from compass.metrics import (
+    compute_health_score,
+    detect_cycles,
+    diff_against_previous,
+    load_previous_snapshot,
+    save_snapshot,
+    build_snapshot_name,
+    HISTORY_DIR_NAME,
+)
+from compass.graph_emitter import (
+    build_dot_content,
+    build_graph_html,
+    validate_dot_syntax,
+)
 
 
 # Mapping extensión → lenguaje. Autoritativo para decidir qué scanner usar:
@@ -295,6 +314,8 @@ class ArchitectCompass:
         # GRF-021: external services (SDKs por nombre de import).
         self.external_services = self.config.get("external_services", {}) or {}
         self._external_index = self._build_external_index(self.external_services)
+        # Sesión 6C: default_edge_type configurable (graph.default_edge_type).
+        self.default_edge_type = resolve_default_edge_type(self.config)
 
         self.map_dir.mkdir(exist_ok=True)
         self.ensure_local_template()
@@ -306,6 +327,23 @@ class ArchitectCompass:
         self.text_extensions = set(
             self.rules.get("text_extensions", [".py", ".js", ".json", ".css"])
         )
+
+        # AST-024 — extensiones de asset binario (imágenes, fonts, media).
+        # Targets que resuelven a archivos con estas extensiones NO emiten
+        # nodo ni edge en el grafo; se acumulan en `metadata.assets` del
+        # nodo fuente. Config key: `basal_rules.asset_extensions`.
+        self.asset_extensions = set(
+            ext.lower() for ext in
+            (self.rules.get("asset_extensions") or []) if ext
+        )
+        # Contadores de filtros (AST-024 + EDG-023) — para reportar al usuario
+        # cuántas edges se descartaron antes de emitir el grafo.
+        self._filter_counts = {
+            "asset": 0,          # AST-024: target con extensión binaria
+            "ignored": 0,        # AST-024/EDG-023: target matchea ignore_*
+            "self_edge": 0,      # edge src == tgt
+            "ignore_outbound": 0,  # match contra graph.ignore_outbound_patterns
+        }
 
         # Registro para unificar identidades de archivos
         self.file_registry = {}
@@ -350,7 +388,11 @@ class ArchitectCompass:
             "files": {},
             "orphans": []
         }
-        self.dot_edges = []
+        # EDG-023 — edges estructuradas: lista de tuplas
+        # `(src_rel, target_label, edge_type, kind)`. El `.dot` se renderiza
+        # desde acá en `_emit_dot_graph()` via graph_emitter.build_dot_content.
+        # `kind`: "file" | "external" | "external_legacy".
+        self._edges = []
         # GRF-021: nodos externos emitidos (label → display name). Cada
         # external_service matcheado genera un único nodo `[EXTERNAL:<label>]`,
         # con shape cylinder + color rojo. Se unifican las edges entrantes.
@@ -359,6 +401,12 @@ class ArchitectCompass:
         # dict[rel_path: list[str]]. Se emiten como `metadata.calls` del
         # nodo en atlas.files, no como edges ni nodos del grafo.
         self._metadata_calls = {}
+        # AST-024 — assets por archivo fuente: dict[rel_path: list[str]].
+        # Se agregan como `metadata.assets` del nodo source.
+        self._metadata_assets = {}
+        # AST-024 (scope extendido): refs filtradas por ignore_*.
+        # dict[rel_path: list[str]]. Se agregan como `metadata.filtered_refs`.
+        self._metadata_filtered_refs = {}
         # Lista de archivos vistos en el walk para la pasada de orphans.
         self._all_scanned_files = []
         # Cache normalizado de dynamic_deps: dict[str, list[str]].
@@ -394,13 +442,48 @@ class ArchitectCompass:
           2. `[proyecto]/.map/compass.local.json` — overrides del proyecto.
           3. `[proyecto]/.map/mapper_config.json` — legacy (se lee si el
              nuevo no existe todavía; warning al usuario).
+
+        Sesión 6C: post-merge aplica `*_remove` keys para permitir restar
+        entries del basal (ej. `asset_extensions_remove: [".svg"]`).
         """
         config = self._load_global_config()
         local_config, local_path_used = self._load_local_config()
         if local_config:
             self._merge_local_into(config, local_config)
+            self._apply_removal_directives(config, local_config)
             print(f"✅ Config local cargada: {local_path_used.name}")
         return config
+
+    # Sesión 6C — removal directives soportados en basal_rules.
+    # Formato: `<list_name>_remove: [...]` resta las entries del basal.
+    _REMOVAL_KEYS = (
+        "asset_extensions",
+        "ignore_patterns",
+        "ignore_files",
+    )
+
+    @classmethod
+    def _apply_removal_directives(cls, config, local_config):
+        """Aplica `*_remove` del basal_rules local al basal merged.
+
+        El user no puede hoy REMOVER una extensión del default (solo extender).
+        Esto permite `{"basal_rules": {"asset_extensions_remove": [".svg"]}}`
+        para proyectos que necesiten salir del default.
+        """
+        local_basal = (local_config or {}).get("basal_rules") or {}
+        if not isinstance(local_basal, dict):
+            return
+        merged_basal = config.setdefault("basal_rules", {})
+        for base_key in cls._REMOVAL_KEYS:
+            remove_key = f"{base_key}_remove"
+            removals = local_basal.get(remove_key)
+            if not isinstance(removals, list) or not removals:
+                continue
+            current = merged_basal.get(base_key) or []
+            if not isinstance(current, list):
+                continue
+            removal_set = {str(r) for r in removals if r}
+            merged_basal[base_key] = [x for x in current if x not in removal_set]
 
     def _load_global_config(self):
         base = {section: {} for section in _SCHEMA_SECTIONS}
@@ -482,6 +565,11 @@ class ArchitectCompass:
             return
         for key, val in local_section.items():
             if key.startswith("_"):
+                continue
+            # Sesión 6C — `*_remove` se procesa en `_apply_removal_directives`
+            # tras el merge; acá lo saltamos para no contaminar el basal con
+            # claves sintéticas.
+            if key.endswith("_remove"):
                 continue
             base_val = base_section.get(key)
             if isinstance(val, list) and isinstance(base_val, list):
@@ -775,6 +863,16 @@ class ArchitectCompass:
                         if file_metadata_calls:
                             self._metadata_calls[rel_path] = file_metadata_calls
                         if fingerprint is not None:
+                            # EDG-023 — guardar edge_types por target para
+                            # reproducir el label en runs cacheados. Se
+                            # extraen de `self._edges` filtrando por src.
+                            edge_types = {
+                                tgt: et for (s, tgt, et, _k) in self._edges
+                                if s == rel_path
+                            }
+                            # AST-024 — persistir assets/filtered_refs por
+                            # archivo para que el replay cacheado preserve
+                            # metadata + filter counts consistentes entre runs.
                             self.current_cache[rel_path] = {
                                 "fingerprint": fingerprint,
                                 "outbound_targets": file_outbound,
@@ -783,6 +881,13 @@ class ArchitectCompass:
                                 "is_relevant": is_relevant,
                                 "stack": file_stack,
                                 "metadata_calls": file_metadata_calls,
+                                "edge_types": edge_types,
+                                "metadata_assets": list(
+                                    self._metadata_assets.get(rel_path, [])
+                                ),
+                                "metadata_filtered_refs": list(
+                                    self._metadata_filtered_refs.get(rel_path, [])
+                                ),
                             }
                         scanned += 1
 
@@ -920,7 +1025,19 @@ class ArchitectCompass:
             )
 
         src_abs = str(file_path.resolve())
-        for raw in raw_imports:
+        # EDG-023 + AST-024 — contenedores para metadata del archivo.
+        file_assets = []
+        file_filtered_refs = []
+        for raw_item in raw_imports:
+            # EDG-023 — cada item puede ser str (legacy) o tuple
+            # `(target, edge_type)`. Normalizamos acá para que el resto del
+            # pipeline reciba siempre `(raw, edge_type)`.
+            # Sesión 6C: default_edge_type viene del config.
+            raw, edge_type = normalize_edge_item(
+                raw_item, default_edge_type=self.default_edge_type,
+            )
+            if raw is None:
+                continue
             classification = self._classify_outbound(
                 raw, language, src_abs, unify_lower,
             )
@@ -937,18 +1054,43 @@ class ArchitectCompass:
 
             final_node = classification["label"]
             if any(r.search(final_node) for r in compiled_ignore_outbound):
+                self._filter_counts["ignore_outbound"] += 1
                 continue
             if final_node == rel_path:
+                self._filter_counts["self_edge"] += 1
                 continue
+
+            # AST-024 — filtros de emisión: assets binarios y refs a archivos
+            # ignorados (por ignore_files / ignore_patterns del config).
+            # Ambos aplican SOLO para targets que resuelven a archivos del
+            # repo (`kind == "file"`). Externals y legacy pasan sin filtro.
+            # Nota: contamos UNIQUE (source, target) pairs para consistencia
+            # entre first-run y cached-replay (el cache dedupa por target).
+            if kind == "file":
+                if self._is_asset_target(final_node):
+                    if final_node not in file_assets:
+                        file_assets.append(final_node)
+                        self._filter_counts["asset"] += 1
+                    continue
+                if self._is_ignored_target(final_node):
+                    if final_node not in file_filtered_refs:
+                        file_filtered_refs.append(final_node)
+                        self._filter_counts["ignored"] += 1
+                    continue
 
             self.atlas["connectivity"]["outbound"].append(
                 f"{rel_path} -> {final_node}"
             )
-            self._register_edge(rel_path, final_node, kind)
+            self._register_edge(rel_path, final_node, kind, edge_type)
             if kind == "external":
                 self._register_external_node(final_node, classification["label_display"])
             outbound_targets.append(final_node)
             is_relevant = True
+        # AST-024 — persistir metadata de assets/filtered_refs a nivel core.
+        if file_assets:
+            self._metadata_assets[rel_path] = file_assets
+        if file_filtered_refs:
+            self._metadata_filtered_refs[rel_path] = file_filtered_refs
         return (
             is_relevant, outbound_targets, inbound_patterns,
             tech_scores_delta, metadata_calls,
@@ -962,26 +1104,62 @@ class ArchitectCompass:
         matches y tech_scores que ya conocíamos. Esto asume que el config
         (patterns, ignore_outbound, unify) no cambió: si cambió, el caller
         debe haber llamado `force_full=True` o haber invalidado el cache.
+
+        EDG-023: los caches viejos no tienen `edge_types` — default a
+        DEFAULT_EDGE_TYPE para cada target. En el próximo scan-full el
+        cache se regenera con edge_types reales.
+
+        AST-024: los filtros de asset/ignored se aplican también al replay
+        cacheado — si el usuario agregó `asset_extensions` al config y los
+        targets viejos incluyen imágenes, el cache_invalidation por
+        `_config_fingerprint` debería haber invalidado esto ya; pero si
+        no (caso edge), filtramos defensivamente.
         """
         outbound_targets = cached.get("outbound_targets") or []
         inbound_patterns = cached.get("inbound_patterns") or []
         tech_delta = cached.get("tech_scores") or {}
         metadata_calls = cached.get("metadata_calls") or []
+        edge_types = cached.get("edge_types") or {}
+        cached_assets = cached.get("metadata_assets") or []
+        cached_filtered = cached.get("metadata_filtered_refs") or []
         is_relevant = bool(cached.get("is_relevant"))
+
+        # AST-024 — restaurar metadata + contar como filtros (consistencia
+        # con el first-run). No re-clasificamos (ya lo hizo el run original),
+        # solo reflejamos la señal en `_filter_counts` y metadata.
+        if cached_assets:
+            self._metadata_assets[rel_path] = list(cached_assets)
+            self._filter_counts["asset"] += len(cached_assets)
+        if cached_filtered:
+            self._metadata_filtered_refs[rel_path] = list(cached_filtered)
+            self._filter_counts["ignored"] += len(cached_filtered)
 
         for pat in inbound_patterns:
             self.atlas["connectivity"]["inbound"].append(f"{rel_path} <- {pat}")
+        kept_targets = []
         for tgt in outbound_targets:
-            self.atlas["connectivity"]["outbound"].append(f"{rel_path} -> {tgt}")
             # Re-clasificar al emitir el edge: si el target sigue siendo un
             # external service declarado, emitir como external; si es path
             # del repo, emitir como file; si no, tratarlo como external
             # legacy (no debería pasar si el config no cambió — pero si
             # cambió, el cache ya fue invalidado antes de llegar acá).
             kind, display = self._reclassify_cached_target(tgt)
-            self._register_edge(rel_path, tgt, kind)
+            # AST-024 — filtros defensivos también en replay.
+            if kind == "file":
+                if self._is_asset_target(tgt):
+                    self._filter_counts["asset"] += 1
+                    self._metadata_assets.setdefault(rel_path, []).append(tgt)
+                    continue
+                if self._is_ignored_target(tgt):
+                    self._filter_counts["ignored"] += 1
+                    self._metadata_filtered_refs.setdefault(rel_path, []).append(tgt)
+                    continue
+            self.atlas["connectivity"]["outbound"].append(f"{rel_path} -> {tgt}")
+            et = edge_types.get(tgt, self.default_edge_type)
+            self._register_edge(rel_path, tgt, kind, et)
             if kind == "external":
                 self._register_external_node(tgt, display)
+            kept_targets.append(tgt)
         for name, delta in tech_delta.items():
             tech_scores[name] = tech_scores.get(name, 0) + delta
         if metadata_calls:
@@ -1129,20 +1307,37 @@ class ArchitectCompass:
         #    fuente para no perder la señal.
         return {"kind": "discard", "label": cleaned}
 
-    def _register_edge(self, src_rel, target_label, kind):
-        """Agrega una línea `.dot` para el edge src → target.
+    def _register_edge(self, src_rel, target_label, kind, edge_type=None):
+        """EDG-023 — persiste un edge estructurado.
 
-        El color del edge y su estilo dependen del tipo:
-            file     → color="red"        (comportamiento existente)
-            external → color="#cc4400"    (naranja para SDKs)
-            external_legacy → color="red" (compat con cache viejo)
+        Guarda `(src, target, edge_type, kind)` en `self._edges`. El
+        rendering final al `.dot` lo hace `graph_emitter.build_dot_content`
+        con colores por `edge_type` y kind (GRF-013).
         """
-        color = "red"
-        if kind == "external":
-            color = "#cc4400"
-        self.dot_edges.append(
-            f'    "{src_rel}" -> "{target_label}" [label="calls", color="{color}"];'
-        )
+        et = edge_type or self.default_edge_type
+        self._edges.append((src_rel, target_label, et, kind))
+
+    def _is_asset_target(self, rel_path):
+        """AST-024 — True si el target tiene una extensión de asset binario."""
+        if not self.asset_extensions:
+            return False
+        ext = os.path.splitext(rel_path)[1].lower()
+        return ext in self.asset_extensions
+
+    def _is_ignored_target(self, rel_path):
+        """AST-024 (scope extendido) — True si el target matchea ignore_*.
+
+        Respeta `ignore_files` (path exacto) e `ignore_patterns` (globs
+        fnmatch) también en la emisión de edges, no sólo en el índice de
+        scan. Resuelve el hallazgo 2026-04-16 documentado en PLAN AST-024.
+        """
+        if rel_path in self.ignore_files:
+            return True
+        basename = os.path.basename(rel_path)
+        for pattern in self.ignore_patterns:
+            if fnmatch.fnmatch(basename, pattern) or fnmatch.fnmatch(rel_path, pattern):
+                return True
+        return False
 
     def _register_external_node(self, node_label, display_label):
         """Registra un nodo `[EXTERNAL:X]` para renderizarlo con shape/color.
@@ -1214,55 +1409,236 @@ class ArchitectCompass:
     # ------------------------------------------------------------------
     # Finalize
     # ------------------------------------------------------------------
+    # Estructura de finalize (Sesión 6B):
+    #   1. _attach_metadata_calls()       → atlas.files[*].metadata.*         (GRF-021 + AST-024)
+    #   2. _compute_metrics()             → health + cycles + delta           (SES 6A — SCR-009, CYC-011, DIF-010)
+    #   3. _emit_dot_graph()              → connectivity.dot                  (GRF-013 + EDG-023 + AST-024)
+    #   4. _emit_graph_html()             → graph.html (Viz.js wrapper)       (GRF-013)
+    #   5. _write_atlas()                 → atlas.json
+    #   6. _rotate_history()              → .map/history/YYYYmmdd_HHMM_*.json (DIF-010)
+    #   7. _persist_fingerprints()        → .map/fingerprints.json            (INC-008)
+    #   8. _update_feedback_log()         → .map/feedback.log
+    #   9. _print_summary()               → stdout
+    #
+    # Orden post-6B: los cycles (CYC-011) se computan ANTES de emitir el
+    # `.dot` — GRF-013 colorea nodos en ciclos con su shape especial, así
+    # que necesita `atlas.cycles` poblado antes de dibujar. `metadata.assets`
+    # también se adjunta antes para que el atlas salga consistente.
+    # La emisión del `.dot` + `.html` se delega a compass/graph_emitter.py —
+    # funciones puras stdlib que espejan el patrón de compass/metrics.py.
     def finalize(self):
-        dot_content = (
-            "digraph G {\n"
-            "    rankdir=LR;\n"
-            "    concentrate=true;\n"
-            "    node [shape=box, style=rounded, fontname=\"Arial\"];\n"
+        self._attach_metadata_calls()
+        self._compute_metrics()
+        self._emit_dot_graph()
+        self._emit_graph_html()
+        self._write_atlas()
+        self._rotate_history()
+        self._persist_fingerprints()
+        self._update_feedback_log()
+        self._print_summary()
+
+    def _collect_graph_nodes(self):
+        """Devuelve set de rel_paths que deben renderizarse en el grafo.
+
+        Incluye (a) todos los archivos con edges entrantes o salientes,
+        (b) todos los orphans listados (para que aparezcan visualmente
+        aunque no tengan edges). NO incluye externals — esos se emiten
+        como cilindros fuera de clusters.
+        """
+        nodes = set()
+        for (src, tgt, _et, kind) in self._edges:
+            nodes.add(src)
+            if kind == "file":
+                nodes.add(tgt)
+        # Orphans: presentes en atlas.orphans pero quizás sin edges.
+        for orphan in self.atlas.get("orphans", []):
+            nodes.add(orphan)
+        return nodes
+
+    def _emit_dot_graph(self):
+        """Paso 1 — emite `connectivity.dot` profesional (GRF-013 + EDG-023).
+
+        Clustering por directorio top-level, colores por kind de nodo
+        (normal/orphan/cycle) y colores/labels por edge_type.
+        """
+        nodes = self._collect_graph_nodes()
+        cycles = self.atlas.get("cycles", []) or []
+        dot_content = build_dot_content(
+            nodes=nodes,
+            edges=self._edges,
+            external_nodes=self._external_nodes,
+            orphans=self.atlas.get("orphans", []),
+            cycles=cycles,
+            graph_config=self.graph_rules,
         )
-
-        # GRF-021: emitir nodos [EXTERNAL:*] con shape distinto.
-        for label, display in self._external_nodes.items():
-            safe_label = label.replace('"', '\\"')
-            dot_content += (
-                f'    "{safe_label}" '
-                f'[label="{display}", shape=cylinder, '
-                f'style=filled, fillcolor="#ffcccc", color="#cc0000", '
-                f'fontname="Arial"];\n'
-            )
-
-        for edge in sorted(set(self.dot_edges)):
-            dot_content += edge + "\n"
-        dot_content += "}"
-
+        # Cache del `.dot` para que _emit_graph_html lo embeba.
+        self._dot_content = dot_content
         with open(self.map_dir / "connectivity.dot", "w", encoding="utf-8") as f:
             f.write(dot_content)
+        # Smoke check — dejamos el resultado en atlas.audit.warnings si falla.
+        ok, msg = validate_dot_syntax(dot_content)
+        if not ok:
+            self.atlas["audit"]["warnings"].append(f"dot syntax: {msg}")
+        # EDG-023 + AST-024 — exponer filter_counts en atlas para observabilidad.
+        # `rendered_edges` = edges únicos en el `.dot` (deduplicados por
+        # (src, tgt, edge_type)). `raw_edges` = lista completa pre-dedup.
+        unique_edges = {(s, t, et) for (s, t, et, _k) in self._edges}
+        self.atlas["graph_filters"] = dict(self._filter_counts)
+        self.atlas["graph_filters"]["rendered_edges"] = len(unique_edges)
+        self.atlas["graph_filters"]["raw_edges"] = len(self._edges)
 
-        # GRF-021: incluir metadata.calls en atlas.files.
+    def _emit_graph_html(self):
+        """Paso 2 — emite `graph.html` universal (Sesión 6C).
+
+        Template vis-network externalizado en `compass/templates/graph.html.tpl`.
+        Se emite SIEMPRE, para cualquier proyecto/stack. Zoom/pan/drag nativos.
+        """
+        dot_content = getattr(self, "_dot_content", "") or ""
+        cycles = self.atlas.get("cycles", []) or []
+        html = build_graph_html(
+            dot_content=dot_content,
+            project_name=self.atlas.get("project_name", "project"),
+            generated_at=self.atlas.get("generated_at", ""),
+            node_count=len(self._collect_graph_nodes()),
+            edge_count=len(self._edges),
+            cycle_count=len(cycles),
+            edges=self._edges,
+            external_nodes=self._external_nodes,
+            orphans=self.atlas.get("orphans", []),
+            cycles=cycles,
+            graph_config=self.graph_rules,
+        )
+        with open(self.map_dir / "graph.html", "w", encoding="utf-8") as f:
+            f.write(html)
+
+    def _attach_metadata_calls(self):
+        """Paso 3 — copia `_metadata_calls/_metadata_assets/_metadata_filtered_refs`
+        a `atlas.files[*].metadata.*` (GRF-021 + AST-024).
+        """
         for rel_path, calls in self._metadata_calls.items():
-            node = self.atlas["files"].get(rel_path)
-            if node is None:
-                continue
-            if "metadata" not in node:
-                node["metadata"] = {}
-            node["metadata"]["calls"] = calls
+            self._ensure_metadata(rel_path)["calls"] = calls
+        # AST-024 — assets binarios referenciados pero no emitidos como edges.
+        for rel_path, assets in self._metadata_assets.items():
+            # dedup + orden estable
+            seen = []
+            for a in assets:
+                if a not in seen:
+                    seen.append(a)
+            self._ensure_metadata(rel_path)["assets"] = seen
+        # AST-024 (scope extendido) — refs a archivos ignorados por config.
+        for rel_path, refs in self._metadata_filtered_refs.items():
+            seen = []
+            for r in refs:
+                if r not in seen:
+                    seen.append(r)
+            self._ensure_metadata(rel_path)["filtered_refs"] = seen
 
+    def _ensure_metadata(self, rel_path):
+        """Garantiza que `atlas.files[rel_path]["metadata"]` exista y devuelve el dict."""
+        node = self.atlas["files"].get(rel_path)
+        if node is None:
+            # El archivo puede no estar en atlas.files si el walk no lo tocó
+            # (ej. nunca fue escaneado pero aparece como target). Creamos
+            # el nodo mínimo para no perder la metadata.
+            node = {"stack": self.resolve_stack_for(rel_path)}
+            self.atlas["files"][rel_path] = node
+        if "metadata" not in node:
+            node["metadata"] = {}
+        return node["metadata"]
+
+    def _compute_metrics(self):
+        """Paso 3 — SCR-009 + CYC-011 + DIF-010. Popula `atlas`.
+
+        Orden importante:
+          a. cycles — info-only, alimenta el diff pero NO el score (PLAN).
+          b. health — independiente de cycles.
+          c. delta  — contra último snapshot de .map/history/.
+
+        El snapshot nuevo se persiste en `_rotate_history()` (paso 5),
+        DESPUÉS de que `atlas` ya tiene health/cycles; así el snapshot
+        del próximo run puede diffear correctamente.
+        """
+        # CYC-011
+        repo_paths = list(self.atlas.get("files", {}).keys())
+        outbound_edges = self.atlas["connectivity"]["outbound"]
+        cycles = detect_cycles(outbound_edges, repo_paths)
+        self.atlas["cycles"] = cycles
+
+        # SCR-009 — se calcula con la foto actual del atlas (cycles ya está).
+        # Sesión 6C: pesos opcionalmente overrideables vía scoring_weights.
+        total_score, breakdown, weights_warning = compute_health_score(
+            self.atlas, self.config,
+        )
+        self.atlas["health"] = breakdown
+        # Back-compat: también dejamos el total top-level para consumidores
+        # que quieran leerlo rápido.
+        self.atlas["health"]["total"] = total_score
+        if weights_warning:
+            self.atlas["audit"]["warnings"].append(weights_warning)
+        # audit.structural_health (existente desde la v1) NO se toca: es la
+        # métrica relevant/total que ya usan scripts y el log. El nuevo
+        # health coexiste.
+
+        # DIF-010 — cargar snapshot previo y calcular delta. Fallback al
+        # `.map/atlas.json` pre-6A para sembrar el primer delta cuando
+        # history/ todavía no tiene entradas.
+        history_dir = self.map_dir / HISTORY_DIR_NAME
+        fallback_atlas = self.map_dir / "atlas.json"
+        previous = load_previous_snapshot(history_dir, fallback_atlas)
+        # No diffear contra el run actual (mismo generated_at — típico de
+        # la segunda invocación sin cambios si el fallback se re-lee a sí
+        # mismo; acá nunca pasa porque fallback lee atlas.json ANTES de
+        # que lo sobreescribamos, pero defensivo igual).
+        if previous and previous.get("generated_at") == self.atlas.get("generated_at"):
+            previous = None
+        delta = diff_against_previous(self.atlas, previous)
+        if delta is not None:
+            self.atlas["delta"] = delta
+
+    def _write_atlas(self):
+        """Paso 4 — escribe `.map/atlas.json`."""
         with open(self.map_dir / "atlas.json", "w", encoding="utf-8") as f:
             json.dump(self.atlas, f, indent=4, ensure_ascii=False)
 
-        # INC-008: persistir fingerprints + per-file cache para el próximo run.
-        self._persist_fingerprints()
+    def _rotate_history(self):
+        """Paso 5 — DIF-010: persiste snapshot y rota a últimas 10 runs.
 
+        El snapshot es el atlas tal como se escribió — incluye health,
+        cycles, stack_map. No incluye delta (evita recursion de deltas).
+        """
+        history_dir = self.map_dir / HISTORY_DIR_NAME
+        snapshot_name = build_snapshot_name(
+            self.atlas["generated_at"], self.atlas["project_name"],
+        )
+        # Copia sin `delta` — el histórico es self-contained.
+        snapshot = {k: v for k, v in self.atlas.items() if k != "delta"}
+        save_snapshot(history_dir, snapshot_name, snapshot)
+
+    def _update_feedback_log(self):
+        """Paso 7 — prepend al `.map/feedback.log`."""
         log_path = self.map_dir / "feedback.log"
-        health = self.atlas["audit"]["structural_health"]
+        structural = self.atlas["audit"]["structural_health"]
+        health_total = self.atlas.get("health", {}).get("total", 0)
+        cycles_count = len(self.atlas.get("cycles", []) or [])
 
         new_entry = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] COMPASS RUN\n"
-        new_entry += f"  - Salud Estructural: {health}%\n"
+        new_entry += f"  - Salud Estructural (relevant/total): {structural}%\n"
+        new_entry += f"  - Health Score (breakdown): {health_total}\n"
         new_entry += (
             f"  - Archivos: {self.atlas['summary']['total_files']} "
             f"(Relevantes: {self.atlas['summary']['relevant_files']})\n"
         )
+        new_entry += f"  - Ciclos detectados: {cycles_count}\n"
+        if "delta" in self.atlas:
+            delta = self.atlas["delta"]
+            hd = delta.get("health_delta", {})
+            new_entry += (
+                f"  - Delta vs run previo: total={hd.get('total', 0):+}, "
+                f"files +{len(delta['files']['added'])}/"
+                f"-{len(delta['files']['removed'])}, "
+                f"orphans +{len(delta['orphans']['added'])}/"
+                f"-{len(delta['orphans']['removed'])}\n"
+            )
         new_entry += "=" * 40 + "\n\n"
 
         old_content = ""
@@ -1272,14 +1648,55 @@ class ArchitectCompass:
         with open(log_path, "w", encoding="utf-8") as f:
             f.write(new_entry + old_content)
 
-        print(f"\n✨ Architect Compass finalizado.")
-        print(f"📊 Salud Estructural: {health}%")
+    def _print_summary(self):
+        """Paso 8 — stdout summary."""
+        structural = self.atlas["audit"]["structural_health"]
+        health = self.atlas.get("health", {})
+        total = health.get("total", 0)
+        cycles = self.atlas.get("cycles", []) or []
 
-        if health < 80.0:
+        print(f"\n✨ Architect Compass finalizado.")
+        print(f"📊 Salud Estructural (relevant/total): {structural}%")
+        print(f"📈 Health Score: {total}/100")
+        bd = {k: health.get(k, {}).get("score") for k in
+              ("orphans", "connectivity", "dead_exports", "external_deps")}
+        print(
+            f"    orphans={bd['orphans']} | connectivity={bd['connectivity']} | "
+            f"dead_exports={bd['dead_exports']} | external_deps={bd['external_deps']}"
+        )
+
+        if cycles:
+            print(f"🔁 Ciclos detectados: {len(cycles)}")
+            for c in cycles[:5]:
+                print(f"    {' → '.join(c)}")
+            if len(cycles) > 5:
+                print(f"    … ({len(cycles) - 5} más en atlas.json[\"cycles\"])")
+
+        # EDG-023 + AST-024 — reportar conteos de filtros aplicados al grafo.
+        fc = self._filter_counts
+        filtered_total = (
+            fc["asset"] + fc["ignored"] + fc["self_edge"] + fc["ignore_outbound"]
+        )
+        if filtered_total:
+            print(
+                f"🔕 Edges filtradas del grafo: total={filtered_total} "
+                f"(assets={fc['asset']}, ignored={fc['ignored']}, "
+                f"self={fc['self_edge']}, patterns={fc['ignore_outbound']})"
+            )
+
+        if "delta" in self.atlas:
+            delta = self.atlas["delta"]
+            hd = delta["health_delta"]
+            print(
+                f"🔀 Delta vs run previo ({delta.get('previous_generated_at')}): "
+                f"health {hd['total']:+} "
+                f"(files +{len(delta['files']['added'])}/"
+                f"-{len(delta['files']['removed'])}, "
+                f"orphans +{len(delta['orphans']['added'])}/"
+                f"-{len(delta['orphans']['removed'])})"
+            )
+
+        if structural < 80.0:
             print(" 💡 SUGERENCIA (ES):")
             print(" La salud estructural es baja porque faltan reglas específicas.")
             print(" Configurá '.map/compass.local.json' usando el template")
-            print("-" * 30)
-            print(" 💡 SUGGESTION (EN):")
-            print(" Low structural health. The project needs specific rules.")
-            print(" Set up '.map/compass.local.json' from the template")

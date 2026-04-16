@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "generated_at": "2026-04-16 03:11:56",
-  "config_fingerprint": "4cd28d95e21c9a17ee7b1cf42cd219f43eec73c7131cda1ae7e57efc0d5953be",
+  "generated_at": "2026-04-16 06:18:29",
+  "config_fingerprint": "73ee3cfd316dac9484f690a071784525f4a56d4837d8fda70f70a1a6f8fde1cc",
   "files": {
     "architect_compass.py": {
       "fingerprint": "5320e4205346dff59f23592bc2d3d7b358be1d51a4bc083883f855f764ae4dfd",
@@ -14,7 +14,12 @@
       "stack": "Python",
       "metadata_calls": [
         "sys"
-      ]
+      ],
+      "edge_types": {
+        "compass/core.py": "import"
+      },
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
     },
     "cli_roadmap.html": {
       "fingerprint": "3abdcb393ef52294985ea1a46df98ff71a15da7361b664e443a6ab474a855a98",
@@ -23,7 +28,10 @@
       "tech_scores": {},
       "is_relevant": false,
       "stack": "Python",
-      "metadata_calls": []
+      "metadata_calls": [],
+      "edge_types": {},
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
     },
     "mapper_config.example.json": {
       "fingerprint": "9e4565da42a97209ab73fcc73eefb4c8700c28db08c3246297a246045640a4b9",
@@ -32,36 +40,42 @@
       "tech_scores": {},
       "is_relevant": false,
       "stack": "Python",
-      "metadata_calls": []
+      "metadata_calls": [],
+      "edge_types": {},
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
     },
     "mapper_config.json": {
-      "fingerprint": "cfe02606a42cf14f36318950765d67999923476d819f181c6e978ab9d1a967aa",
+      "fingerprint": "7dffb83b5a3a2a332e7efddf3293adb06767845d5bbdd2d8e3e041b6ac10e674",
       "outbound_targets": [],
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": false,
       "stack": "Python",
-      "metadata_calls": []
-    },
-    ".quarantine/.legacy-v1/mapper_config.v2-pre-def-025.json": {
-      "fingerprint": "eb515f0c879e7dfd74c8619dc081d50c0bc88e0d0629a60f244ca6ec68fbea56",
-      "outbound_targets": [],
-      "inbound_patterns": [],
-      "tech_scores": {},
-      "is_relevant": false,
-      "stack": "Python",
-      "metadata_calls": []
+      "metadata_calls": [],
+      "edge_types": {},
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
     },
     "compass/core.py": {
-      "fingerprint": "4bac636a8c92ba63e3466e6cb18024a493396d4580314c10209e3b266f6d5d9d",
+      "fingerprint": "fb6e746d941c41add7b52bebc203a087ae630e1e2d9a82446c8ec44be696a5c6",
       "outbound_targets": [
         "compass/stack_detector.py",
         "compass/stack_detector.py",
         "compass/path_resolver.py",
-        "compass/scanners/__init__.py",
-        "compass/scanners/__init__.py",
-        "compass/scanners/__init__.py",
-        "compass/scanners/__init__.py"
+        "compass/scanners/base.py",
+        "compass/scanners/base.py",
+        "compass/scanners/base.py",
+        "compass/metrics.py",
+        "compass/metrics.py",
+        "compass/metrics.py",
+        "compass/metrics.py",
+        "compass/metrics.py",
+        "compass/metrics.py",
+        "compass/metrics.py",
+        "compass/graph_emitter.py",
+        "compass/graph_emitter.py",
+        "compass/graph_emitter.py"
       ],
       "inbound_patterns": [],
       "tech_scores": {},
@@ -75,7 +89,50 @@
         "hashlib",
         "pathlib:Path",
         "datetime:datetime"
+      ],
+      "edge_types": {
+        "compass/stack_detector.py": "import",
+        "compass/path_resolver.py": "import",
+        "compass/scanners/base.py": "import",
+        "compass/metrics.py": "import",
+        "compass/graph_emitter.py": "import"
+      },
+      "metadata_assets": [],
+      "metadata_filtered_refs": [
+        "compass/scanners/__init__.py"
       ]
+    },
+    "compass/graph_emitter.py": {
+      "fingerprint": "1a4aff913b48de1c947c82751644fb7b3683586ddc0bda8375c83e0caaf7ce50",
+      "outbound_targets": [],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": false,
+      "stack": "Python",
+      "metadata_calls": [
+        "__future__:annotations",
+        "json",
+        "pathlib:Path"
+      ],
+      "edge_types": {},
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
+    },
+    "compass/metrics.py": {
+      "fingerprint": "c90476469861a128250b4f38149c7ddd61871be8fc18bbc7f0f0a9d487ef7977",
+      "outbound_targets": [],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": false,
+      "stack": "Python",
+      "metadata_calls": [
+        "__future__:annotations",
+        "json",
+        "pathlib:Path"
+      ],
+      "edge_types": {},
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
     },
     "compass/path_resolver.py": {
       "fingerprint": "df20bc8815f7e6d1a7543a846ba7c39545d073e91b7e8b5c7927e8ac8358f15c",
@@ -88,7 +145,10 @@
         "os",
         "re",
         "pathlib:Path"
-      ]
+      ],
+      "edge_types": {},
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
     },
     "compass/stack_detector.py": {
       "fingerprint": "fa96711f8d125bb26557cbe0381e4035b12b5755d45394dfb466c8489d7b2f0d",
@@ -102,10 +162,13 @@
         "fnmatch",
         "collections:Counter",
         "pathlib:Path"
-      ]
+      ],
+      "edge_types": {},
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
     },
     "compass/scanners/base.py": {
-      "fingerprint": "992420f620f89286adeba472b493a817d1e5cb7d48bce3e536985756051e5361",
+      "fingerprint": "1a45e965118c2af930ca72b9bd84f01abc4349bc6a3f30d728af9203241f4e89",
       "outbound_targets": [],
       "inbound_patterns": [],
       "tech_scores": {},
@@ -114,10 +177,13 @@
       "metadata_calls": [
         "abc:ABC",
         "abc:abstractmethod"
-      ]
+      ],
+      "edge_types": {},
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
     },
     "compass/scanners/html.py": {
-      "fingerprint": "09cd4a52653a5cea5d9b1be60e9e3956ba66a9e137b1aa0159f099d75a03e4fc",
+      "fingerprint": "1b2c27260f435e222ca8425d7c9f9d45ba0a649db21507bf58ee2276ea3f6e70",
       "outbound_targets": [
         "compass/scanners/base.py"
       ],
@@ -127,10 +193,15 @@
       "stack": "Python",
       "metadata_calls": [
         "re"
-      ]
+      ],
+      "edge_types": {
+        "compass/scanners/base.py": "import"
+      },
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
     },
     "compass/scanners/python.py": {
-      "fingerprint": "57d494fc923ad0498443911608a6707b61779b920e6426f5e12f133b75f56819",
+      "fingerprint": "7b9e8f927fb4539af51c55b2c5f7cc480ab96a33e8e346d949a32c1460367833",
       "outbound_targets": [
         "compass/scanners/base.py"
       ],
@@ -140,11 +211,17 @@
       "stack": "Python",
       "metadata_calls": [
         "ast"
-      ]
+      ],
+      "edge_types": {
+        "compass/scanners/base.py": "import"
+      },
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
     },
     "compass/scanners/regex_fallback.py": {
-      "fingerprint": "6695d70b5d1274bb9a3c444e83be1cc57b75794909ce49800ff3b6b58434f453",
+      "fingerprint": "81af6f3b7cfbee046745c0a63695435b838782405bbc7db6a1611cc693c45791",
       "outbound_targets": [
+        "compass/scanners/base.py",
         "compass/scanners/base.py"
       ],
       "inbound_patterns": [],
@@ -153,11 +230,17 @@
       "stack": "Python",
       "metadata_calls": [
         "re"
-      ]
+      ],
+      "edge_types": {
+        "compass/scanners/base.py": "import"
+      },
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
     },
     "compass/scanners/treesitter.py": {
-      "fingerprint": "b5a9127cfdb958af7ed9cd89126d92ab1e09993ffd723767d6ebeeb1f8a9d587",
+      "fingerprint": "6e3e10bb0c17aafd00a2cc30681a7e5c9fd939ab4803dcb232a43fe79f9d3fa5",
       "outbound_targets": [
+        "compass/scanners/base.py",
         "compass/scanners/base.py"
       ],
       "inbound_patterns": [],
@@ -166,7 +249,12 @@
       "stack": "Python",
       "metadata_calls": [
         "importlib"
-      ]
+      ],
+      "edge_types": {
+        "compass/scanners/base.py": "import"
+      },
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
     }
   }
 }

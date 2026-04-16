@@ -18,16 +18,32 @@ está disponible, el scanner ni siquiera se construye.
 
 import importlib
 
-from compass.scanners.base import Scanner as _BaseScanner
+from compass.scanners.base import Scanner as _BaseScanner, DEFAULT_EDGE_TYPE
 
 
-# Tipos de nodo del árbol AST tree-sitter por lenguaje. Lista acumulable a
-# medida que se verifica el comportamiento sobre proyectos reales.
+# EDG-023 — mapping node_type → edge_type por lenguaje. Lista acumulable.
+# Conservador: si un node type no aparece acá, cae al DEFAULT_EDGE_TYPE.
+_NODE_TYPE_EDGE = {
+    "php": {
+        "include_expression":      "include",
+        "include_once_expression": "include",
+        "require_expression":      "require",
+        "require_once_expression": "require",
+    },
+    "javascript": {
+        "import_statement": "import",
+        "call_expression":  "use",   # fetch/axios se capturan pero el AST no distingue sin lookup
+    },
+    "typescript": {
+        "import_statement": "import",
+        "call_expression":  "use",
+    },
+}
+
+
+# Tipos de nodo del árbol AST tree-sitter por lenguaje (derivado del mapping).
 _NODE_TYPES_BY_LANGUAGE = {
-    "php": ("include_expression", "require_expression",
-            "include_once_expression", "require_once_expression"),
-    "javascript": ("import_statement", "call_expression"),
-    "typescript": ("import_statement", "call_expression"),
+    lang: tuple(mapping.keys()) for lang, mapping in _NODE_TYPE_EDGE.items()
 }
 
 
@@ -68,9 +84,8 @@ class TreeSitterScanner(_BaseScanner):
         lang_obj = Language(language_fn())
         self._parser = Parser(lang_obj)
         self._language = (language or "").lower()
-        self._node_types = set(
-            _NODE_TYPES_BY_LANGUAGE.get(self._language, ())
-        )
+        self._edge_map = dict(_NODE_TYPE_EDGE.get(self._language, {}))
+        self._node_types = set(self._edge_map.keys())
 
     def extract_imports(self, file_path):
         if not self._node_types:
@@ -95,6 +110,8 @@ class TreeSitterScanner(_BaseScanner):
             text = source_bytes[node.start_byte:node.end_byte].decode(
                 "utf-8", errors="ignore"
             )
-            out.append(text)
+            # EDG-023 — edge_type según node_type; fallback a DEFAULT.
+            edge_type = self._edge_map.get(node.type, DEFAULT_EDGE_TYPE)
+            out.append((text, edge_type))
         for child in node.children:
             self._walk(child, source_bytes, out)
