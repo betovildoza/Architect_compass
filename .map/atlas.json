@@ -1,11 +1,11 @@
 {
-    "generated_at": "2026-04-16 01:43:44",
+    "generated_at": "2026-04-16 03:11:56",
     "project_name": "Architect_compass",
     "identities": [
         {
             "tech": "Python",
-            "confidence": 12,
-            "files": 12,
+            "confidence": 13,
+            "files": 13,
             "source": "stack_markers"
         }
     ],
@@ -13,10 +13,10 @@
         "": "Python"
     },
     "summary": {
-        "total_files": 12,
+        "total_files": 13,
         "relevant_files": 6,
         "scanned_files": 0,
-        "reused_from_cache": 12
+        "reused_from_cache": 13
     },
     "connectivity": {
         "inbound": [],
@@ -36,7 +36,7 @@
         ]
     },
     "audit": {
-        "structural_health": 50.0,
+        "structural_health": 46.15,
         "warnings": []
     },
     "anomalies": [],
@@ -59,6 +59,10 @@
             "orphan_reason": "no_inbound"
         },
         "mapper_config.json": {
+            "stack": "Python",
+            "orphan_reason": "no_inbound"
+        },
+        ".quarantine/.legacy-v1/mapper_config.v2-pre-def-025.json": {
             "stack": "Python",
             "orphan_reason": "no_inbound"
         },
@@ -148,6 +152,7 @@
         "cli_roadmap.html",
         "mapper_config.example.json",
         "mapper_config.json",
+        ".quarantine/.legacy-v1/mapper_config.v2-pre-def-025.json",
         "compass/scanners/html.py",
         "compass/scanners/python.py",
         "compass/scanners/regex_fallback.py",

@@ -187,149 +187,67 @@
   },
   "definitions": [
     {
-      "name": "AI-Agent-Framework",
-      "stack": "AI-Agent-Framework",
+      "name": "Python-Patterns",
       "language": "python",
       "tier": "regex_fallback",
+      "_comment": "Python usa PythonScanner (stdlib ast) para outbound — estas patterns NO se aplican al scanner primario, quedan como fallback documental. Los inbound siguen siendo útiles si algún día se agregan patterns específicas de Python (ej. @app.route). Hoy vacío porque la identidad 'Python' ya la resuelve stack_markers + StackDetector; duplicar aquí genera ruido en tech_scores (DEF-025).",
       "patterns": {
-        "inbound": [
-          "@app\\.route",
-          "async def",
-          "def tool_",
-          "def skill_"
-        ],
-        "outbound": [
-          "ChromaDB",
-          "mcp_client",
-          "openai",
-          "anthropic",
-          "requests\\.post",
-          "bridge_leer"
-        ]
+        "inbound": [],
+        "outbound": []
       }
     },
     {
-      "name": "Tauri-Desktop-App-JS",
-      "stack": "Tauri-Desktop-App",
-      "language": "javascript",
-      "tier": "regex_fallback",
-      "patterns": {
-        "inbound": [
-          "invoke\\(",
-          "listen\\(",
-          "emit\\("
-        ],
-        "outbound": [
-          "@tauri-apps/api",
-          "window.__TAURI__"
-        ]
-      }
-    },
-    {
-      "name": "Tauri-Desktop-App-Rust",
-      "stack": "Tauri-Desktop-App",
-      "language": "rust",
-      "tier": "regex_fallback",
-      "patterns": {
-        "inbound": [
-          "tauri::command"
-        ],
-        "outbound": [
-          "command!",
-          "manage!"
-        ]
-      }
-    },
-    {
-      "name": "WordPress-Development",
-      "stack": "WordPress-Development",
+      "name": "PHP-Patterns",
       "language": "php",
       "tier": "regex_fallback",
-      "patterns": {
-        "inbound": [
-          "add_action\\(",
-          "add_filter\\(",
-          "do_action\\(",
-          "register_rest_route"
-        ],
-        "outbound": [
-          "wp_enqueue_script\\s*\\(\\s*'[^']+'\\s*,\\s*[A-Z_]+\\s*\\.\\s*'([^']+)'",
-          "wp_enqueue_style\\s*\\(\\s*'[^']+'\\s*,\\s*[A-Z_]+\\s*\\.\\s*'([^']+)'",
-          "require_once\\s+[A-Z_]+\\s*\\.\\s*'([^']+)'"
-        ]
-      }
-    },
-    {
-      "name": "Modern-Web-Stack-JS",
-      "stack": "Modern-Web-Stack",
-      "language": "javascript",
-      "tier": "regex_fallback",
-      "patterns": {
-        "inbound": [
-          "\"use client\"",
-          "export default function",
-          "const (.*) = (.*) =>"
-        ],
-        "outbound": [
-          "import .* from",
-          "fetch\\(",
-          "invoke\\(",
-          "supabase\\.",
-          "axios",
-          "from '@/(.*)'"
-        ]
-      }
-    },
-    {
-      "name": "Modern-Web-Stack-TS",
-      "stack": "Modern-Web-Stack",
-      "language": "typescript",
-      "tier": "regex_fallback",
-      "patterns": {
-        "inbound": [
-          "\"use client\"",
-          "export default function",
-          "const (.*) = (.*) =>"
-        ],
-        "outbound": [
-          "import .* from",
-          "fetch\\(",
-          "invoke\\(",
-          "supabase\\.",
-          "axios",
-          "from '@/(.*)'"
-        ]
-      }
-    },
-    {
-      "name": "Vanilla-Web-Stack-PHP",
-      "stack": "Vanilla-Web-Stack",
-      "language": "php",
-      "tier": "regex_fallback",
+      "_comment": "Outbound consolida patterns de WordPress-Development + Vanilla-Web-Stack-PHP (pre-DEF-025). Cubre: include/require literales, require __DIR__ . '/path' (PHP-inbound-019), wp_enqueue_script/style con ABSPATH/TEMPLATEPATH concatenado. Inbound vacío: WP hooks (add_action, register_rest_route) ya no generan identity — la identidad WordPress viene de stack_markers (DEF-025).",
       "patterns": {
         "inbound": [],
         "outbound": [
           "include\\s*\\(?\\s*['\"]([^'\"]+)['\"]",
           "require(?:_once)?\\s*\\(?\\s*['\"]([^'\"]+)['\"]",
-          "require(?:_once)?\\s+[A-Z_]+\\s*\\.\\s*'([^']+)'"
+          "require(?:_once)?\\s+[A-Z_]+\\s*\\.\\s*'([^']+)'",
+          "wp_enqueue_script\\s*\\(\\s*'[^']+'\\s*,\\s*[A-Z_]+\\s*\\.\\s*'([^']+)'",
+          "wp_enqueue_style\\s*\\(\\s*'[^']+'\\s*,\\s*[A-Z_]+\\s*\\.\\s*'([^']+)'"
         ]
       }
     },
     {
-      "name": "Vanilla-Web-Stack-JS",
-      "stack": "Vanilla-Web-Stack",
+      "name": "JavaScript-Patterns",
       "language": "javascript",
       "tier": "regex_fallback",
+      "_comment": "Outbound consolida patterns de Modern-Web-Stack-JS + Vanilla-Web-Stack-JS + Tauri-Desktop-App-JS (pre-DEF-025). Cubre: import from, fetch literal, alias Next.js (from '@/...'). Inbound vacío: patterns como 'invoke(', 'listen(', 'export default function', 'addEventListener' generaban identities falsas ('Tauri', 'Modern-Web') en proyectos que no usan esos stacks — la identidad correcta viene de stack_markers (DEF-025).",
       "patterns": {
-        "inbound": [
-          "function\\s+([\\w\\d_]+)\\s*\\(",
-          "(?:const|let|var)\\s+([\\w\\d_]+)\\s*=\\s*\\(",
-          "addEventListener"
-        ],
+        "inbound": [],
         "outbound": [
+          "import\\s+.+\\s+from\\s+['\"]([^'\"]+)['\"]",
           "fetch\\s*\\(\\s*['\"]([^'\"]+)['\"]",
-          "import\\s+.+\\s+from\\s+['\"]([^'\"]+)['\"]"
+          "from\\s+['\"]@/([^'\"]+)['\"]"
         ]
+      }
+    },
+    {
+      "name": "TypeScript-Patterns",
+      "language": "typescript",
+      "tier": "regex_fallback",
+      "_comment": "TypeScript usa tree-sitter-typescript cuando la grammar está disponible. Patterns regex idénticas a JavaScript-Patterns como fallback Tier 3 si tree-sitter no está instalado. Misma consolidación que JS post-DEF-025.",
+      "patterns": {
+        "inbound": [],
+        "outbound": [
+          "import\\s+.+\\s+from\\s+['\"]([^'\"]+)['\"]",
+          "fetch\\s*\\(\\s*['\"]([^'\"]+)['\"]",
+          "from\\s+['\"]@/([^'\"]+)['\"]"
+        ]
+      }
+    },
+    {
+      "name": "HTML-Patterns",
+      "language": "html",
+      "tier": "regex_fallback",
+      "_comment": "HTML usa HtmlScanner (hardcoded, HTML-019) que extrae src/href/action/form. Esta entry queda como placeholder para override futuro vía compass.local.json (ej. proyectos con atributos custom). Outbound vacío hoy — si el usuario lo define, se suma a lo que HtmlScanner ya captura.",
+      "patterns": {
+        "inbound": [],
+        "outbound": []
       }
     }
   ]

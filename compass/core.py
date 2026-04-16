@@ -45,6 +45,37 @@ def _language_for_file(filename):
     return _EXTENSION_LANGUAGE.get(ext, "")
 
 
+def _definition_applies_to_stack(definition, file_stack):
+    """DEF-025 — guardián de contexto por stack.
+
+    Para configs pre-DEF-025 que declaran `stack` (o `stacks`) en una
+    definition, validar que el stack del archivo coincida antes de sumar
+    `tech_scores`. Esto evita que una regex pensada para `Tauri` matchee
+    sobre un `.js` vanilla y genere la identity falsa `Tauri-Desktop-App-JS`
+    en un proyecto HTML+PHP.
+
+    Reglas:
+      - Si la definition NO declara `stack` ni `stacks` → aplica a todos
+        (language-based post-DEF-025 — el filtro de lenguaje ya actuó
+        antes, acá solo chequeamos si hay restricción adicional por stack).
+      - Si declara `stack` (string) → match exacto case-insensitive.
+      - Si declara `stacks` (lista) → cualquiera matchea.
+      - Si `file_stack` es vacío y la definition restringe stack, no aplica.
+    """
+    declared_single = definition.get("stack")
+    declared_list = definition.get("stacks")
+    if not declared_single and not declared_list:
+        return True
+    declared = []
+    if declared_single:
+        declared.append(str(declared_single).lower())
+    if declared_list:
+        declared.extend(str(x).lower() for x in declared_list)
+    if not file_stack:
+        return False
+    return str(file_stack).lower() in declared
+
+
 # -----------------------------------------------------------------------------
 # Config schema v2 (CFG-005)
 # -----------------------------------------------------------------------------
@@ -735,6 +766,7 @@ class ArchitectCompass:
                             rel_path=rel_path,
                             filename=file,
                             language=language,
+                            file_stack=file_stack,
                             inbound_index=inbound_index,
                             tech_scores=tech_scores,
                             unify_lower=unify_lower,
@@ -826,7 +858,7 @@ class ArchitectCompass:
         return out
 
     def _scan_file(self, *, file_path, rel_path, filename, language,
-                   inbound_index, tech_scores, unify_lower,
+                   file_stack, inbound_index, tech_scores, unify_lower,
                    compiled_ignore_outbound):
         """Escanea un archivo: inbound scoring + outbound via scanner/resolver.
 
@@ -836,6 +868,15 @@ class ArchitectCompass:
         re-leer el contenido. `metadata_calls` es la lista de raws que
         GRF-021 clasifica como builtin/stdlib/no-resolvable (no emiten edge
         pero quedan visibles en atlas.files[rel_path].metadata.calls).
+
+        DEF-025 — guardián de contexto: una definition solo incrementa
+        `tech_scores` si es *compatible* con el archivo. El modo language
+        lo valida `_definition_applies_to_language`. El modo stack (legacy
+        de configs pre-DEF-025 que declaran `stack` en la definition) lo
+        valida `_definition_applies_to_stack` contra `file_stack`. Esto
+        elimina los falsos positivos tipo `Tauri-Desktop-App-JS` sumando
+        score en un proyecto HTML+PHP por matchear regex genéricas sobre
+        JS vanilla.
         """
         is_relevant = any(filename.endswith(ext) for ext in (".js", ".css"))
         outbound_targets = []
@@ -846,6 +887,8 @@ class ArchitectCompass:
         # Inbound: se sigue leyendo contenido para pattern matching de scoring.
         # DEF-017: filtrar por lenguaje del archivo. Si la definition no
         # declara `language`, aplica a todos (backward-compat).
+        # DEF-025: además validar por stack si la definition lo declara
+        # (guardián de contexto — ver docstring).
         if inbound_index:
             try:
                 with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
@@ -854,6 +897,8 @@ class ArchitectCompass:
                 content = ""
             for name, df, compiled_list in inbound_index:
                 if not _definition_applies_to_language(df, language):
+                    continue
+                if not _definition_applies_to_stack(df, file_stack):
                     continue
                 for pat, regex in compiled_list:
                     if regex.search(content):

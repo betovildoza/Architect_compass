@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "generated_at": "2026-04-16 01:43:44",
-  "config_fingerprint": "e5be3e647dea3359b6a6aa947da8ca7942051fd761ac23b5d7d5df1a03167c0c",
+  "generated_at": "2026-04-16 03:11:56",
+  "config_fingerprint": "4cd28d95e21c9a17ee7b1cf42cd219f43eec73c7131cda1ae7e57efc0d5953be",
   "files": {
     "architect_compass.py": {
       "fingerprint": "5320e4205346dff59f23592bc2d3d7b358be1d51a4bc083883f855f764ae4dfd",
@@ -35,6 +35,15 @@
       "metadata_calls": []
     },
     "mapper_config.json": {
+      "fingerprint": "cfe02606a42cf14f36318950765d67999923476d819f181c6e978ab9d1a967aa",
+      "outbound_targets": [],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": false,
+      "stack": "Python",
+      "metadata_calls": []
+    },
+    ".quarantine/.legacy-v1/mapper_config.v2-pre-def-025.json": {
       "fingerprint": "eb515f0c879e7dfd74c8619dc081d50c0bc88e0d0629a60f244ca6ec68fbea56",
       "outbound_targets": [],
       "inbound_patterns": [],
@@ -44,7 +53,7 @@
       "metadata_calls": []
     },
     "compass/core.py": {
-      "fingerprint": "563049c1e2d0f1a150433c28c1b7136d599cf99730699f2a3b6fdfabc8cd8d57",
+      "fingerprint": "4bac636a8c92ba63e3466e6cb18024a493396d4580314c10209e3b266f6d5d9d",
       "outbound_targets": [
         "compass/stack_detector.py",
         "compass/stack_detector.py",
