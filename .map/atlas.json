@@ -1,11 +1,11 @@
 {
-    "generated_at": "2026-04-17 05:04:41",
+    "generated_at": "2026-04-17 07:05:36",
     "project_name": "Architect_compass",
     "identities": [
         {
             "tech": "Python",
-            "confidence": 15,
-            "files": 15,
+            "confidence": 16,
+            "files": 16,
             "source": "stack_markers"
         }
     ],
@@ -13,10 +13,10 @@
         "": "Python"
     },
     "summary": {
-        "total_files": 15,
+        "total_files": 16,
         "relevant_files": 7,
         "scanned_files": 1,
-        "reused_from_cache": 14
+        "reused_from_cache": 15
     },
     "connectivity": {
         "inbound": [],
@@ -39,6 +39,8 @@
             "compass/core.py -> compass/graph_emitter.py",
             "compass/core.py -> compass/graph_emitter.py",
             "compass/core.py -> compass/validation.py",
+            "compass/core.py -> compass/consolidator.py",
+            "compass/core.py -> compass/consolidator.py",
             "compass/graph_emitter.py -> [EXTERNAL:unpkg.com]",
             "compass/scanners/html.py -> compass/scanners/base.py",
             "compass/scanners/html.py -> compass/scanners/base.py",
@@ -54,7 +56,7 @@
         ]
     },
     "audit": {
-        "structural_health": 46.67,
+        "structural_health": 43.75,
         "warnings": []
     },
     "anomalies": [],
@@ -79,6 +81,14 @@
         "mapper_config.json": {
             "stack": "Python",
             "orphan_reason": "no_inbound"
+        },
+        "compass/consolidator.py": {
+            "stack": "Python",
+            "metadata": {
+                "calls": [
+                    "__future__:annotations"
+                ]
+            }
         },
         "compass/core.py": {
             "stack": "Python",
@@ -213,9 +223,86 @@
     "entry_points": [
         "architect_compass.py"
     ],
+    "metadata_consolidated": {
+        "assets": {},
+        "calls": {
+            "__future__:annotations": [
+                "compass/consolidator.py",
+                "compass/graph_emitter.py",
+                "compass/metrics.py",
+                "compass/validation.py"
+            ],
+            "abc:ABC": [
+                "compass/scanners/base.py"
+            ],
+            "abc:abstractmethod": [
+                "compass/scanners/base.py"
+            ],
+            "ast": [
+                "compass/path_resolver.py",
+                "compass/scanners/python.py"
+            ],
+            "collections:Counter": [
+                "compass/stack_detector.py"
+            ],
+            "datetime:datetime": [
+                "compass/core.py"
+            ],
+            "fnmatch": [
+                "compass/core.py",
+                "compass/stack_detector.py"
+            ],
+            "hashlib": [
+                "compass/core.py"
+            ],
+            "importlib": [
+                "compass/scanners/treesitter.py"
+            ],
+            "json": [
+                "compass/core.py",
+                "compass/graph_emitter.py",
+                "compass/metrics.py",
+                "compass/validation.py"
+            ],
+            "os": [
+                "compass/core.py",
+                "compass/path_resolver.py",
+                "compass/stack_detector.py"
+            ],
+            "pathlib:Path": [
+                "compass/core.py",
+                "compass/graph_emitter.py",
+                "compass/metrics.py",
+                "compass/path_resolver.py",
+                "compass/stack_detector.py",
+                "compass/validation.py"
+            ],
+            "re": [
+                "compass/core.py",
+                "compass/path_resolver.py",
+                "compass/scanners/base.py",
+                "compass/scanners/html.py",
+                "compass/scanners/regex_fallback.py",
+                "compass/scanners/treesitter.py"
+            ],
+            "sys": [
+                "architect_compass.py",
+                "compass/core.py"
+            ],
+            "urllib.parse:urlparse": [
+                "compass/core.py",
+                "compass/scanners/base.py"
+            ]
+        },
+        "filtered_refs": {
+            "compass/scanners/__init__.py": [
+                "compass/core.py"
+            ]
+        }
+    },
     "cycles": [],
     "health": {
-        "total": 73.17,
+        "total": 74.84,
         "weights": {
             "orphans": 0.4,
             "connectivity": 0.3,
@@ -223,7 +310,7 @@
             "external_deps": 0.15
         },
         "orphans": {
-            "score": 46.67,
+            "score": 50.0,
             "count": 8,
             "files": [
                 "architect_compass.py",
@@ -238,11 +325,11 @@
         },
         "connectivity": {
             "score": 100.0,
-            "avg_inbound": 1.93,
-            "total_inbound_edges": 29
+            "avg_inbound": 1.94,
+            "total_inbound_edges": 31
         },
         "dead_exports": {
-            "score": 66.67,
+            "score": 68.75,
             "count": 5,
             "files": [
                 "architect_compass.py",
@@ -253,13 +340,13 @@
             ]
         },
         "external_deps": {
-            "score": 96.67,
+            "score": 96.88,
             "external_targets": 1,
-            "total_targets": 30
+            "total_targets": 32
         }
     },
     "delta": {
-        "previous_generated_at": "2026-04-17 04:45:52",
+        "previous_generated_at": "2026-04-17 07:03:23",
         "files": {
             "added": [],
             "removed": []
@@ -291,8 +378,8 @@
         "ignored": 1,
         "self_edge": 0,
         "ignore_outbound": 0,
-        "rendered_edges": 14,
-        "raw_edges": 30
+        "rendered_edges": 15,
+        "raw_edges": 32
     },
     "external_tiers": {
         "[EXTERNAL:unpkg.com]": "service"

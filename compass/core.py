@@ -36,6 +36,10 @@ from compass.graph_emitter import (
     validate_dot_syntax,
 )
 from compass.validation import validate_local_config
+from compass.consolidator import (
+    build_metadata_consolidated,
+    build_compact_atlas,
+)
 
 
 # Mapping extensión → lenguaje. Autoritativo para decidir qué scanner usar:
@@ -2102,13 +2106,15 @@ class ArchitectCompass:
     # ------------------------------------------------------------------
     # Finalize
     # ------------------------------------------------------------------
-    # Estructura de finalize (Sesión 7 · VAL-014 agregado al inicio):
+    # Estructura de finalize (Sesión 10 · CONS-029 + LLM-VIEW-028 agregados):
     #   0. _validate_local_config()       → atlas.audit.warnings + consola    (VAL-014, SES 7)
     #   1. _attach_metadata_calls()       → atlas.files[*].metadata.*         (GRF-021 + AST-024)
+    #   1b. _consolidate_metadata()       → atlas.metadata_consolidated       (CONS-029, SES 10)
     #   2. _compute_metrics()             → health + cycles + delta           (SES 6A — SCR-009, CYC-011, DIF-010)
     #   3. _emit_dot_graph()              → connectivity.dot                  (GRF-013 + EDG-023 + AST-024)
     #   4. _emit_graph_html()             → graph.html (vis-network wrapper)  (GRF-013)
     #   5. _write_atlas()                 → atlas.json
+    #   5b. _write_atlas_compact()        → atlas.compact.json                (LLM-VIEW-028, SES 10)
     #   6. _rotate_history()              → .map/history/YYYYmmdd_HHMM_*.json (DIF-010)
     #   7. _persist_fingerprints()        → .map/fingerprints.json            (INC-008)
     #   8. _update_feedback_log()         → .map/feedback.log
@@ -2130,14 +2136,45 @@ class ArchitectCompass:
     def finalize(self):
         self._run_config_validation()
         self._attach_metadata_calls()
+        self._consolidate_metadata()   # CONS-029 (Sesión 10)
         self._compute_metrics()
         self._emit_dot_graph()
         self._emit_graph_html()
         self._write_atlas()
+        self._write_atlas_compact()    # LLM-VIEW-028 (Sesión 10)
         self._rotate_history()
         self._persist_fingerprints()
         self._update_feedback_log()
         self._print_summary()
+
+    def _consolidate_metadata(self):
+        """CONS-029 (Sesión 10) — vista global invertida de metadata.
+
+        `atlas.files[*].metadata.{assets,calls,filtered_refs}` hoy duplica
+        targets entre archivos (ej. 30 HTMLs × favicon = 30 entries). Se
+        mantiene la vista per-source (humano) y se AGREGA la consolidada
+        con shape `{target: [source1, ...]}` en `atlas.metadata_consolidated`.
+        """
+        self.atlas["metadata_consolidated"] = build_metadata_consolidated(self.atlas)
+
+    def _write_atlas_compact(self):
+        """LLM-VIEW-028 (Sesión 10) — `.map/atlas.compact.json`.
+
+        Shape mínimo para pasar como contexto a un agente LLM — sin metadata
+        explotada per-source, usa `metadata_consolidated` de CONS-029.
+        Preserva topología (mismos nodes + edges + cycles que atlas.json).
+        """
+        compact = build_compact_atlas(
+            atlas=self.atlas,
+            edges=self._edges,
+            external_nodes=self._external_nodes,
+            external_tiers=self._external_node_tiers,
+        )
+        # Dump compacto (separators sin whitespace) — el archivo está pensado
+        # para ser ingerido por un agente LLM; minimizar tokens vale más que
+        # legibilidad humana (para eso está atlas.json con indent=4).
+        with open(self.map_dir / "atlas.compact.json", "w", encoding="utf-8") as f:
+            json.dump(compact, f, separators=(",", ":"), ensure_ascii=False)
 
     def _run_config_validation(self):
         """VAL-014 (Sesión 7) — valida el compass.local.json del proyecto.

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-04-17 05:04:41",
+  "generated_at": "2026-04-17 07:05:36",
   "config_fingerprint": "d5ad085834f0966346bd7428b09080b66788e2359c8b602935b5bf38be5821f2",
   "files": {
     "architect_compass.py": {
@@ -57,8 +57,22 @@
       "metadata_assets": [],
       "metadata_filtered_refs": []
     },
+    "compass/consolidator.py": {
+      "fingerprint": "3f8b854180299321ddae950dfd01bb68e790b62049475a553bd9a9aa9e1ab81c",
+      "outbound_targets": [],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": false,
+      "stack": "Python",
+      "metadata_calls": [
+        "__future__:annotations"
+      ],
+      "edge_types": {},
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
+    },
     "compass/core.py": {
-      "fingerprint": "08ed339f2bd08a3f7be7b1f9e86c68cce01875e677699db2c7880c5f68a5a11f",
+      "fingerprint": "bcb2cf1de7d51bacedcac9ffdd877f19d43d13a716ac6bf74a468f70fa127851",
       "outbound_targets": [
         "compass/stack_detector.py",
         "compass/stack_detector.py",
@@ -76,7 +90,9 @@
         "compass/graph_emitter.py",
         "compass/graph_emitter.py",
         "compass/graph_emitter.py",
-        "compass/validation.py"
+        "compass/validation.py",
+        "compass/consolidator.py",
+        "compass/consolidator.py"
       ],
       "inbound_patterns": [],
       "tech_scores": {},
@@ -99,7 +115,8 @@
         "compass/scanners/base.py": "import",
         "compass/metrics.py": "import",
         "compass/graph_emitter.py": "import",
-        "compass/validation.py": "import"
+        "compass/validation.py": "import",
+        "compass/consolidator.py": "import"
       },
       "metadata_assets": [],
       "metadata_filtered_refs": [
