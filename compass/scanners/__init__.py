@@ -78,6 +78,7 @@ def _build_scanner(language, config):
     # SEM-020: compilar loader_calls regex para el lenguaje.
     loader_regex = None
     loader_edge_map = {}
+    lang_loaders = {}
     if config and isinstance(config, dict):
         loaders = (config.get("http_loaders") or {}).get(language) or []
         http_regex = build_http_loader_regex(loaders)
@@ -99,6 +100,7 @@ def _build_scanner(language, config):
             http_regex=http_regex,
             loader_regex=loader_regex,
             loader_edge_map=loader_edge_map,
+            loader_specs=lang_loaders if loader_regex else None,
         )
 
     # Nada aplicable.

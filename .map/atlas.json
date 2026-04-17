@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-04-17 07:05:36",
+    "generated_at": "2026-04-17 09:20:33",
     "project_name": "Architect_compass",
     "identities": [
         {
@@ -15,8 +15,8 @@
     "summary": {
         "total_files": 16,
         "relevant_files": 7,
-        "scanned_files": 1,
-        "reused_from_cache": 15
+        "scanned_files": 16,
+        "reused_from_cache": 0
     },
     "connectivity": {
         "inbound": [],
@@ -52,7 +52,8 @@
             "compass/scanners/treesitter.py -> compass/scanners/base.py",
             "compass/scanners/treesitter.py -> compass/scanners/base.py",
             "compass/scanners/treesitter.py -> compass/scanners/base.py",
-            "compass/scanners/treesitter.py -> compass/path_resolver.py"
+            "compass/scanners/treesitter.py -> compass/path_resolver.py",
+            "compass/scanners/treesitter.py -> compass/scanners/regex_fallback.py"
         ]
     },
     "audit": {
@@ -192,7 +193,6 @@
         },
         "compass/scanners/regex_fallback.py": {
             "stack": "Python",
-            "orphan_reason": "no_inbound",
             "metadata": {
                 "calls": [
                     "re"
@@ -217,7 +217,6 @@
         "mapper_config.json",
         "compass/scanners/html.py",
         "compass/scanners/python.py",
-        "compass/scanners/regex_fallback.py",
         "compass/scanners/treesitter.py"
     ],
     "entry_points": [
@@ -302,7 +301,7 @@
     },
     "cycles": [],
     "health": {
-        "total": 74.84,
+        "total": 78.3,
         "weights": {
             "orphans": 0.4,
             "connectivity": 0.3,
@@ -310,8 +309,8 @@
             "external_deps": 0.15
         },
         "orphans": {
-            "score": 50.0,
-            "count": 8,
+            "score": 56.25,
+            "count": 7,
             "files": [
                 "architect_compass.py",
                 "cli_roadmap.html",
@@ -319,58 +318,60 @@
                 "mapper_config.json",
                 "compass/scanners/html.py",
                 "compass/scanners/python.py",
-                "compass/scanners/regex_fallback.py",
                 "compass/scanners/treesitter.py"
             ]
         },
         "connectivity": {
             "score": 100.0,
-            "avg_inbound": 1.94,
-            "total_inbound_edges": 31
+            "avg_inbound": 2.0,
+            "total_inbound_edges": 32
         },
         "dead_exports": {
-            "score": 68.75,
-            "count": 5,
+            "score": 75.0,
+            "count": 4,
             "files": [
                 "architect_compass.py",
                 "compass/scanners/html.py",
                 "compass/scanners/python.py",
-                "compass/scanners/regex_fallback.py",
                 "compass/scanners/treesitter.py"
             ]
         },
         "external_deps": {
-            "score": 96.88,
+            "score": 96.97,
             "external_targets": 1,
-            "total_targets": 32
+            "total_targets": 33
         }
     },
     "delta": {
-        "previous_generated_at": "2026-04-17 07:03:23",
+        "previous_generated_at": "2026-04-17 09:16:18",
         "files": {
             "added": [],
             "removed": []
         },
         "edges": {
-            "added": [],
+            "added": [
+                "compass/scanners/treesitter.py -> compass/scanners/regex_fallback.py"
+            ],
             "removed": [],
-            "added_count": 0,
+            "added_count": 1,
             "removed_count": 0
         },
         "orphans": {
             "added": [],
-            "removed": []
+            "removed": [
+                "compass/scanners/regex_fallback.py"
+            ]
         },
         "cycles": {
             "added": [],
             "removed": []
         },
         "health_delta": {
-            "total": 0.0,
-            "orphans": 0.0,
+            "total": 3.46,
+            "orphans": 6.25,
             "connectivity": 0.0,
-            "dead_exports": 0.0,
-            "external_deps": 0.0
+            "dead_exports": 6.25,
+            "external_deps": 0.09
         }
     },
     "graph_filters": {
@@ -378,8 +379,8 @@
         "ignored": 1,
         "self_edge": 0,
         "ignore_outbound": 0,
-        "rendered_edges": 15,
-        "raw_edges": 32
+        "rendered_edges": 16,
+        "raw_edges": 33
     },
     "external_tiers": {
         "[EXTERNAL:unpkg.com]": "service"

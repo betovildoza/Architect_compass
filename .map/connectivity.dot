@@ -27,7 +27,7 @@ digraph G {
         "compass/scanners/base.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
         "compass/scanners/html.py" [shape=box, fillcolor="#fff3cd", color="#b7791f"];
         "compass/scanners/python.py" [shape=box, fillcolor="#fff3cd", color="#b7791f"];
-        "compass/scanners/regex_fallback.py" [shape=box, fillcolor="#fff3cd", color="#b7791f"];
+        "compass/scanners/regex_fallback.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
         "compass/scanners/treesitter.py" [shape=box, fillcolor="#fff3cd", color="#b7791f"];
         "compass/stack_detector.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
         "compass/validation.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
@@ -48,6 +48,7 @@ digraph G {
     "compass/scanners/regex_fallback.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scanners/treesitter.py" -> "compass/path_resolver.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scanners/treesitter.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/scanners/treesitter.py" -> "compass/scanners/regex_fallback.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     subgraph "cluster_legend" {
         label="Leyenda"; style="rounded,filled";
         fillcolor="#ffffff"; color="#999999";

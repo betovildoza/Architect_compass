@@ -238,14 +238,18 @@
     "plugin_dir_path":               "{plugins_root}",
     "__dirname":                     "{source_dir}"
   },
-  "_loader_calls_note": "SEM-020: llamadas a funciones de carga de recursos. El scanner captura la llamada completa + el PathResolver extrae el argumento `arg` (1-based) y lo resuelve. `ext_default` se agrega si el string no termina en extensión conocida. Si `arg` es concatenación `fn() . 'literal'` o interpolación `\"$var/literal\"`, el resolver usa path_functions para evaluar la parte dinámica.",
+  "_loader_calls_note": "SEM-020: llamadas a funciones de carga de recursos. El scanner captura la llamada completa + el PathResolver extrae el argumento `arg` (1-based) y lo resuelve. `ext_default` se agrega si el string no termina en extensión conocida. Si `arg` es concatenación `fn() . 'literal'` o interpolación `\"$var/literal\"`, el resolver usa path_functions para evaluar la parte dinámica. Mini-S10.5: `arg: 0` = zero-arg call con path implícito (`path_template`), `path_template_with_arg` = variante cuando hay un string literal como argumento (ej. `get_header('alt')` → `header-alt.php`). `accepts_array: true` = el argumento puede ser un array literal PHP; se emite un edge por cada string del array.",
   "loader_calls": {
     "wp_enqueue_script":   { "arg": 2, "ext_default": ".js",  "language": "php", "edge_type": "enqueue" },
     "wp_enqueue_style":    { "arg": 2, "ext_default": ".css", "language": "php", "edge_type": "enqueue" },
     "wp_register_script":  { "arg": 2, "ext_default": ".js",  "language": "php", "edge_type": "enqueue" },
     "wp_register_style":   { "arg": 2, "ext_default": ".css", "language": "php", "edge_type": "enqueue" },
     "get_template_part":   { "arg": 1, "ext_default": ".php", "language": "php", "edge_type": "include", "base": "{theme_root}" },
-    "locate_template":     { "arg": 1, "ext_default": ".php", "language": "php", "edge_type": "include", "base": "{theme_root}" }
+    "locate_template":     { "arg": 1, "ext_default": ".php", "language": "php", "edge_type": "include", "base": "{theme_root}", "accepts_array": true },
+    "get_header":          { "arg": 0, "language": "php", "edge_type": "include", "path_template": "{theme_root}/header.php",   "path_template_with_arg": "{theme_root}/header-{arg}.php" },
+    "get_footer":          { "arg": 0, "language": "php", "edge_type": "include", "path_template": "{theme_root}/footer.php",   "path_template_with_arg": "{theme_root}/footer-{arg}.php" },
+    "get_sidebar":         { "arg": 0, "language": "php", "edge_type": "include", "path_template": "{theme_root}/sidebar.php",  "path_template_with_arg": "{theme_root}/sidebar-{arg}.php" },
+    "comments_template":   { "arg": 0, "language": "php", "edge_type": "include", "path_template": "{theme_root}/comments.php" }
   },
   "http_loaders": {
     "python": [

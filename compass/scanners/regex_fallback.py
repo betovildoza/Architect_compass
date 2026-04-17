@@ -32,6 +32,51 @@ from compass.path_resolver import encode_loader_raw
 # URL-SCAN — regex para capturar URL literals en source text.
 _URL_LITERAL_RE = re.compile(r'''["'](https?://[^"'\s)]+)["']''')
 
+# Mini-S10.5 — detectar array literal PHP tipo `['a.php', 'b.php']` o
+# `array('a.php', 'b.php')` como primer argumento. Solo match si TODOS los
+# elementos son string literals (no variables ni concatenaciones). Extrae
+# cada literal; si hay variables/arrays dinámicos, retorna lista vacía.
+_PHP_ARRAY_LITERAL_RE = re.compile(
+    r'''^\s*(?:\[|array\s*\()\s*(.+?)\s*(?:\]|\))\s*(?:,.*)?$''', re.DOTALL,
+)
+_PHP_STRING_ITEM_RE = re.compile(r'''['"]([^'"]+)['"]''')
+
+
+def _expand_loader_body(fn_name, body, loader_specs):
+    """Mini-S10.5 — Dada una call body cruda, devuelve una lista de
+    cuerpos sintéticos a emitir como sentinels.
+
+    Caso normal: devuelve `[body]` intacto.
+    Caso `accepts_array: true` + primer arg = array literal con solo
+    strings: devuelve `["'item1'", "'item2'", ...]` — un body por string,
+    para que el resolver trate cada uno como call one-arg normal.
+    Si el array tiene variables o no se puede parsear, retorna `[body]`
+    (el resolver termina descartándolo, comportamiento pre-S10.5).
+    """
+    if not loader_specs:
+        return [body]
+    spec = loader_specs.get(fn_name) or {}
+    if not spec.get("accepts_array"):
+        return [body]
+    # Extraer el primer arg del body a mano (split_call_args vive en el
+    # resolver; acá replicamos muy chico: buscar `[` o `array(` al inicio).
+    stripped = body.lstrip()
+    if not (stripped.startswith("[") or stripped.lower().startswith("array")):
+        return [body]
+    m = _PHP_ARRAY_LITERAL_RE.match(body)
+    if not m:
+        return [body]
+    inner = m.group(1)
+    # Detectar presencia de variables o concatenaciones → bail out.
+    # Quitamos primero los string literals para ver si queda ruido no-delim.
+    residual = _PHP_STRING_ITEM_RE.sub("", inner)
+    if re.search(r"[\$\.]", residual):
+        return [body]
+    items = _PHP_STRING_ITEM_RE.findall(inner)
+    if not items:
+        return [body]
+    return [f"'{item}'" for item in items]
+
 
 class RegexFallbackScanner(_BaseScanner):
     """Scanner Tier 3 basado en patrones del config.
@@ -43,11 +88,14 @@ class RegexFallbackScanner(_BaseScanner):
         http_regex: compiled regex de NET-022 http_loaders (opcional).
     """
 
-    def __init__(self, patterns, http_regex=None, loader_regex=None, loader_edge_map=None):
+    def __init__(self, patterns, http_regex=None, loader_regex=None,
+                 loader_edge_map=None, loader_specs=None):
         self._http_regex = http_regex
         # SEM-020 — regex de loader_calls + dict fn_name → edge_type.
         self._loader_regex = loader_regex
         self._loader_edge_map = loader_edge_map or {}
+        # Mini-S10.5 — spec completa por fn_name (para accepts_array).
+        self._loader_specs = loader_specs or {}
         patterns = patterns or {}
         raw_outbound = patterns.get("outbound", []) or []
         # EDG-023: guardamos (compiled, edge_type) por pattern.
@@ -110,12 +158,17 @@ class RegexFallbackScanner(_BaseScanner):
 
         # SEM-020 — loader_calls: emitir sentinel por cada call matcheada
         # con su edge_type configurado. El PathResolver resuelve el arg.
+        # Mini-S10.5 — si spec declara `accepts_array`, expandir array literal
+        # PHP en múltiples sentinels (uno por string) al vuelo.
         if self._loader_regex:
             for match in self._loader_regex.finditer(content):
                 fn = match.group(1)
                 body = match.group(2) or ""
                 edge_type = self._loader_edge_map.get(fn, DEFAULT_EDGE_TYPE)
-                out.append((encode_loader_raw(fn, body), edge_type))
+                for emitted_body in _expand_loader_body(
+                    fn, body, self._loader_specs,
+                ):
+                    out.append((encode_loader_raw(fn, emitted_body), edge_type))
 
         # NET-022 — segundo pass: URLs literales en llamadas HTTP.
         if self._http_regex:

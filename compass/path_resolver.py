@@ -380,6 +380,15 @@ class PathResolver:
         completo entre paréntesis (posiblemente multi-arg, con comillas,
         concatenaciones, etc.). Extraemos el argumento `arg` según config
         y lo resolvemos.
+
+        Mini-S10.5 — extensiones:
+          - `arg: 0` + `path_template` → zero-arg call con path implícito
+            (`get_header()` → `{theme_root}/header.php`).
+          - `path_template_with_arg` → si hay un string literal como arg,
+            sustituir `{arg}` en el template (`get_header('alt')` →
+            `header-alt.php`).
+          El scanner hace expansión previa para `accepts_array: true`
+          (emite un sentinel por cada string del array).
         """
         if not sentinel_raw.startswith(LOADER_SENTINEL):
             return None
@@ -393,6 +402,10 @@ class PathResolver:
         arg_index = int(spec.get("arg", 1))
         ext_default = spec.get("ext_default")
         base_tok = spec.get("base")  # Opcional: fuerza base (ej. {theme_root}).
+
+        # Mini-S10.5 — zero-arg call con path implícito.
+        if arg_index == 0:
+            return self._resolve_zero_arg_loader(spec, body, source_file)
 
         # Extraer argumento `arg_index` (1-based) del call body.
         arg_expr = self._split_call_args(body, arg_index)
@@ -455,6 +468,41 @@ class PathResolver:
                 candidate, source_file, raw_original=arg_expr,
             )
         return None
+
+    def _resolve_zero_arg_loader(self, spec, body, source_file):
+        """Mini-S10.5 — resuelve `arg: 0` loader calls.
+
+        Casos:
+          - body vacío o no literal-string → `path_template`.
+          - body con string literal como primer arg + `path_template_with_arg`
+            → sustituir `{arg}` en el template (ej. `get_header('alt')` →
+            `{theme_root}/header-alt.php`).
+          - body con variable/expresión / sin `path_template_with_arg`
+            → fallback a `path_template`.
+        """
+        tpl_default = spec.get("path_template")
+        tpl_with_arg = spec.get("path_template_with_arg")
+        chosen = tpl_default
+        # Intentar extraer un primer arg literal string si existe.
+        first_arg = self._split_call_args(body, 1) if body and body.strip() else None
+        if tpl_with_arg and first_arg is not None:
+            literal = self._strip_quotes(first_arg.strip())
+            # Solo string literal puro (sin concatenaciones ni variables).
+            raw_trimmed = first_arg.strip()
+            is_literal = (
+                len(raw_trimmed) >= 2
+                and raw_trimmed[0] in ("'", '"', "`")
+                and raw_trimmed[-1] == raw_trimmed[0]
+                and raw_trimmed[0] not in literal
+            )
+            if is_literal and literal:
+                chosen = tpl_with_arg.replace("{arg}", literal)
+        if not chosen:
+            return None
+        base_path = self._resolve_path_function_token(chosen, source_file)
+        if base_path is None:
+            return None
+        return self._resolve_absolute_path(str(base_path))
 
     @staticmethod
     def _maybe_append_ext(path_str, ext_default):
