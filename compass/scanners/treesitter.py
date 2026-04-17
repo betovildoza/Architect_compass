@@ -31,7 +31,9 @@ from compass.scanners.base import (
     Scanner as _BaseScanner,
     DEFAULT_EDGE_TYPE,
     build_http_loader_regex,
+    build_loader_call_regex,
 )
+from compass.path_resolver import encode_loader_raw
 
 # URL-SCAN — regex para capturar URL literals en source text.
 # Captura strings entre comillas simples o dobles que empiezan con http(s)://.
@@ -108,9 +110,24 @@ class TreeSitterScanner(_BaseScanner):
 
         # NET-022 — regex para URLs literales en llamadas HTTP.
         self._http_regex = None
+        self._loader_regex = None
+        self._loader_edge_map = {}
         if config and isinstance(config, dict):
             loaders = (config.get("http_loaders") or {}).get(self._language) or []
             self._http_regex = build_http_loader_regex(loaders)
+            # SEM-020 — loader_calls filtradas por lenguaje.
+            loader_calls = config.get("loader_calls") or {}
+            lang_loaders = {
+                name: spec for name, spec in loader_calls.items()
+                if isinstance(spec, dict)
+                and (spec.get("language") or "").lower() == self._language
+            }
+            if lang_loaders:
+                self._loader_regex = build_loader_call_regex(lang_loaders.keys())
+                self._loader_edge_map = {
+                    name: spec.get("edge_type") or DEFAULT_EDGE_TYPE
+                    for name, spec in lang_loaders.items()
+                }
 
     def extract_imports(self, file_path):
         try:
@@ -130,6 +147,13 @@ class TreeSitterScanner(_BaseScanner):
 
         # NET-022 — segundo pass: extraer URLs literales de llamadas HTTP.
         source_text = data.decode("utf-8", errors="ignore")
+        # SEM-020 — loader_calls.
+        if self._loader_regex:
+            for match in self._loader_regex.finditer(source_text):
+                fn = match.group(1)
+                body = match.group(2) or ""
+                edge_type = self._loader_edge_map.get(fn, DEFAULT_EDGE_TYPE)
+                out.append((encode_loader_raw(fn, body), edge_type))
         if self._http_regex:
             for match in self._http_regex.finditer(source_text):
                 url = match.group(1)

@@ -116,6 +116,44 @@ def build_http_loader_regex(loader_names):
     return re.compile(pattern, re.DOTALL)
 
 
+def build_loader_call_regex(loader_names):
+    """SEM-020 — Compila regex que matchea cualquier `<fn>(...)` multi-línea.
+
+    `loader_names` es iterable de strings (las claves de `loader_calls` del
+    config). Retorna `re.Pattern` cuyo group(1) es el fn_name matcheado y
+    group(2) es el cuerpo entre paréntesis (sin balancear fully, pero
+    permisivo — el PathResolver hace el split de args cuidadoso con quoting
+    y paréntesis anidados).
+
+    Ejemplo de match:
+        wp_enqueue_style('etca-base', "$dir/assets/css/base.css", [], '1.0')
+        get_template_part('template-parts/header')
+        require get_template_directory() . '/inc/x.php'
+
+    re.DOTALL para tolerar llamadas con saltos de línea.
+    Word boundary a izquierda para no matchear prefijos accidentales
+    (ej. `my_wp_enqueue_script` no matchea).
+    """
+    if not loader_names:
+        return None
+    escaped = sorted(
+        (re.escape(name) for name in loader_names if name),
+        key=len, reverse=True,
+    )
+    if not escaped:
+        return None
+    names_alt = "|".join(escaped)
+    # El balance de paréntesis lo hace el PathResolver (_split_call_args) con
+    # stack explícito; acá solo necesitamos capturar un cuerpo "suficientemente
+    # amplio". Usamos non-greedy hasta la primera `)` seguida de algo que no
+    # parezca un continuación razonable. Para evitar over-matching en archivos
+    # gigantes, limitamos a ~4000 chars (cuerpo típico es <200).
+    pattern = (
+        r"(?<![a-zA-Z0-9_])(" + names_alt + r")\s*\(((?:[^()]|\([^)]*\)){0,4000}?)\)"
+    )
+    return re.compile(pattern, re.DOTALL)
+
+
 def extract_http_host(url_string):
     """NET-022 — Extrae hostname de una URL string usando urlparse.
 

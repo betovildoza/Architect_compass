@@ -431,11 +431,18 @@ class ArchitectCompass:
         )
         self.stack_map = self.stack_detector.detect(self.project_root)
 
-        # --- Path resolver (RES-002) -------------------------------------
+        # --- Path resolver (RES-002 + SEM-020) ---------------------------
         # PathResolver convierte raw imports a paths absolutos posix. El
         # scanner dispatcher (SCN-003) produce los raws; el resolver los
         # interpreta según el lenguaje del archivo fuente.
-        self.path_resolver = PathResolver(self.project_root)
+        # SEM-020: detectar theme_root / plugins_root para proyectos WP.
+        theme_root, plugins_root = self._detect_wp_roots()
+        self.path_resolver = PathResolver(
+            self.project_root,
+            config=self.config,
+            theme_root=theme_root,
+            plugins_root=plugins_root,
+        )
 
         # --- Incremental cache (INC-008) ---------------------------------
         # `previous_cache` es el contenido previo de fingerprints.json. Si
@@ -887,6 +894,72 @@ class ArchitectCompass:
                 return self.file_registry[registry_path]
 
         return clean
+
+    # ------------------------------------------------------------------
+    # SEM-020 — detección de roots WordPress para el PathResolver
+    # ------------------------------------------------------------------
+    def _detect_wp_roots(self):
+        """Detecta `theme_root` y `plugins_root` absolutos si el proyecto
+        tiene un sub-árbol WordPress. Devuelve `(theme_root, plugins_root)`
+        — cada uno puede ser None si no se detecta.
+
+        Heurística mínima (sin I/O extra — sólo consulta stack_map):
+            - Si algún subdir del stack_map tiene stack 'WordPress-Development'
+              y existe `functions.php` dentro, es candidato a theme_root.
+            - Si el proyecto root contiene `themes/<X>/functions.php`,
+              elegimos ese como theme_root.
+            - plugins_root = el primer `wp-content/plugins/` absoluto que
+              encontremos, o `<project_root>/wp-content/plugins` como fallback
+              si existe.
+
+        Para ETCA (themes/etca-aula/functions.php) el resultado es
+        `theme_root = <project>/themes/etca-aula`. Para proyectos non-WP,
+        ambos son None y el PathResolver usa project_root como fallback.
+        """
+        theme_root = None
+        plugins_root = None
+
+        # 1. Preferir candidatos del stack_map con stack WordPress-Development.
+        wp_stack_keys = [
+            rel for rel, stack in getattr(self, "stack_map", {}).items()
+            if rel and "WordPress" in str(stack)
+        ]
+        # 2. Buscar directorios con functions.php (theme marker).
+        candidates = []
+        for rel in wp_stack_keys:
+            p = self.project_root / rel
+            if (p / "functions.php").is_file():
+                candidates.append(p)
+        # Fallback: walk `themes/` si existe (hasta 2 niveles).
+        themes_dir = self.project_root / "themes"
+        if not candidates and themes_dir.is_dir():
+            try:
+                for child in themes_dir.iterdir():
+                    if child.is_dir() and (child / "functions.php").is_file():
+                        candidates.append(child)
+            except OSError:
+                pass
+        # wp-content/themes/<X>/functions.php
+        wp_themes = self.project_root / "wp-content" / "themes"
+        if not candidates and wp_themes.is_dir():
+            try:
+                for child in wp_themes.iterdir():
+                    if child.is_dir() and (child / "functions.php").is_file():
+                        candidates.append(child)
+            except OSError:
+                pass
+        if candidates:
+            theme_root = candidates[0].resolve()
+
+        # 3. plugins_root: `wp-content/plugins` bajo project_root o
+        #    directamente `plugins/` si el proyecto es el wp-content mismo.
+        for rel in ("wp-content/plugins", "plugins"):
+            cand = self.project_root / rel
+            if cand.is_dir():
+                plugins_root = cand.resolve()
+                break
+
+        return theme_root, plugins_root
 
     # ------------------------------------------------------------------
     # Stack resolution por archivo (STK-001 + MST-006)

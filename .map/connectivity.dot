@@ -42,7 +42,9 @@ digraph G {
     "compass/graph_emitter.py" -> "[EXTERNAL:unpkg.com]" [label="fetch", color="#c0392b", fontname="Arial", fontsize=9];
     "compass/scanners/html.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scanners/python.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/scanners/regex_fallback.py" -> "compass/path_resolver.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scanners/regex_fallback.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/scanners/treesitter.py" -> "compass/path_resolver.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scanners/treesitter.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     subgraph "cluster_legend" {
         label="Leyenda"; style="rounded,filled";

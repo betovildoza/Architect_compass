@@ -17,7 +17,10 @@ El scanner se cachea por (language, id(config)) para no re-construirlo por
 archivo en cada run.
 """
 
-from compass.scanners.base import Scanner, NullScanner, build_http_loader_regex
+from compass.scanners.base import (
+    Scanner, NullScanner, build_http_loader_regex, build_loader_call_regex,
+    DEFAULT_EDGE_TYPE,
+)
 from compass.scanners.html import HtmlScanner
 from compass.scanners.python import PythonScanner
 from compass.scanners.regex_fallback import RegexFallbackScanner
@@ -56,7 +59,7 @@ def _build_scanner(language, config):
     if language == "python":
         return PythonScanner(config=config)
     if language in ("html", "htm"):
-        return HtmlScanner()
+        return HtmlScanner(config=config)
 
     grammars = (config.get("language_grammars") or {}) if config else {}
     grammar_name = grammars.get(language)
@@ -72,11 +75,31 @@ def _build_scanner(language, config):
     patterns = _collect_regex_patterns(language, config)
     # NET-022: compilar http_loaders regex para el lenguaje.
     http_regex = None
+    # SEM-020: compilar loader_calls regex para el lenguaje.
+    loader_regex = None
+    loader_edge_map = {}
     if config and isinstance(config, dict):
         loaders = (config.get("http_loaders") or {}).get(language) or []
         http_regex = build_http_loader_regex(loaders)
-    if patterns.get("outbound") or http_regex:
-        return RegexFallbackScanner(patterns, http_regex=http_regex)
+        loader_calls = config.get("loader_calls") or {}
+        lang_loaders = {
+            name: spec for name, spec in loader_calls.items()
+            if isinstance(spec, dict)
+            and (spec.get("language") or "").lower() == (language or "").lower()
+        }
+        if lang_loaders:
+            loader_regex = build_loader_call_regex(lang_loaders.keys())
+            loader_edge_map = {
+                name: spec.get("edge_type") or DEFAULT_EDGE_TYPE
+                for name, spec in lang_loaders.items()
+            }
+    if patterns.get("outbound") or http_regex or loader_regex:
+        return RegexFallbackScanner(
+            patterns,
+            http_regex=http_regex,
+            loader_regex=loader_regex,
+            loader_edge_map=loader_edge_map,
+        )
 
     # Nada aplicable.
     if language not in _FEEDBACK_NO_SCANNER:

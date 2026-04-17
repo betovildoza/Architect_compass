@@ -27,6 +27,7 @@ compass/core.py::analyze() antes de SCN-003.
 import re
 
 from compass.scanners.base import Scanner as _BaseScanner, DEFAULT_EDGE_TYPE
+from compass.path_resolver import encode_loader_raw
 
 # URL-SCAN — regex para capturar URL literals en source text.
 _URL_LITERAL_RE = re.compile(r'''["'](https?://[^"'\s)]+)["']''')
@@ -42,8 +43,11 @@ class RegexFallbackScanner(_BaseScanner):
         http_regex: compiled regex de NET-022 http_loaders (opcional).
     """
 
-    def __init__(self, patterns, http_regex=None):
+    def __init__(self, patterns, http_regex=None, loader_regex=None, loader_edge_map=None):
         self._http_regex = http_regex
+        # SEM-020 — regex de loader_calls + dict fn_name → edge_type.
+        self._loader_regex = loader_regex
+        self._loader_edge_map = loader_edge_map or {}
         patterns = patterns or {}
         raw_outbound = patterns.get("outbound", []) or []
         # EDG-023: guardamos (compiled, edge_type) por pattern.
@@ -103,6 +107,15 @@ class RegexFallbackScanner(_BaseScanner):
                     match = next((g for g in match if g), "")
                 if match:
                     out.append((str(match).strip(), edge_type))
+
+        # SEM-020 — loader_calls: emitir sentinel por cada call matcheada
+        # con su edge_type configurado. El PathResolver resuelve el arg.
+        if self._loader_regex:
+            for match in self._loader_regex.finditer(content):
+                fn = match.group(1)
+                body = match.group(2) or ""
+                edge_type = self._loader_edge_map.get(fn, DEFAULT_EDGE_TYPE)
+                out.append((encode_loader_raw(fn, body), edge_type))
 
         # NET-022 — segundo pass: URLs literales en llamadas HTTP.
         if self._http_regex:

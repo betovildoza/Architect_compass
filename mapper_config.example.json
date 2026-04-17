@@ -76,8 +76,30 @@
   "_comment_external_include_stdlib": "NET-023 complement. Cuando NET-023 promueve imports Python no-resueltos a [EXTERNAL:<head>], por default filtramos stdlib (`os`, `sys`, `json`, `re`, `pathlib`, etc.) porque nunca son una dep real del proyecto. Seteá `true` si querés ver todos los imports stdlib como nodos externos del grafo (comportamiento pre-filtro).",
   "external_include_stdlib": false,
 
+  "_path_functions_comment": "SEM-020 — funciones cuyo return-value semántico es un path conocido. El PathResolver las evalúa al ver `fn()` en una concatenación PHP o interpolación PHP (tipo `\"$dir/foo\"` donde $dir = get_template_directory_uri()). Valor = template con tokens {theme_root}, {plugins_root}, {source_dir}. core.py detecta theme_root desde `themes/<X>/functions.php` o `wp-content/themes/<X>/functions.php`; fallback a project_root.",
+  "path_functions": {
+    "get_template_directory_uri":    "{theme_root}",
+    "get_template_directory":        "{theme_root}",
+    "get_stylesheet_directory_uri":  "{theme_root}",
+    "get_stylesheet_directory":      "{theme_root}",
+    "plugins_url":                   "{plugins_root}",
+    "plugin_dir_url":                "{plugins_root}",
+    "plugin_dir_path":               "{plugins_root}",
+    "__dirname":                     "{source_dir}"
+  },
+
+  "_loader_calls_comment": "SEM-020 — llamadas a funciones de carga de recursos. El scanner captura la llamada completa + el PathResolver extrae el argumento `arg` (1-based) y lo resuelve contra path_functions. `ext_default` se agrega si el string no termina en extensión conocida. `base` (opcional) fuerza base al path resuelto por path_functions (ej. get_template_part → {theme_root}). `language` filtra por lenguaje del archivo fuente. Elimina necesidad de declarar recursos WP en dynamic_deps.",
+  "loader_calls": {
+    "wp_enqueue_script":   { "arg": 2, "ext_default": ".js",  "language": "php", "edge_type": "enqueue" },
+    "wp_enqueue_style":    { "arg": 2, "ext_default": ".css", "language": "php", "edge_type": "enqueue" },
+    "wp_register_script":  { "arg": 2, "ext_default": ".js",  "language": "php", "edge_type": "enqueue" },
+    "wp_register_style":   { "arg": 2, "ext_default": ".css", "language": "php", "edge_type": "enqueue" },
+    "get_template_part":   { "arg": 1, "ext_default": ".php", "language": "php", "edge_type": "include", "base": "{theme_root}" },
+    "locate_template":     { "arg": 1, "ext_default": ".php", "language": "php", "edge_type": "include", "base": "{theme_root}" }
+  },
+
   "http_loaders": {
-    "_comment": "NET-022 — funciones HTTP cuyo primer argumento string literal es una URL. El scanner extrae la URL y la emite con edge_type 'fetch'. core.py parsea el hostname y lo matchea contra external_services[*].match_urls para asignar un label legible. Si no matchea, usa el hostname crudo. Para agregar wrappers custom del proyecto (ej. apiReq, apiCall), extendé esta sección en compass.local.json — las listas se unen por lenguaje (no se reemplazan).",
+    "_comment": "NET-022 — funciones HTTP cuyo primer argumento string literal es una URL. El scanner extrae la URL y la emite con edge_type 'fetch'. core.py parsea el hostname y lo matchea contra external_services[*].match_urls para asignar un label legible. Si no matchea, usa el hostname crudo. Para agregar wrappers custom del proyecto (ej. apiReq, apiCall), extendé esta sección en compass.local.json — las listas se unen por lenguaje (no se reemplazan). FIX-027: el scanner HTML reutiliza esta lista para escanear bloques <script> inline.",
     "_note_content_vs_functional": "NET-022b (Session 8) — Filtros hardcoded: (1) las URLs capturadas por `<a href>` en HTML NO se procesan (son navegación/contenido, p.ej. linkedin.com, schema.org, sitemaps.org); solo se scanean <script src>, <link href>, <img src>, <iframe src>, <form action>, <video|audio|source src>. (2) URLs con hostname local/loopback/privado (localhost, 127.0.0.1, 0.0.0.0, ::1, 10.*, 172.16-31.*, 192.168.*) se descartan silenciosamente en core.py — son dev-noise, no dependencias funcionales. No hay flag de config para estos filtros; son comportamiento fijo.",
     "python": ["requests.get", "requests.post", "urlopen", "httpx.get"],
     "javascript": ["fetch", "axios.get", "axios.post"],

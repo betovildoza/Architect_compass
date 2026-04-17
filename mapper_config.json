@@ -227,6 +227,26 @@
     }
   },
   "external_include_stdlib": false,
+  "_path_functions_note": "SEM-020: funciones cuyo return-value semántico es un path conocido. El PathResolver las evalúa al ver `fn()` en una concatenación (php) o interpolación (js/php). Valor = template con tokens {theme_root}, {plugins_root}, {source_dir}. Cada token se resuelve en runtime: theme_root = dir del tema WP detectado (o project_root fallback); plugins_root = wp-content/plugins; source_dir = dir del archivo fuente.",
+  "path_functions": {
+    "get_template_directory_uri":    "{theme_root}",
+    "get_template_directory":        "{theme_root}",
+    "get_stylesheet_directory_uri":  "{theme_root}",
+    "get_stylesheet_directory":      "{theme_root}",
+    "plugins_url":                   "{plugins_root}",
+    "plugin_dir_url":                "{plugins_root}",
+    "plugin_dir_path":               "{plugins_root}",
+    "__dirname":                     "{source_dir}"
+  },
+  "_loader_calls_note": "SEM-020: llamadas a funciones de carga de recursos. El scanner captura la llamada completa + el PathResolver extrae el argumento `arg` (1-based) y lo resuelve. `ext_default` se agrega si el string no termina en extensión conocida. Si `arg` es concatenación `fn() . 'literal'` o interpolación `\"$var/literal\"`, el resolver usa path_functions para evaluar la parte dinámica.",
+  "loader_calls": {
+    "wp_enqueue_script":   { "arg": 2, "ext_default": ".js",  "language": "php", "edge_type": "enqueue" },
+    "wp_enqueue_style":    { "arg": 2, "ext_default": ".css", "language": "php", "edge_type": "enqueue" },
+    "wp_register_script":  { "arg": 2, "ext_default": ".js",  "language": "php", "edge_type": "enqueue" },
+    "wp_register_style":   { "arg": 2, "ext_default": ".css", "language": "php", "edge_type": "enqueue" },
+    "get_template_part":   { "arg": 1, "ext_default": ".php", "language": "php", "edge_type": "include", "base": "{theme_root}" },
+    "locate_template":     { "arg": 1, "ext_default": ".php", "language": "php", "edge_type": "include", "base": "{theme_root}" }
+  },
   "http_loaders": {
     "python": [
       "requests.get", "requests.post", "requests.put", "requests.delete",

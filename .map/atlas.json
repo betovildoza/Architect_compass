@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-04-17 03:46:34",
+    "generated_at": "2026-04-17 05:04:41",
     "project_name": "Architect_compass",
     "identities": [
         {
@@ -15,8 +15,8 @@
     "summary": {
         "total_files": 15,
         "relevant_files": 7,
-        "scanned_files": 0,
-        "reused_from_cache": 15
+        "scanned_files": 1,
+        "reused_from_cache": 14
     },
     "connectivity": {
         "inbound": [],
@@ -41,12 +41,16 @@
             "compass/core.py -> compass/validation.py",
             "compass/graph_emitter.py -> [EXTERNAL:unpkg.com]",
             "compass/scanners/html.py -> compass/scanners/base.py",
+            "compass/scanners/html.py -> compass/scanners/base.py",
             "compass/scanners/python.py -> compass/scanners/base.py",
             "compass/scanners/regex_fallback.py -> compass/scanners/base.py",
             "compass/scanners/regex_fallback.py -> compass/scanners/base.py",
+            "compass/scanners/regex_fallback.py -> compass/path_resolver.py",
             "compass/scanners/treesitter.py -> compass/scanners/base.py",
             "compass/scanners/treesitter.py -> compass/scanners/base.py",
-            "compass/scanners/treesitter.py -> compass/scanners/base.py"
+            "compass/scanners/treesitter.py -> compass/scanners/base.py",
+            "compass/scanners/treesitter.py -> compass/scanners/base.py",
+            "compass/scanners/treesitter.py -> compass/path_resolver.py"
         ]
     },
     "audit": {
@@ -119,6 +123,7 @@
             "stack": "Python",
             "metadata": {
                 "calls": [
+                    "ast",
                     "os",
                     "re",
                     "pathlib:Path"
@@ -210,7 +215,7 @@
     ],
     "cycles": [],
     "health": {
-        "total": 73.09,
+        "total": 73.17,
         "weights": {
             "orphans": 0.4,
             "connectivity": 0.3,
@@ -233,8 +238,8 @@
         },
         "connectivity": {
             "score": 100.0,
-            "avg_inbound": 1.67,
-            "total_inbound_edges": 25
+            "avg_inbound": 1.93,
+            "total_inbound_edges": 29
         },
         "dead_exports": {
             "score": 66.67,
@@ -248,13 +253,13 @@
             ]
         },
         "external_deps": {
-            "score": 96.15,
+            "score": 96.67,
             "external_targets": 1,
-            "total_targets": 26
+            "total_targets": 30
         }
     },
     "delta": {
-        "previous_generated_at": "2026-04-17 02:47:12",
+        "previous_generated_at": "2026-04-17 04:45:52",
         "files": {
             "added": [],
             "removed": []
@@ -286,8 +291,8 @@
         "ignored": 1,
         "self_edge": 0,
         "ignore_outbound": 0,
-        "rendered_edges": 12,
-        "raw_edges": 26
+        "rendered_edges": 14,
+        "raw_edges": 30
     },
     "external_tiers": {
         "[EXTERNAL:unpkg.com]": "service"
