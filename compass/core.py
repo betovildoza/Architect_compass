@@ -225,6 +225,15 @@ _PYTHON_STDLIB_FALLBACK = frozenset({
 })
 
 
+# TIER-035 — ranking para que un segundo registro de un mismo external no
+# degrade su tier. service gana siempre (señal de red externa).
+_TIER_RANK = {"stdlib": 1, "package": 2, "wrapper": 3, "service": 4}
+
+
+def _tier_rank(tier):
+    return _TIER_RANK.get(tier, 0)
+
+
 def _is_python_stdlib(module_head):
     """NET-023 complement — True si `module_head` es un módulo stdlib de Python.
 
@@ -433,6 +442,9 @@ class ArchitectCompass:
         # `force_full` o el archivo no existe / es inválido / cambió de
         # versión, partimos vacío. `current_cache` se va llenando durante
         # analyze() y se persiste en finalize().
+        # TIER-035 — _cached_external_tiers se puebla dentro de _load_fingerprints
+        # si el cache tenía tiers de un run previo. Default vacío.
+        self._cached_external_tiers = {}
         self.previous_cache = self._load_fingerprints()
         self.current_cache = {}
 
@@ -459,6 +471,9 @@ class ArchitectCompass:
         # external_service matcheado genera un único nodo `[EXTERNAL:<label>]`,
         # con shape cylinder + color rojo. Se unifican las edges entrantes.
         self._external_nodes = {}
+        # TIER-035: tier semántico por external node label.
+        # dict[str label → str tier ('stdlib'|'package'|'service'|'wrapper')].
+        self._external_node_tiers = {}
         # GRF-021: llamadas builtin/stdlib/no-resolvable por archivo fuente.
         # dict[rel_path: list[str]]. Se emiten como `metadata.calls` del
         # nodo en atlas.files, no como edges ni nodos del grafo.
@@ -708,6 +723,14 @@ class ArchitectCompass:
         files = data.get("files")
         if not isinstance(files, dict):
             return {}
+        # TIER-035 — exponer external_tiers cacheados para que el replay
+        # pueda reusarlos sin recomputar (el recomputo pierde info parcial
+        # como URL host → service cuando el host no está en match_urls).
+        cached_tiers = data.get("external_tiers")
+        if isinstance(cached_tiers, dict):
+            self._cached_external_tiers = dict(cached_tiers)
+        else:
+            self._cached_external_tiers = {}
         return files
 
     def _config_fingerprint(self):
@@ -741,6 +764,11 @@ class ArchitectCompass:
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "config_fingerprint": self._config_fingerprint(),
             "files": self.current_cache,
+            # TIER-035 — persistir external_tiers computados en este run para
+            # que el cached replay no tenga que re-clasificar (información
+            # parcialmente perdible — p.ej. URL host por external_services
+            # sin match_urls config).
+            "external_tiers": dict(self._external_node_tiers),
         }
         try:
             with open(self.fingerprints_path, "w", encoding="utf-8") as f:
@@ -1031,6 +1059,9 @@ class ArchitectCompass:
                 }
         self.atlas["identities"] = list(identity_index.values())
 
+        # GRAPH-036 — detectar entry points del proyecto.
+        self._detect_entry_points()
+
         self.run_audit()
 
     # ------------------------------------------------------------------
@@ -1178,7 +1209,11 @@ class ArchitectCompass:
             )
             self._register_edge(rel_path, final_node, kind, edge_type)
             if kind == "external":
-                self._register_external_node(final_node, classification["label_display"])
+                self._register_external_node(
+                    final_node,
+                    classification["label_display"],
+                    tier=classification.get("tier"),
+                )
             outbound_targets.append(final_node)
             is_relevant = True
         # AST-024 — persistir metadata de assets/filtered_refs a nivel core.
@@ -1253,7 +1288,14 @@ class ArchitectCompass:
             et = edge_types.get(tgt, self.default_edge_type)
             self._register_edge(rel_path, tgt, kind, et)
             if kind == "external":
-                self._register_external_node(tgt, display)
+                # TIER-035 — preferir tier cacheado del run previo (preserva
+                # la señal de `service` obtenida por URL literal cuando el
+                # display es solo un hostname sin match en config). Fallback
+                # a recompute si no hay cached.
+                tier = self._cached_external_tiers.get(tgt)
+                if not tier:
+                    tier = self._tier_from_display(display, language=None)
+                self._register_external_node(tgt, display, tier=tier)
             kept_targets.append(tgt)
         for name, delta in tech_delta.items():
             tech_scores[name] = tech_scores.get(name, 0) + delta
@@ -1445,10 +1487,12 @@ class ArchitectCompass:
             if self._is_local_hostname(host):
                 return {"kind": "discard", "label": cleaned}
             label = self._match_external_by_url(host) or host
+            # TIER-035 — URL → service (red externa).
             return {
                 "kind": "external",
                 "label": f"[EXTERNAL:{label}]",
                 "label_display": label,
+                "tier": "service",
             }
 
         # 1. Archivo del repo (precedencia máxima).
@@ -1467,10 +1511,13 @@ class ArchitectCompass:
         #    desvían en paso 0 (NET-022) — no llegan acá.
         ext_label = self._match_external_service(cleaned)
         if ext_label:
+            # TIER-035 — SDK declarado (import match) → service.
+            # Los external_services cubren casi siempre red externa.
             return {
                 "kind": "external",
                 "label": f"[EXTERNAL:{ext_label}]",
                 "label_display": ext_label,
+                "tier": "service",
             }
 
         # 3. Legacy `unify_external_nodes` — se mantiene como categoría
@@ -1484,10 +1531,17 @@ class ArchitectCompass:
             # Tratamos el unify como external genérico: mismo shape, label
             # = nombre del paquete. Evita regresión visual en grafos viejos.
             display = head if head in unify_lower else lower
+            # TIER-035 — legacy unify son bare names de paquetes (fetch,
+            # axios, anthropic). Clasificamos como package por default;
+            # si es un wrapper declarado, el branch final lo resuelve más
+            # abajo (no — ese branch corre después; acá elegimos package).
             return {
                 "kind": "external",
                 "label": f"[EXTERNAL:{display}]",
                 "label_display": display,
+                "tier": self._classify_external_tier(
+                    display, language, is_service=False,
+                ),
             }
 
         # 4. NET-023 — auto-promoción de imports no resueltos a externals.
@@ -1518,6 +1572,9 @@ class ArchitectCompass:
                 "kind": "external",
                 "label": f"[EXTERNAL:{promoted}]",
                 "label_display": promoted,
+                "tier": self._classify_external_tier(
+                    promoted, language, is_service=False,
+                ),
             }
 
         # 5. Resto (builtins, stdlib, funciones de framework, libs locales
@@ -1666,13 +1723,249 @@ class ArchitectCompass:
                 return True
         return False
 
-    def _register_external_node(self, node_label, display_label):
+    def _register_external_node(self, node_label, display_label, tier=None):
         """Registra un nodo `[EXTERNAL:X]` para renderizarlo con shape/color.
 
         Unifica por label — múltiples sources apuntando al mismo external
         reusan el mismo nodo.
+
+        TIER-035 — `tier` opcional (`stdlib|package|service|wrapper`). Se
+        guarda en `self._external_node_tiers`. Si ya existe una entrada con
+        un tier más específico (p.ej. service), NO se degrada a package —
+        los services ganan (son la señal más fuerte).
         """
         self._external_nodes[node_label] = display_label
+        if tier:
+            # Precedencia entre tiers: service > wrapper > package > stdlib.
+            # Evita que un segundo pass (p.ej. cache replay con tier='package')
+            # pise a un URL-match previo (tier='service').
+            existing = self._external_node_tiers.get(node_label)
+            if not existing or _tier_rank(tier) > _tier_rank(existing):
+                self._external_node_tiers[node_label] = tier
+
+    # TIER-035 — clasificación de tier para externals (package|stdlib|wrapper).
+    # `service` se setea directamente en `_classify_outbound` cuando hay match
+    # de URL o de external_service declarado. Este helper cubre la rama donde
+    # el external se resolvió por nombre de paquete (unify legacy o
+    # auto-promote), que son los dos lugares donde hay ambigüedad package vs
+    # stdlib vs wrapper.
+    def _classify_external_tier(self, display_label, language, is_service):
+        if is_service:
+            return "service"
+        if not display_label:
+            return "package"
+        # Wrapper? El config `graph.external_wrappers` agrupa nombres
+        # custom por lenguaje + "any" (cross-lang).
+        if self._is_external_wrapper(display_label, language):
+            return "wrapper"
+        # Stdlib? Hoy solo Python tiene tabla confiable (sys.stdlib_module_names).
+        head = str(display_label).split("/", 1)[0].split(".", 1)[0]
+        lang = (language or "").lower()
+        if lang == "python" and _is_python_stdlib(head):
+            return "stdlib"
+        return "package"
+
+    def _tier_from_display(self, display_label, language=None):
+        """TIER-035 — tier a partir del display label del external.
+
+        Usado en rutas donde no hay contexto del raw (ej. cached replay).
+        Heurística:
+          - URL-like (contiene `.` y TLD reconocible o match vs URL index) → service.
+          - Match por nombre contra `external_services[*].match` → service.
+          - Wrapper custom → wrapper.
+          - Stdlib Python → stdlib.
+          - Resto → package.
+        """
+        if not display_label:
+            return "package"
+        # Service by URL host match.
+        if self._match_external_by_url(display_label):
+            return "service"
+        # Service by name — scan external_services labels.
+        for entry in (self.external_services.values()
+                      if isinstance(self.external_services, dict)
+                      else (self.external_services or [])):
+            if isinstance(entry, dict):
+                lbl = (entry.get("label") or "").strip()
+                if lbl and lbl == str(display_label).strip():
+                    return "service"
+        return self._classify_external_tier(
+            display_label, language, is_service=False,
+        )
+
+    def _is_external_wrapper(self, display_label, language):
+        """TIER-035 — True si `display_label` está en `graph.external_wrappers`.
+
+        Busca en la lista del lenguaje específico y en "any". Match case-insensitive
+        por nombre completo del display (ej. `apiReq`).
+        """
+        wrappers_cfg = (self.graph_rules.get("external_wrappers") or {})
+        if not isinstance(wrappers_cfg, dict):
+            return False
+        lang = (language or "").lower()
+        candidates = set()
+        for key in ("any", lang):
+            lst = wrappers_cfg.get(key) or []
+            if isinstance(lst, list):
+                for name in lst:
+                    if name:
+                        candidates.add(str(name).lower())
+        return str(display_label).lower() in candidates
+
+    # GRAPH-036 — regex para `if __name__ == "__main__":` (variantes con
+    # comillas simples/dobles + whitespace flexible).
+    _PY_MAIN_RE = re.compile(
+        r"^\s*if\s+__name__\s*==\s*['\"]__main__['\"]\s*:\s*$",
+        re.MULTILINE,
+    )
+
+    # GRAPH-036 — regex para extraer paths de .bat/.sh (línea con `python
+    # algo.py`, `node algo.js`, o ruta directa tipo `SET SCRIPT_PATH="..."`).
+    # Captura cualquier token con extensión .py/.js/.ts/.mjs/.php/.sh/.bat.
+    _SCRIPT_REF_RE = re.compile(
+        r'''["']?([A-Za-z0-9_./\\:-]+\.(?:py|js|ts|mjs|tsx|jsx|php|sh|bat))["']?''',
+        re.IGNORECASE,
+    )
+
+    def _detect_entry_points(self):
+        """GRAPH-036 — detecta entry points del proyecto y los guarda en
+        `atlas.entry_points`.
+
+        Heurísticas:
+          - **Python:** archivo contiene `if __name__ == "__main__":`.
+          - **Shell/Batch en raíz:** archivos `.bat` / `.sh` en el root del
+            proyecto se escanean para extraer referencias a scripts
+            `.py/.js/.ts/...` — esos scripts referenciados se marcan como
+            entry points (si existen en el repo).
+          - **Node.js:** `package.json` en raíz → `main`, `bin` (string u
+            objeto), `scripts.start` (si referencia un file directamente).
+          - **PHP:** archivos `index.php` en la raíz del proyecto (no en
+            subdirs — solo raíz).
+
+        Output: lista ordenada de paths posix relativos al project_root,
+        todos presentes en `self._all_scanned_files` (o agregados si existen
+        pero quedaron fuera del walk — ej. `.bat` que no se indexa por
+        extension).
+        """
+        entry_set = set()
+        indexed = set(self._all_scanned_files)
+
+        # 1) Python `__main__` — escaneo directo de los .py indexados.
+        for rel_path in self._all_scanned_files:
+            if not rel_path.endswith(".py"):
+                continue
+            try:
+                abs_path = self.project_root / rel_path
+                with open(abs_path, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+            except OSError:
+                continue
+            if self._PY_MAIN_RE.search(content):
+                entry_set.add(rel_path)
+
+        # 2) Shell/Batch en raíz — leer cada .bat/.sh directamente de disco
+        # (no están indexados por `text_extensions` default).
+        try:
+            for item in self.project_root.iterdir():
+                if not item.is_file():
+                    continue
+                if item.suffix.lower() not in (".bat", ".sh"):
+                    continue
+                try:
+                    content = item.read_text(encoding="utf-8", errors="ignore")
+                except OSError:
+                    continue
+                for m in self._SCRIPT_REF_RE.finditer(content):
+                    raw = m.group(1).strip().strip("\"'")
+                    if not raw:
+                        continue
+                    # Normalizar separadores y convertir absoluto → relativo
+                    # si cae dentro del proyecto.
+                    candidate = self._normalize_entry_candidate(raw)
+                    if candidate and candidate in indexed:
+                        entry_set.add(candidate)
+        except OSError:
+            pass
+
+        # 3) package.json en raíz.
+        pkg_json_path = self.project_root / "package.json"
+        if pkg_json_path.is_file():
+            try:
+                pkg = json.loads(
+                    pkg_json_path.read_text(encoding="utf-8", errors="ignore")
+                )
+            except (OSError, ValueError):
+                pkg = None
+            if isinstance(pkg, dict):
+                # main
+                main = pkg.get("main")
+                if isinstance(main, str):
+                    cand = self._normalize_entry_candidate(main)
+                    if cand and cand in indexed:
+                        entry_set.add(cand)
+                # bin (string u objeto)
+                bin_val = pkg.get("bin")
+                if isinstance(bin_val, str):
+                    cand = self._normalize_entry_candidate(bin_val)
+                    if cand and cand in indexed:
+                        entry_set.add(cand)
+                elif isinstance(bin_val, dict):
+                    for _k, v in bin_val.items():
+                        if isinstance(v, str):
+                            cand = self._normalize_entry_candidate(v)
+                            if cand and cand in indexed:
+                                entry_set.add(cand)
+                # scripts.start (extraer archivo referenciado si existe)
+                scripts = pkg.get("scripts")
+                if isinstance(scripts, dict):
+                    start_cmd = scripts.get("start")
+                    if isinstance(start_cmd, str):
+                        for m in self._SCRIPT_REF_RE.finditer(start_cmd):
+                            cand = self._normalize_entry_candidate(m.group(1))
+                            if cand and cand in indexed:
+                                entry_set.add(cand)
+
+        # 4) PHP + HTML estático: index.{php,html,htm} SOLO en raíz.
+        #    No matchear `index.*` en subdirs — solo root.
+        for candidate in ("index.php", "index.html", "index.htm"):
+            p = self.project_root / candidate
+            if p.is_file() and candidate in indexed:
+                entry_set.add(candidate)
+
+        # Persistir ordenado — estable para diff.
+        self.atlas["entry_points"] = sorted(entry_set)
+
+    def _normalize_entry_candidate(self, raw):
+        """GRAPH-036 — normaliza un raw path (bat/sh/package.json) a posix
+        relativo al project_root si cae dentro. Devuelve None si es externo
+        o no se puede mapear.
+        """
+        if not raw:
+            return None
+        raw = raw.strip().strip('"').strip("'")
+        # Windows vars simples del tipo %FOO% o $FOO — no se pueden resolver.
+        if "%" in raw or (raw.startswith("$") and "/" not in raw):
+            return None
+        # Cleanup separadores.
+        p = raw.replace("\\", "/")
+        # Quitar prefijos relativos.
+        while p.startswith("./"):
+            p = p[2:]
+        try:
+            # Absoluto: intentar re-relativizar.
+            candidate_path = Path(raw)
+            if candidate_path.is_absolute():
+                try:
+                    rel = candidate_path.resolve().relative_to(
+                        self.project_root
+                    ).as_posix()
+                    return rel
+                except (ValueError, OSError):
+                    return None
+            # Relativo — asumimos root del proyecto como base.
+            return p
+        except (ValueError, OSError):
+            return None
 
     def _compute_orphans(self):
         """DYN-007: clasifica archivos sin inbound real como huérfanos.
@@ -1851,6 +2144,10 @@ class ArchitectCompass:
         self.atlas["graph_filters"] = dict(self._filter_counts)
         self.atlas["graph_filters"]["rendered_edges"] = len(unique_edges)
         self.atlas["graph_filters"]["raw_edges"] = len(self._edges)
+        # TIER-035 — expone la clasificación de tier en el atlas para
+        # consumidores (LLM view futuro, diff, HTML viewer).
+        if self._external_node_tiers:
+            self.atlas["external_tiers"] = dict(self._external_node_tiers)
 
     def _emit_graph_html(self):
         """Paso 2 — emite `graph.html` universal (Sesión 6C).
@@ -1872,6 +2169,8 @@ class ArchitectCompass:
             orphans=self.atlas.get("orphans", []),
             cycles=cycles,
             graph_config=self.graph_rules,
+            external_tiers=self._external_node_tiers,
+            entry_points=self.atlas.get("entry_points", []),
         )
         with open(self.map_dir / "graph.html", "w", encoding="utf-8") as f:
             f.write(html)

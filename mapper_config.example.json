@@ -98,7 +98,27 @@
       "^self$",
       "^none$",
       "^$"
-    ]
+    ],
+    "_external_tier_colors_note": "TIER-035: colores por tier semántico del external. stdlib=gris neutro, package=azul, service=violeta, wrapper=ámbar.",
+    "external_tier_colors": {
+      "stdlib":  "#9ca3af",
+      "package": "#60a5fa",
+      "service": "#a78bfa",
+      "wrapper": "#f59e0b"
+    },
+    "_external_wrappers_note": "TIER-035: nombres de wrappers HTTP custom del proyecto (ej. apiReq, apiCall). Se clasifican como tier='wrapper' en vez de 'package'. Sección 'any' aplica a todos los lenguajes.",
+    "external_wrappers": {
+      "any": [],
+      "python": [],
+      "javascript": ["apiReq", "apiCall"],
+      "typescript": [],
+      "php": []
+    },
+    "_entry_point_style_note": "GRAPH-036: los archivos detectados como entry points (ej. con bloque __main__, index.php raíz, package.json main, referenciados desde .bat/.sh) reciben este estilo distintivo.",
+    "entry_point_border_color": "#fbbf24",
+    "entry_point_border_width": 4,
+    "entry_point_size_boost": 10,
+    "entry_point_label_prefix": ""
   },
 
   "external_services": {

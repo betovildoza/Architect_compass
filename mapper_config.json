@@ -196,7 +196,27 @@
       "orphan":   "box",
       "cycle":    "box",
       "external": "cylinder"
-    }
+    },
+    "_external_tier_colors_note": "TIER-035: color por tier semántico del external. stdlib=gris neutro (ruido), package=azul (dep instalada), service=violeta (red externa), wrapper=ámbar (HTTP wrapper custom del proyecto).",
+    "external_tier_colors": {
+      "stdlib":  "#9ca3af",
+      "package": "#60a5fa",
+      "service": "#a78bfa",
+      "wrapper": "#f59e0b"
+    },
+    "_external_wrappers_note": "TIER-035: nombres de funciones/identifiers que son wrappers HTTP custom del proyecto. Cuando un external promovido matchea uno de estos (por lenguaje o en 'any'), se clasifica como tier='wrapper' en vez de 'package'. Útil para apiReq/apiCall/etc.",
+    "external_wrappers": {
+      "any": [],
+      "python": [],
+      "javascript": [],
+      "typescript": [],
+      "php": []
+    },
+    "_entry_point_style_note": "GRAPH-036: estilo visual del nodo entry point (archivo ejecutable: __main__, index.php raíz, package.json main, ref desde .bat/.sh).",
+    "entry_point_border_color": "#fbbf24",
+    "entry_point_border_width": 4,
+    "entry_point_size_boost": 10,
+    "entry_point_label_prefix": ""
   },
   "scoring_weights": {
     "health_weights": {

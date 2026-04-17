@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "generated_at": "2026-04-16 21:49:18",
-  "config_fingerprint": "6da6eed5d06537b62bb6416a4ff44d901257e14d0314e5d6140d54b4a28fa7d1",
+  "generated_at": "2026-04-17 03:46:34",
+  "config_fingerprint": "4b6ea9266359b2652c39f250a36018162db8c19f79d7ddac42ea76ea321fde1d",
   "files": {
     "architect_compass.py": {
       "fingerprint": "5320e4205346dff59f23592bc2d3d7b358be1d51a4bc083883f855f764ae4dfd",
@@ -34,7 +34,7 @@
       "metadata_filtered_refs": []
     },
     "mapper_config.example.json": {
-      "fingerprint": "d555da0f85b6c403b18ba42f24ee77b905844c8481586dc80a1d8600cd2c41f9",
+      "fingerprint": "8a53c3efdd3f295433a7d46d4a8ce1a25adce4e6573d5e9fd756f30ca0703a55",
       "outbound_targets": [],
       "inbound_patterns": [],
       "tech_scores": {},
@@ -46,7 +46,7 @@
       "metadata_filtered_refs": []
     },
     "mapper_config.json": {
-      "fingerprint": "ad3f91a26eb51de6efc65e65b2274ebccd979ff96e745467de2a1ae56dccdc3a",
+      "fingerprint": "fdb4ac40efe4e26fdad0a436a356c366905010c5163bfe1b3cd3ba00d20eadf1",
       "outbound_targets": [],
       "inbound_patterns": [],
       "tech_scores": {},
@@ -58,7 +58,7 @@
       "metadata_filtered_refs": []
     },
     "compass/core.py": {
-      "fingerprint": "0d947f7415ec1f8b68b1632840347cb66b03ba581a0a9a59efd8e0740abf6f1d",
+      "fingerprint": "1bd90b6a2ab1c90153253f8f3ec24b7748f10b6c421371d95ac51000d4401e7d",
       "outbound_targets": [
         "compass/stack_detector.py",
         "compass/stack_detector.py",
@@ -107,7 +107,7 @@
       ]
     },
     "compass/graph_emitter.py": {
-      "fingerprint": "1a4aff913b48de1c947c82751644fb7b3683586ddc0bda8375c83e0caaf7ce50",
+      "fingerprint": "9c140151ad0aaad653a30d7b9581c752d400c86c1a117fcc3af90ad3dabe28e6",
       "outbound_targets": [
         "[EXTERNAL:unpkg.com]"
       ],
@@ -284,5 +284,8 @@
       "metadata_assets": [],
       "metadata_filtered_refs": []
     }
+  },
+  "external_tiers": {
+    "[EXTERNAL:unpkg.com]": "service"
   }
 }

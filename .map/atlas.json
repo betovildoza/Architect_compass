@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-04-16 21:49:17",
+    "generated_at": "2026-04-17 03:46:34",
     "project_name": "Architect_compass",
     "identities": [
         {
@@ -15,8 +15,8 @@
     "summary": {
         "total_files": 15,
         "relevant_files": 7,
-        "scanned_files": 15,
-        "reused_from_cache": 0
+        "scanned_files": 0,
+        "reused_from_cache": 15
     },
     "connectivity": {
         "inbound": [],
@@ -205,6 +205,9 @@
         "compass/scanners/regex_fallback.py",
         "compass/scanners/treesitter.py"
     ],
+    "entry_points": [
+        "architect_compass.py"
+    ],
     "cycles": [],
     "health": {
         "total": 73.09,
@@ -251,7 +254,7 @@
         }
     },
     "delta": {
-        "previous_generated_at": "2026-04-16 20:33:49",
+        "previous_generated_at": "2026-04-17 02:47:12",
         "files": {
             "added": [],
             "removed": []
@@ -285,5 +288,8 @@
         "ignore_outbound": 0,
         "rendered_edges": 12,
         "raw_edges": 26
+    },
+    "external_tiers": {
+        "[EXTERNAL:unpkg.com]": "service"
     }
 }

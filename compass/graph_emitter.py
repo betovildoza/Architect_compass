@@ -57,6 +57,22 @@ _DEFAULT_VIS_NETWORK_CDN = (
     "https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"
 )
 
+# TIER-035 — colores por tier del external (overridable vía
+# graph.external_tier_colors).
+_DEFAULT_EXTERNAL_TIER_COLORS = {
+    "stdlib":  "#9ca3af",
+    "package": "#60a5fa",
+    "service": "#a78bfa",
+    "wrapper": "#f59e0b",
+}
+
+# GRAPH-036 — estilo del entry point (overridable vía
+# graph.entry_point_*).
+_DEFAULT_ENTRY_POINT_BORDER_COLOR = "#fbbf24"
+_DEFAULT_ENTRY_POINT_BORDER_WIDTH = 4
+_DEFAULT_ENTRY_POINT_SIZE_BOOST = 10
+_DEFAULT_ENTRY_POINT_LABEL_PREFIX = ""
+
 # Path al template HTML (Sesión 6C — externo para mantenibilidad).
 _TEMPLATE_PATH = Path(__file__).parent / "templates" / "graph.html.tpl"
 
@@ -296,6 +312,7 @@ def build_graph_html(
     node_count, edge_count, cycle_count,
     edges=None, external_nodes=None, orphans=None, cycles=None,
     graph_config=None,
+    external_tiers=None, entry_points=None,
 ):
     """Genera el `graph.html` universal basado en vis-network.
 
@@ -330,6 +347,39 @@ def build_graph_html(
     # Nodes en ciclos (planos, sin estructura de lista-de-ciclos).
     cycle_nodes = sorted(_nodes_in_cycles(cycles or []))
 
+    # TIER-035 — tier colors y mapping label→tier.
+    tier_colors = dict(_DEFAULT_EXTERNAL_TIER_COLORS)
+    tier_colors.update(graph_config.get("external_tier_colors") or {})
+    ext_tiers_map = dict(external_tiers or {})
+
+    # GRAPH-036 — entry point style + lista de paths.
+    ep_border_color = (
+        graph_config.get("entry_point_border_color")
+        or _DEFAULT_ENTRY_POINT_BORDER_COLOR
+    )
+    try:
+        ep_border_width = int(
+            graph_config.get(
+                "entry_point_border_width", _DEFAULT_ENTRY_POINT_BORDER_WIDTH
+            )
+        )
+    except (TypeError, ValueError):
+        ep_border_width = _DEFAULT_ENTRY_POINT_BORDER_WIDTH
+    try:
+        ep_size_boost = int(
+            graph_config.get(
+                "entry_point_size_boost", _DEFAULT_ENTRY_POINT_SIZE_BOOST
+            )
+        )
+    except (TypeError, ValueError):
+        ep_size_boost = _DEFAULT_ENTRY_POINT_SIZE_BOOST
+    ep_label_prefix = str(
+        graph_config.get(
+            "entry_point_label_prefix", _DEFAULT_ENTRY_POINT_LABEL_PREFIX
+        )
+    )
+    entry_points_list = sorted(entry_points or [])
+
     safe_project = str(project_name or "project")
     replacements = {
         "{PROJECT_NAME}": safe_project.replace("{", "").replace("}", ""),
@@ -343,6 +393,13 @@ def build_graph_html(
         "{ORPHANS_JSON}": json.dumps(orphans_list, ensure_ascii=False),
         "{CYCLES_NODES_JSON}": json.dumps(cycle_nodes, ensure_ascii=False),
         "{EDGE_COLORS_JSON}": json.dumps(edge_colors, ensure_ascii=False),
+        "{EXTERNAL_TIERS_JSON}": json.dumps(ext_tiers_map, ensure_ascii=False),
+        "{TIER_COLORS_JSON}": json.dumps(tier_colors, ensure_ascii=False),
+        "{ENTRY_POINTS_JSON}": json.dumps(entry_points_list, ensure_ascii=False),
+        "{ENTRY_POINT_BORDER_COLOR}": str(ep_border_color),
+        "{ENTRY_POINT_BORDER_WIDTH}": str(ep_border_width),
+        "{ENTRY_POINT_SIZE_BOOST}": str(ep_size_boost),
+        "{ENTRY_POINT_LABEL_PREFIX}": ep_label_prefix,
     }
     out = template
     for placeholder, value in replacements.items():
