@@ -1,11 +1,11 @@
 {
-    "generated_at": "2026-04-17 09:20:33",
+    "generated_at": "2026-04-17 11:44:50",
     "project_name": "Architect_compass",
     "identities": [
         {
             "tech": "Python",
-            "confidence": 16,
-            "files": 16,
+            "confidence": 17,
+            "files": 17,
             "source": "stack_markers"
         }
     ],
@@ -13,10 +13,10 @@
         "": "Python"
     },
     "summary": {
-        "total_files": 16,
+        "total_files": 17,
         "relevant_files": 7,
-        "scanned_files": 16,
-        "reused_from_cache": 0
+        "scanned_files": 1,
+        "reused_from_cache": 16
     },
     "connectivity": {
         "inbound": [],
@@ -57,7 +57,7 @@
         ]
     },
     "audit": {
-        "structural_health": 43.75,
+        "structural_health": 41.18,
         "warnings": []
     },
     "anomalies": [],
@@ -68,6 +68,32 @@
             "metadata": {
                 "calls": [
                     "sys"
+                ]
+            }
+        },
+        "architect_symbols.py": {
+            "stack": "Python",
+            "orphan_reason": "no_inbound",
+            "metadata": {
+                "calls": [
+                    "__future__:annotations",
+                    "argparse",
+                    "ast",
+                    "fnmatch",
+                    "json",
+                    "os",
+                    "re",
+                    "sys",
+                    "time",
+                    "datetime:datetime",
+                    "datetime:timezone",
+                    "pathlib:Path",
+                    "typing:Any",
+                    "typing:Dict",
+                    "typing:Iterable",
+                    "typing:List",
+                    "typing:Optional",
+                    "typing:Tuple"
                 ]
             }
         },
@@ -212,6 +238,7 @@
     },
     "orphans": [
         "architect_compass.py",
+        "architect_symbols.py",
         "cli_roadmap.html",
         "mapper_config.example.json",
         "mapper_config.json",
@@ -220,12 +247,14 @@
         "compass/scanners/treesitter.py"
     ],
     "entry_points": [
-        "architect_compass.py"
+        "architect_compass.py",
+        "architect_symbols.py"
     ],
     "metadata_consolidated": {
         "assets": {},
         "calls": {
             "__future__:annotations": [
+                "architect_symbols.py",
                 "compass/consolidator.py",
                 "compass/graph_emitter.py",
                 "compass/metrics.py",
@@ -237,7 +266,11 @@
             "abc:abstractmethod": [
                 "compass/scanners/base.py"
             ],
+            "argparse": [
+                "architect_symbols.py"
+            ],
             "ast": [
+                "architect_symbols.py",
                 "compass/path_resolver.py",
                 "compass/scanners/python.py"
             ],
@@ -245,9 +278,14 @@
                 "compass/stack_detector.py"
             ],
             "datetime:datetime": [
+                "architect_symbols.py",
                 "compass/core.py"
             ],
+            "datetime:timezone": [
+                "architect_symbols.py"
+            ],
             "fnmatch": [
+                "architect_symbols.py",
                 "compass/core.py",
                 "compass/stack_detector.py"
             ],
@@ -258,17 +296,20 @@
                 "compass/scanners/treesitter.py"
             ],
             "json": [
+                "architect_symbols.py",
                 "compass/core.py",
                 "compass/graph_emitter.py",
                 "compass/metrics.py",
                 "compass/validation.py"
             ],
             "os": [
+                "architect_symbols.py",
                 "compass/core.py",
                 "compass/path_resolver.py",
                 "compass/stack_detector.py"
             ],
             "pathlib:Path": [
+                "architect_symbols.py",
                 "compass/core.py",
                 "compass/graph_emitter.py",
                 "compass/metrics.py",
@@ -277,6 +318,7 @@
                 "compass/validation.py"
             ],
             "re": [
+                "architect_symbols.py",
                 "compass/core.py",
                 "compass/path_resolver.py",
                 "compass/scanners/base.py",
@@ -286,7 +328,29 @@
             ],
             "sys": [
                 "architect_compass.py",
+                "architect_symbols.py",
                 "compass/core.py"
+            ],
+            "time": [
+                "architect_symbols.py"
+            ],
+            "typing:Any": [
+                "architect_symbols.py"
+            ],
+            "typing:Dict": [
+                "architect_symbols.py"
+            ],
+            "typing:Iterable": [
+                "architect_symbols.py"
+            ],
+            "typing:List": [
+                "architect_symbols.py"
+            ],
+            "typing:Optional": [
+                "architect_symbols.py"
+            ],
+            "typing:Tuple": [
+                "architect_symbols.py"
             ],
             "urllib.parse:urlparse": [
                 "compass/core.py",
@@ -301,7 +365,7 @@
     },
     "cycles": [],
     "health": {
-        "total": 78.3,
+        "total": 77.19,
         "weights": {
             "orphans": 0.4,
             "connectivity": 0.3,
@@ -309,10 +373,11 @@
             "external_deps": 0.15
         },
         "orphans": {
-            "score": 56.25,
-            "count": 7,
+            "score": 52.94,
+            "count": 8,
             "files": [
                 "architect_compass.py",
+                "architect_symbols.py",
                 "cli_roadmap.html",
                 "mapper_config.example.json",
                 "mapper_config.json",
@@ -323,11 +388,11 @@
         },
         "connectivity": {
             "score": 100.0,
-            "avg_inbound": 2.0,
+            "avg_inbound": 1.88,
             "total_inbound_edges": 32
         },
         "dead_exports": {
-            "score": 75.0,
+            "score": 76.47,
             "count": 4,
             "files": [
                 "architect_compass.py",
@@ -343,35 +408,35 @@
         }
     },
     "delta": {
-        "previous_generated_at": "2026-04-17 09:16:18",
+        "previous_generated_at": "2026-04-17 09:20:33",
         "files": {
-            "added": [],
+            "added": [
+                "architect_symbols.py"
+            ],
             "removed": []
         },
         "edges": {
-            "added": [
-                "compass/scanners/treesitter.py -> compass/scanners/regex_fallback.py"
-            ],
+            "added": [],
             "removed": [],
-            "added_count": 1,
+            "added_count": 0,
             "removed_count": 0
         },
         "orphans": {
-            "added": [],
-            "removed": [
-                "compass/scanners/regex_fallback.py"
-            ]
+            "added": [
+                "architect_symbols.py"
+            ],
+            "removed": []
         },
         "cycles": {
             "added": [],
             "removed": []
         },
         "health_delta": {
-            "total": 3.46,
-            "orphans": 6.25,
+            "total": -1.11,
+            "orphans": -3.31,
             "connectivity": 0.0,
-            "dead_exports": 6.25,
-            "external_deps": 0.09
+            "dead_exports": 1.47,
+            "external_deps": 0.0
         }
     },
     "graph_filters": {

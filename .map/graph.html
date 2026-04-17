@@ -52,8 +52,8 @@
     <strong style="font-size:11px; color:#aaa; display:block; margin-bottom:4px;">Externals por tier</strong>
   </div>
   <div class="meta">
-    2026-04-17 09:20:33<br>
-    nodes=16 · edges=33 · cycles=0
+    2026-04-17 11:44:50<br>
+    nodes=17 · edges=33 · cycles=0
   </div>
 </div>
 <div id="controls">
@@ -67,14 +67,14 @@
   // Datos inyectados por graph_emitter.build_graph_html()
   const EDGES_RAW = [["architect_compass.py", "compass/core.py", "import"], ["compass/core.py", "compass/stack_detector.py", "import"], ["compass/core.py", "compass/stack_detector.py", "import"], ["compass/core.py", "compass/path_resolver.py", "import"], ["compass/core.py", "compass/scanners/base.py", "import"], ["compass/core.py", "compass/scanners/base.py", "import"], ["compass/core.py", "compass/scanners/base.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/graph_emitter.py", "import"], ["compass/core.py", "compass/graph_emitter.py", "import"], ["compass/core.py", "compass/graph_emitter.py", "import"], ["compass/core.py", "compass/validation.py", "import"], ["compass/core.py", "compass/consolidator.py", "import"], ["compass/core.py", "compass/consolidator.py", "import"], ["compass/graph_emitter.py", "[EXTERNAL:unpkg.com]", "fetch"], ["compass/scanners/html.py", "compass/scanners/base.py", "import"], ["compass/scanners/html.py", "compass/scanners/base.py", "import"], ["compass/scanners/python.py", "compass/scanners/base.py", "import"], ["compass/scanners/regex_fallback.py", "compass/scanners/base.py", "import"], ["compass/scanners/regex_fallback.py", "compass/scanners/base.py", "import"], ["compass/scanners/regex_fallback.py", "compass/path_resolver.py", "import"], ["compass/scanners/treesitter.py", "compass/scanners/base.py", "import"], ["compass/scanners/treesitter.py", "compass/scanners/base.py", "import"], ["compass/scanners/treesitter.py", "compass/scanners/base.py", "import"], ["compass/scanners/treesitter.py", "compass/scanners/base.py", "import"], ["compass/scanners/treesitter.py", "compass/path_resolver.py", "import"], ["compass/scanners/treesitter.py", "compass/scanners/regex_fallback.py", "import"]];
   const EXTERNALS = new Set(["[EXTERNAL:unpkg.com]"]);
-  const ORPHANS = new Set(["architect_compass.py", "cli_roadmap.html", "compass/scanners/html.py", "compass/scanners/python.py", "compass/scanners/treesitter.py", "mapper_config.example.json", "mapper_config.json"]);
+  const ORPHANS = new Set(["architect_compass.py", "architect_symbols.py", "cli_roadmap.html", "compass/scanners/html.py", "compass/scanners/python.py", "compass/scanners/treesitter.py", "mapper_config.example.json", "mapper_config.json"]);
   const CYCLES_NODES = new Set([]);
   const EDGE_COLORS = {"import": "#1f7a1f", "require": "#333333", "include": "#555555", "src": "#1f5fbf", "href": "#2e86de", "action": "#8e44ad", "fetch": "#c0392b", "enqueue": "#7d3c98", "use": "#888888"};
   // TIER-035 — tier semántico por external label + colores por tier.
   const EXTERNAL_TIERS = {"[EXTERNAL:unpkg.com]": "service"};
   const TIER_COLORS = {"stdlib": "#9ca3af", "package": "#60a5fa", "service": "#a78bfa", "wrapper": "#f59e0b"};
   // GRAPH-036 — entry points (paths posix) + style.
-  const ENTRY_POINTS = new Set(["architect_compass.py"]);
+  const ENTRY_POINTS = new Set(["architect_compass.py", "architect_symbols.py"]);
   const EP_BORDER_COLOR = "#fbbf24";
   const EP_BORDER_WIDTH = 4;
   const EP_SIZE_BOOST = 10;

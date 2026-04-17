@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-04-17 09:20:34",
+  "generated_at": "2026-04-17 11:44:51",
   "config_fingerprint": "afb3dbb17548f09985c6e75bfc41b7bd516f2bf1e0ccab9aa6f024f68cea19b4",
   "files": {
     "architect_compass.py": {
@@ -18,6 +18,37 @@
       "edge_types": {
         "compass/core.py": "import"
       },
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
+    },
+    "architect_symbols.py": {
+      "fingerprint": "eb6f87b9d61ce92f6755d739f8d684bd54e5f3ead9bba5091eb36fd877787729",
+      "outbound_targets": [],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": false,
+      "stack": "Python",
+      "metadata_calls": [
+        "__future__:annotations",
+        "argparse",
+        "ast",
+        "fnmatch",
+        "json",
+        "os",
+        "re",
+        "sys",
+        "time",
+        "datetime:datetime",
+        "datetime:timezone",
+        "pathlib:Path",
+        "typing:Any",
+        "typing:Dict",
+        "typing:Iterable",
+        "typing:List",
+        "typing:Optional",
+        "typing:Tuple"
+      ],
+      "edge_types": {},
       "metadata_assets": [],
       "metadata_filtered_refs": []
     },

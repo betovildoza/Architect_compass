@@ -10,6 +10,7 @@ digraph G {
         fillcolor="#fafafa"; color="#cccccc";
         fontname="Arial"; fontsize=11;
         "architect_compass.py" [shape=box, fillcolor="#fff3cd", color="#b7791f"];
+        "architect_symbols.py" [shape=box, fillcolor="#fff3cd", color="#b7791f"];
         "cli_roadmap.html" [shape=box, fillcolor="#fff3cd", color="#b7791f"];
         "mapper_config.example.json" [shape=box, fillcolor="#fff3cd", color="#b7791f"];
         "mapper_config.json" [shape=box, fillcolor="#fff3cd", color="#b7791f"];
