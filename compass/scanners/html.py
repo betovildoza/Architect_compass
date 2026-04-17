@@ -1,7 +1,7 @@
 """HTML scanner (Tier 3, dedicado) — HTML-019.
 
 Extrae referencias de los atributos estándar que enlazan a otros recursos del
-repo: `<script src>`, `<link href>`, `<img src>`, `<a href>`, `<form action>`,
+repo: `<script src>`, `<link href>`, `<img src>`, `<form action>`,
 `<iframe src>`, `<video src>`, `<source src>`, `<audio src>`.
 
 Diseño:
@@ -15,6 +15,12 @@ Diseño:
     - Las URLs absolutas (`http://`, `https://`, `//cdn.…`) se dejan pasar
       como raws — `_resolve_html` devolverá None (no existen en el repo) y
       GRF-021 decide si las vuelve a nodo `[EXTERNAL:*]`.
+    - Session 8 (NET-022b): `<a href>` queda EXCLUIDO del scan. Los links
+      de `<a>` son navegación/contenido (linkedin, schema.org, sitemaps.org,
+      etc.) — no son dependencias funcionales del código. Los atributos que
+      SÍ cargan recursos que el browser ejecuta o renderiza (`script src`,
+      `link href`, `img src`, `iframe src`, media, `form action`) se
+      mantienen.
 """
 
 import re
@@ -31,8 +37,8 @@ _HTML_ATTR_PATTERNS = [
     (r"""<link\b[^>]*?\bhref\s*=\s*["']([^"']+)["']""", "href"),
     # <img src="...">
     (r"""<img\b[^>]*?\bsrc\s*=\s*["']([^"']+)["']""", "src"),
-    # <a href="...">
-    (r"""<a\b[^>]*?\bhref\s*=\s*["']([^"']+)["']""", "href"),
+    # NOTA (Session 8 / NET-022b): `<a href>` EXCLUIDO — es navegación de
+    # contenido, no dependencia funcional. Ver docstring del módulo.
     # <form action="...">
     (r"""<form\b[^>]*?\baction\s*=\s*["']([^"']+)["']""", "action"),
     # <iframe src="...">

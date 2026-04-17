@@ -1,10 +1,12 @@
 import os
+import sys
 import json
 import re
 import fnmatch
 import hashlib
 from pathlib import Path
 from datetime import datetime
+from urllib.parse import urlparse as _urlparse
 
 from compass.stack_detector import StackDetector, resolve_file_stack
 from compass.path_resolver import PathResolver
@@ -108,6 +110,8 @@ def _definition_applies_to_stack(definition, file_stack):
 #   scoring            → network/persistence/identity triggers (SCR-009)
 #   graph              → unify_external_nodes, ignore_outbound_patterns
 #   definitions        → recetas regex Tier 3 (SCN-003)
+#   http_loaders       → funciones HTTP por lenguaje (NET-022)
+#   external_services  → SDKs + URL patterns por host (GRF-021 + NET-022)
 #
 # El config local vive en [proyecto]/.map/compass.local.json y contiene
 # solo overrides (no el schema completo). El archivo legacy
@@ -131,6 +135,7 @@ _SCHEMA_SECTIONS = (
     "definitions",
     "dynamic_deps",
     "external_services",
+    "http_loaders",
 )
 
 # ------------------------------------------------------------------
@@ -156,6 +161,87 @@ _EXAMPLE_WARNING = (
     "el prefijo '_example_'). Ediciones en '_example_*' NO tienen efecto "
     "y Compass emite un warning al detectar drift vs el default shipeado."
 )
+
+
+# ------------------------------------------------------------------
+# NET-023 complement — stdlib filter para auto-promoción externals.
+#
+# NET-023 promueve imports Python no-resueltos a [EXTERNAL:<head>]. Sin
+# filtro, módulos stdlib (`os`, `sys`, `json`, `re`, `pathlib`, etc.)
+# aparecen como nodos externos y ensucian el grafo con ruido que nunca
+# es una dependencia real del proyecto.
+#
+# Estrategia:
+#   - Python 3.10+: `sys.stdlib_module_names` (frozenset oficial).
+#   - Fallback estático para Python 3.8/3.9 (baseline del proyecto).
+#
+# Config flag top-level `external_include_stdlib` (default False):
+#   - False → stdlib filtrada (comportamiento default post-filtro).
+#   - True  → stdlib vuelve a aparecer (parity con pre-filtro NET-023).
+#
+# El set fallback cubre ~280 módulos top-level de Python 3.8. Fuente:
+# docs Python 3.8 (`docs.python.org/3.8/py-modindex.html`) + ajustes por
+# módulos removidos en 3.9/3.10 pero presentes en 3.8 (formatter, parser,
+# symbol, imp, binhex) — los dejamos para que `pathlib.head` matchee en
+# entornos 3.8/3.9 exactos.
+# ------------------------------------------------------------------
+
+_PYTHON_STDLIB_FALLBACK = frozenset({
+    # Core / builtins wrappers
+    "__future__", "__main__", "_thread", "abc", "aifc", "antigravity",
+    "argparse", "array", "ast", "asynchat", "asyncio", "asyncore", "atexit",
+    "audioop", "base64", "bdb", "binascii", "binhex", "bisect", "builtins",
+    "bz2", "cProfile", "calendar", "cgi", "cgitb", "chunk", "cmath", "cmd",
+    "code", "codecs", "codeop", "collections", "colorsys", "compileall",
+    "concurrent", "configparser", "contextlib", "contextvars", "copy",
+    "copyreg", "crypt", "csv", "ctypes", "curses", "dataclasses", "datetime",
+    "dbm", "decimal", "difflib", "dis", "distutils", "doctest", "email",
+    "encodings", "ensurepip", "enum", "errno", "faulthandler", "fcntl",
+    "filecmp", "fileinput", "fnmatch", "formatter", "fractions", "ftplib",
+    "functools", "gc", "genericpath", "getopt", "getpass", "gettext", "glob",
+    "graphlib", "grp", "gzip", "hashlib", "heapq", "hmac", "html", "http",
+    "idlelib", "imaplib", "imghdr", "imp", "importlib", "inspect", "io",
+    "ipaddress", "itertools", "json", "keyword", "lib2to3", "linecache",
+    "locale", "logging", "lzma", "macpath", "mailbox", "mailcap", "marshal",
+    "math", "mimetypes", "mmap", "modulefinder", "msilib", "msvcrt",
+    "multiprocessing", "netrc", "nis", "nntplib", "ntpath", "numbers",
+    "opcode", "operator", "optparse", "os", "ossaudiodev", "parser", "pathlib",
+    "pdb", "pickle", "pickletools", "pipes", "pkgutil", "platform", "plistlib",
+    "poplib", "posix", "posixpath", "pprint", "profile", "pstats", "pty",
+    "pwd", "py_compile", "pyclbr", "pydoc", "pydoc_data", "pyexpat", "queue",
+    "quopri", "random", "re", "readline", "reprlib", "resource", "rlcompleter",
+    "runpy", "sched", "secrets", "select", "selectors", "shelve", "shlex",
+    "shutil", "signal", "site", "smtpd", "smtplib", "sndhdr", "socket",
+    "socketserver", "spwd", "sqlite3", "sre_compile", "sre_constants",
+    "sre_parse", "ssl", "stat", "statistics", "string", "stringprep",
+    "struct", "subprocess", "sunau", "symbol", "symtable", "sys", "sysconfig",
+    "syslog", "tabnanny", "tarfile", "telnetlib", "tempfile", "termios",
+    "test", "textwrap", "threading", "time", "timeit", "tkinter", "token",
+    "tokenize", "tomllib", "trace", "traceback", "tracemalloc", "tty",
+    "turtle", "turtledemo", "types", "typing", "unicodedata", "unittest",
+    "urllib", "uu", "uuid", "venv", "warnings", "wave", "weakref",
+    "webbrowser", "winreg", "winsound", "wsgiref", "xdrlib", "xml", "xmlrpc",
+    "zipapp", "zipfile", "zipimport", "zlib", "zoneinfo",
+})
+
+
+def _is_python_stdlib(module_head):
+    """NET-023 complement — True si `module_head` es un módulo stdlib de Python.
+
+    Precedencia:
+      - Python 3.10+: `sys.stdlib_module_names` (frozenset oficial del CPython
+        que corresponde a la versión del intérprete activo).
+      - Python 3.8/3.9: fallback estático `_PYTHON_STDLIB_FALLBACK`.
+
+    `module_head` es el primer segmento del import (ej. para `os.path`,
+    head = `os`; para `urllib.request`, head = `urllib`).
+    """
+    if not module_head:
+        return False
+    stdlib_names = getattr(sys, "stdlib_module_names", None)
+    if stdlib_names is not None:
+        return module_head in stdlib_names
+    return module_head in _PYTHON_STDLIB_FALLBACK
 
 _LOCAL_TEMPLATE = {
     # ---- basal_rules ------------------------------------------------
@@ -288,6 +374,8 @@ class ArchitectCompass:
         # GRF-021: external services (SDKs por nombre de import).
         self.external_services = self.config.get("external_services", {}) or {}
         self._external_index = self._build_external_index(self.external_services)
+        # NET-022: índice de URL patterns para matchear hostname → label.
+        self._external_url_index = self._build_external_url_index(self.external_services)
         # Sesión 6C: default_edge_type configurable (graph.default_edge_type).
         self.default_edge_type = resolve_default_edge_type(self.config)
 
@@ -1248,6 +1336,83 @@ class ArchitectCompass:
                 return label
         return None
 
+    @staticmethod
+    def _build_external_url_index(services):
+        """NET-022 — Construye índice de URL patterns para matchear hosts.
+
+        Acepta dos shapes de config (dict o list, como _build_external_index).
+        Devuelve list[(compiled_regex, display_label)]. Cada entry de
+        `external_services` puede tener un campo `match_urls` (lista de regex
+        patterns aplicados contra el hostname extraído de la URL).
+        """
+        out = []
+        if isinstance(services, dict):
+            iterable = services.values()
+        elif isinstance(services, list):
+            iterable = services
+        else:
+            return out
+        for entry in iterable:
+            if not isinstance(entry, dict):
+                continue
+            label = entry.get("label") or entry.get("name") or ""
+            url_patterns = entry.get("match_urls") or []
+            if not label or not isinstance(url_patterns, list):
+                continue
+            for pattern in url_patterns:
+                if not pattern:
+                    continue
+                try:
+                    compiled = re.compile(str(pattern), re.IGNORECASE)
+                    out.append((compiled, str(label).strip()))
+                except re.error:
+                    continue
+        return out
+
+    def _match_external_by_url(self, hostname):
+        """NET-022 — Devuelve display label si `hostname` matchea algún
+        pattern de `external_services[*].match_urls`. None si no matchea.
+        """
+        if not hostname:
+            return None
+        h = hostname.lower()
+        for regex, label in self._external_url_index:
+            if regex.fullmatch(h):
+                return label
+        return None
+
+    # Session 8 — NET-022b. Hostnames locales / de red privada (RFC 1918)
+    # no son dependencias externas reales: son dev-noise (p.ej. `localhost`,
+    # `127.0.0.1`, `192.168.x.x`) que ensucia el grafo. Se filtran en la
+    # rama URL de `_classify_outbound` antes de emitir el nodo external.
+    @staticmethod
+    def _is_local_hostname(host):
+        """Devuelve True si `host` es loopback, wildcard o red privada
+        RFC 1918. Acepta hostname con/sin puerto (`localhost:3000`).
+        """
+        if not host:
+            return False
+        h = str(host).strip().lower()
+        # Separar puerto si viene pegado (urlparse.hostname ya lo remueve,
+        # pero este helper es defensivo por si se llama con host:port crudo).
+        if ":" in h:
+            h = h.split(":", 1)[0]
+        if h in ("localhost", "127.0.0.1", "0.0.0.0", "::1"):
+            return True
+        if h.startswith("192.168.") or h.startswith("10."):
+            return True
+        # RFC 1918: 172.16.0.0/12 → 172.16.x.x a 172.31.x.x
+        if h.startswith("172."):
+            parts = h.split(".")
+            if len(parts) >= 2:
+                try:
+                    second = int(parts[1])
+                    if 16 <= second <= 31:
+                        return True
+                except ValueError:
+                    pass
+        return False
+
     def _classify_outbound(self, raw, language, source_abs, unify_lower):
         """GRF-021 — clasifica un raw outbound en una de 3 categorías:
 
@@ -1268,6 +1433,24 @@ class ArchitectCompass:
         if not cleaned:
             return {"kind": "discard", "label": None}
 
+        # 0. NET-022 — URL literal → external by host.
+        #    URLs no son paths resolvibles — desviar ANTES del resolve() para
+        #    evitar un wasted lookup y un posible false positive si hay un
+        #    archivo con nombre parecido. urlparse es stdlib, zero-cost.
+        _parsed_url = _urlparse(cleaned)
+        if _parsed_url.scheme in ("http", "https") and _parsed_url.hostname:
+            host = _parsed_url.hostname.lower()
+            # NET-022b: descartar loopback / wildcard / redes privadas
+            # (RFC 1918). Son dev-noise, no dependencias funcionales.
+            if self._is_local_hostname(host):
+                return {"kind": "discard", "label": cleaned}
+            label = self._match_external_by_url(host) or host
+            return {
+                "kind": "external",
+                "label": f"[EXTERNAL:{label}]",
+                "label_display": label,
+            }
+
         # 1. Archivo del repo (precedencia máxima).
         resolved_abs = self.path_resolver.resolve(raw, language, source_abs)
         if resolved_abs:
@@ -1280,9 +1463,8 @@ class ArchitectCompass:
                 pass  # Fuera del project_root — seguir clasificando.
 
         # 2. External service declarado (Level 1 — GRF-021).
-        #    También cubre URLs absolutas HTML como `https://…` si su host
-        #    matchea un needle (no es el caso hoy, pero no rompe). NET-022
-        #    hará el parseo proper.
+        #    Cubre SDKs por nombre de import. Las URLs absolutas ya se
+        #    desvían en paso 0 (NET-022) — no llegan acá.
         ext_label = self._match_external_service(cleaned)
         if ext_label:
             return {
@@ -1308,11 +1490,122 @@ class ArchitectCompass:
                 "label_display": display,
             }
 
-        # 4. Resto (builtins, stdlib, funciones de framework, libs locales
-        #    sin resolver, URLs absolutas http/https no-declaradas). NO
-        #    emiten nodo ni edge. Se acumulan en metadata.calls del nodo
-        #    fuente para no perder la señal.
+        # 4. NET-023 — auto-promoción de imports no resueltos a externals.
+        #    Imports Python y bare specifiers JS/TS que (a) no resolvieron
+        #    contra el repo, (b) no matchearon external_services, (c) no
+        #    matchearon unify_external_nodes → se promueven a
+        #    `[EXTERNAL:<head>]` en vez de descartarse. Evita perder señal
+        #    de dependencias reales (tiktoken, pydantic, fastapi, lodash,
+        #    etc.) que no están hardcodeadas en el config.
+        #
+        #    Reglas por lenguaje:
+        #      - Python: raw no-relativo (no empieza con `.`), sin `/`,
+        #        primer segmento debe ser identifier válido. Head = primer
+        #        segmento tras split por `.` y `:` (el scanner emite shape
+        #        `pkg.sub:name` o `pkg.sub`). Relativos (`.foo`, `..pkg:x`)
+        #        quedan como discard (son del repo pero no resolvieron —
+        #        señal de bug/archivo faltante, no dep externa).
+        #      - JS/TS: bare specifier (no empieza con `./`, `../`, `/`,
+        #        `\`). Para scoped (`@scope/pkg/sub`) head = `@scope/pkg`
+        #        (dos primeros segmentos). Para no-scoped (`lodash/get`)
+        #        head = primer segmento.
+        #      - PHP: por ahora no se aplica (la resolución PHP usa paths,
+        #        no bare specifiers; las deps cross-plugin son scope de
+        #        capa 2 fuera del alcance actual).
+        promoted = self._auto_promote_external(cleaned, language)
+        if promoted:
+            return {
+                "kind": "external",
+                "label": f"[EXTERNAL:{promoted}]",
+                "label_display": promoted,
+            }
+
+        # 5. Resto (builtins, stdlib, funciones de framework, libs locales
+        #    sin resolver, URLs absolutas http/https no-declaradas, imports
+        #    PHP sin match). NO emiten nodo ni edge. Se acumulan en
+        #    metadata.calls del nodo fuente para no perder la señal.
         return {"kind": "discard", "label": cleaned}
+
+    # NET-023 — regex de identifier Python válido (ASCII-only, primer char
+    # letra o underscore). Usado por `_auto_promote_external` para no
+    # promover cualquier basura (ej. fragmentos accidentales del scanner).
+    _PY_IDENT_RE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
+
+    def _auto_promote_external(self, cleaned, language):
+        """NET-023 — devuelve el head del import si califica como external.
+
+        Llamado SOLO en el fallback de `_classify_outbound`, después de
+        agotar resolución repo + external_services + unify_external_nodes.
+        No aplica a PHP (retorna None).
+
+        Retorna:
+            - string (el head a usar como display label) si promueve.
+            - None si el raw no califica (caerá al discard).
+        """
+        if not cleaned:
+            return None
+        lang = (language or "").lower()
+
+        if lang == "python":
+            # Relativo → no promover (es del repo, falló la resolución;
+            # mejor dejarlo en metadata.calls como señal de bug).
+            if cleaned.startswith("."):
+                return None
+            # El scanner Python emite `pkg.sub:name` o `pkg.sub`. Separamos
+            # por `:` (from-import) y por `.` (submodule). Head = primer
+            # segmento antes de ambos separadores.
+            module_part = cleaned.split(":", 1)[0]
+            if "/" in module_part or "\\" in module_part:
+                # No debería pasar con el scanner stdlib (genera dotted),
+                # pero si aparece un raw con slash lo tratamos como path
+                # no-resuelto → discard.
+                return None
+            head = module_part.split(".", 1)[0].strip()
+            if not head or not self._PY_IDENT_RE.match(head):
+                return None
+            # NET-023 complement — stdlib filter. Por default ocultamos
+            # `os`, `sys`, `json`, `re`, `pathlib`, etc. del grafo (son ruido,
+            # nunca son una dep real del proyecto). El user puede revertir
+            # seteando `external_include_stdlib: true` en mapper_config.json
+            # o en su compass.local.json.
+            if not self.config.get("external_include_stdlib", False):
+                if _is_python_stdlib(head):
+                    return None
+            return head
+
+        if lang in ("javascript", "typescript", "jsx", "tsx"):
+            # Bare specifier: no empieza con `.` ni con `/` ni con `\`.
+            # Los schemes `http://` / `https://` / `//` YA fueron excluidos
+            # por el path_resolver (devolvió None sin consumirlos) pero
+            # aparecen acá como `cleaned`. Filtrar explícitamente.
+            if (
+                cleaned.startswith(".")
+                or cleaned.startswith("/")
+                or cleaned.startswith("\\")
+            ):
+                return None
+            low = cleaned.lower()
+            if (
+                low.startswith("http://")
+                or low.startswith("https://")
+                or low.startswith("//")
+                or ":" in cleaned.split("/", 1)[0]  # protocolos genéricos
+            ):
+                return None
+            # Scoped package `@scope/pkg[/sub]` → head = `@scope/pkg`.
+            if cleaned.startswith("@"):
+                parts = cleaned.split("/")
+                if len(parts) < 2 or not parts[0][1:] or not parts[1]:
+                    return None
+                return parts[0] + "/" + parts[1]
+            # No-scoped: head = primer segmento.
+            head = cleaned.split("/", 1)[0].strip()
+            if not head:
+                return None
+            return head
+
+        # PHP y otros: no aplica NET-023 hoy.
+        return None
 
     def _register_edge(self, src_rel, target_label, kind, edge_type=None):
         """EDG-023 — persiste un edge estructurado.

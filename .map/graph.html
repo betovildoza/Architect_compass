@@ -49,8 +49,8 @@
   <span class="dot" style="background:#fff3cd;border:1px solid #b7791f"></span>Huérfano<br>
   <span class="dot" style="background:#fde0dc;border:1px solid #c0392b"></span>En ciclo<br>
   <div class="meta">
-    2026-04-16 17:09:56<br>
-    nodes=15 · edges=24 · cycles=0
+    2026-04-16 21:49:17<br>
+    nodes=15 · edges=26 · cycles=0
   </div>
 </div>
 <div id="controls">
@@ -62,8 +62,8 @@
 <div id="status"></div>
 <script>
   // Datos inyectados por graph_emitter.build_graph_html()
-  const EDGES_RAW = [["architect_compass.py", "compass/core.py", "import"], ["compass/core.py", "compass/stack_detector.py", "import"], ["compass/core.py", "compass/stack_detector.py", "import"], ["compass/core.py", "compass/path_resolver.py", "import"], ["compass/core.py", "compass/scanners/base.py", "import"], ["compass/core.py", "compass/scanners/base.py", "import"], ["compass/core.py", "compass/scanners/base.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/graph_emitter.py", "import"], ["compass/core.py", "compass/graph_emitter.py", "import"], ["compass/core.py", "compass/graph_emitter.py", "import"], ["compass/core.py", "compass/validation.py", "import"], ["compass/scanners/html.py", "compass/scanners/base.py", "import"], ["compass/scanners/python.py", "compass/scanners/base.py", "import"], ["compass/scanners/regex_fallback.py", "compass/scanners/base.py", "import"], ["compass/scanners/regex_fallback.py", "compass/scanners/base.py", "import"], ["compass/scanners/treesitter.py", "compass/scanners/base.py", "import"], ["compass/scanners/treesitter.py", "compass/scanners/base.py", "import"]];
-  const EXTERNALS = new Set([]);
+  const EDGES_RAW = [["architect_compass.py", "compass/core.py", "import"], ["compass/core.py", "compass/stack_detector.py", "import"], ["compass/core.py", "compass/stack_detector.py", "import"], ["compass/core.py", "compass/path_resolver.py", "import"], ["compass/core.py", "compass/scanners/base.py", "import"], ["compass/core.py", "compass/scanners/base.py", "import"], ["compass/core.py", "compass/scanners/base.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/metrics.py", "import"], ["compass/core.py", "compass/graph_emitter.py", "import"], ["compass/core.py", "compass/graph_emitter.py", "import"], ["compass/core.py", "compass/graph_emitter.py", "import"], ["compass/core.py", "compass/validation.py", "import"], ["compass/graph_emitter.py", "[EXTERNAL:unpkg.com]", "fetch"], ["compass/scanners/html.py", "compass/scanners/base.py", "import"], ["compass/scanners/python.py", "compass/scanners/base.py", "import"], ["compass/scanners/regex_fallback.py", "compass/scanners/base.py", "import"], ["compass/scanners/regex_fallback.py", "compass/scanners/base.py", "import"], ["compass/scanners/treesitter.py", "compass/scanners/base.py", "import"], ["compass/scanners/treesitter.py", "compass/scanners/base.py", "import"], ["compass/scanners/treesitter.py", "compass/scanners/base.py", "import"]];
+  const EXTERNALS = new Set(["[EXTERNAL:unpkg.com]"]);
   const ORPHANS = new Set(["architect_compass.py", "cli_roadmap.html", "compass/scanners/html.py", "compass/scanners/python.py", "compass/scanners/regex_fallback.py", "compass/scanners/treesitter.py", "mapper_config.example.json", "mapper_config.json"]);
   const CYCLES_NODES = new Set([]);
   const EDGE_COLORS = {"import": "#1f7a1f", "require": "#333333", "include": "#555555", "src": "#1f5fbf", "href": "#2e86de", "action": "#8e44ad", "fetch": "#c0392b", "enqueue": "#7d3c98", "use": "#888888"};

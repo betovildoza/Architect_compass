@@ -1,4 +1,4 @@
-"""Scanners dispatcher — SCN-003.
+"""Scanners dispatcher — SCN-003 + NET-022.
 
 `get_scanner(language, config) -> Scanner`
 
@@ -10,11 +10,14 @@ Orden de preferencia:
        RegexFallbackScanner (Tier 3).
     4. Nada disponible → NullScanner (devuelve []; se anota como aviso).
 
+NET-022: todos los tiers reciben `config` para compilar el `http_loaders`
+regex y extraer URLs literales de llamadas HTTP con edge_type `"fetch"`.
+
 El scanner se cachea por (language, id(config)) para no re-construirlo por
 archivo en cada run.
 """
 
-from compass.scanners.base import Scanner, NullScanner
+from compass.scanners.base import Scanner, NullScanner, build_http_loader_regex
 from compass.scanners.html import HtmlScanner
 from compass.scanners.python import PythonScanner
 from compass.scanners.regex_fallback import RegexFallbackScanner
@@ -51,7 +54,7 @@ def get_scanner(language, config):
 
 def _build_scanner(language, config):
     if language == "python":
-        return PythonScanner()
+        return PythonScanner(config=config)
     if language in ("html", "htm"):
         return HtmlScanner()
 
@@ -60,15 +63,20 @@ def _build_scanner(language, config):
 
     if grammar_name and grammar_name != "stdlib_ast" and _TS_AVAILABLE:
         try:
-            return TreeSitterScanner(grammar_name, language)
+            return TreeSitterScanner(grammar_name, language, config=config)
         except ImportError:
             # La grammar no está instalada — caemos a Tier 3.
             pass
 
     # Tier 3: recoger patterns de las definitions aplicables.
     patterns = _collect_regex_patterns(language, config)
-    if patterns.get("outbound"):
-        return RegexFallbackScanner(patterns)
+    # NET-022: compilar http_loaders regex para el lenguaje.
+    http_regex = None
+    if config and isinstance(config, dict):
+        loaders = (config.get("http_loaders") or {}).get(language) or []
+        http_regex = build_http_loader_regex(loaders)
+    if patterns.get("outbound") or http_regex:
+        return RegexFallbackScanner(patterns, http_regex=http_regex)
 
     # Nada aplicable.
     if language not in _FEEDBACK_NO_SCANNER:

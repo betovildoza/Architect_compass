@@ -73,8 +73,21 @@
     ]
   },
 
+  "_comment_external_include_stdlib": "NET-023 complement. Cuando NET-023 promueve imports Python no-resueltos a [EXTERNAL:<head>], por default filtramos stdlib (`os`, `sys`, `json`, `re`, `pathlib`, etc.) porque nunca son una dep real del proyecto. Seteá `true` si querés ver todos los imports stdlib como nodos externos del grafo (comportamiento pre-filtro).",
+  "external_include_stdlib": false,
+
+  "http_loaders": {
+    "_comment": "NET-022 — funciones HTTP cuyo primer argumento string literal es una URL. El scanner extrae la URL y la emite con edge_type 'fetch'. core.py parsea el hostname y lo matchea contra external_services[*].match_urls para asignar un label legible. Si no matchea, usa el hostname crudo. Para agregar wrappers custom del proyecto (ej. apiReq, apiCall), extendé esta sección en compass.local.json — las listas se unen por lenguaje (no se reemplazan).",
+    "_note_content_vs_functional": "NET-022b (Session 8) — Filtros hardcoded: (1) las URLs capturadas por `<a href>` en HTML NO se procesan (son navegación/contenido, p.ej. linkedin.com, schema.org, sitemaps.org); solo se scanean <script src>, <link href>, <img src>, <iframe src>, <form action>, <video|audio|source src>. (2) URLs con hostname local/loopback/privado (localhost, 127.0.0.1, 0.0.0.0, ::1, 10.*, 172.16-31.*, 192.168.*) se descartan silenciosamente en core.py — son dev-noise, no dependencias funcionales. No hay flag de config para estos filtros; son comportamiento fijo.",
+    "python": ["requests.get", "requests.post", "urlopen", "httpx.get"],
+    "javascript": ["fetch", "axios.get", "axios.post"],
+    "typescript": ["fetch", "axios.get", "axios.post"],
+    "php": ["wp_remote_get", "wp_remote_post", "curl_init", "file_get_contents"]
+  },
+
   "graph": {
     "_comment": "Reglas que afectan cómo se renderiza el grafo (aristas y nodos externos).",
+    "_unify_external_nodes_note": "PARCIAL: fallback para URLs dinamicas/variables no capturadas por NET-022 (URLs literales). Completar con SEM-020.",
     "unify_external_nodes": [
       "fetch",
       "axios",
@@ -86,6 +99,25 @@
       "^none$",
       "^$"
     ]
+  },
+
+  "external_services": {
+    "_comment": "NET-022 — servicios externos reconocibles por nombre de import (match) o por hostname de URL (match_urls). match_urls son regex aplicadas contra el hostname extraído de URLs literales en llamadas HTTP. Ejemplo: requests.get('https://api.openai.com/v1/chat') matchea match_urls 'api\\.openai\\.com' y emite [EXTERNAL:OpenAI].",
+    "anthropic": {
+      "match": ["anthropic", "@anthropic-ai/sdk"],
+      "match_urls": ["api\\.anthropic\\.com"],
+      "label": "Anthropic"
+    },
+    "openai": {
+      "match": ["openai"],
+      "match_urls": ["api\\.openai\\.com"],
+      "label": "OpenAI"
+    },
+    "supabase": {
+      "match": ["supabase", "@supabase/supabase-js"],
+      "match_urls": [".*\\.supabase\\.co"],
+      "label": "Supabase"
+    }
   },
 
   "definitions": [

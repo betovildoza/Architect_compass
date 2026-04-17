@@ -157,6 +157,7 @@
     ]
   },
   "graph": {
+    "_unify_external_nodes_note": "PARCIAL: fallback para URLs dinamicas/variables no capturadas por NET-022 (URLs literales). Completar con SEM-020.",
     "unify_external_nodes": [
       "fetch",
       "anthropic",
@@ -205,34 +206,109 @@
       "external_deps": 0.15
     }
   },
+  "external_include_stdlib": false,
+  "http_loaders": {
+    "python": [
+      "requests.get", "requests.post", "requests.put", "requests.delete",
+      "requests.patch", "requests.head", "requests.options", "requests.request",
+      "urlopen", "urllib.request.urlopen",
+      "httpx.get", "httpx.post", "httpx.put", "httpx.delete",
+      "httpx.patch", "httpx.head", "httpx.options", "httpx.request"
+    ],
+    "javascript": [
+      "fetch",
+      "axios.get", "axios.post", "axios.put", "axios.delete",
+      "axios.patch", "axios.head", "axios.options", "axios.request", "axios"
+    ],
+    "typescript": [
+      "fetch",
+      "axios.get", "axios.post", "axios.put", "axios.delete",
+      "axios.patch", "axios.head", "axios.options", "axios.request", "axios"
+    ],
+    "php": [
+      "wp_remote_get", "wp_remote_post", "wp_remote_request",
+      "curl_init", "file_get_contents", "fopen"
+    ]
+  },
   "external_services": {
     "anthropic": {
       "match": ["anthropic", "@anthropic-ai/sdk", "Anthropic\\Anthropic"],
+      "match_urls": ["api\\.anthropic\\.com"],
       "label": "Anthropic"
     },
     "openai": {
       "match": ["openai", "OpenAI\\OpenAI", "openai/openai-python"],
+      "match_urls": ["api\\.openai\\.com"],
       "label": "OpenAI"
     },
     "supabase": {
       "match": ["supabase", "@supabase/supabase-js"],
+      "match_urls": [".*\\.supabase\\.co"],
       "label": "Supabase"
     },
     "stripe": {
       "match": ["stripe", "@stripe/stripe-js", "Stripe\\Stripe"],
+      "match_urls": ["api\\.stripe\\.com"],
       "label": "Stripe"
     },
     "openrouter": {
       "match": ["openrouter"],
+      "match_urls": ["openrouter\\.ai"],
       "label": "OpenRouter"
     },
     "gemini": {
       "match": ["@google/generative-ai", "google-generativeai"],
+      "match_urls": ["generativelanguage\\.googleapis\\.com"],
       "label": "Gemini"
     },
     "chromadb": {
       "match": ["chromadb"],
       "label": "ChromaDB"
+    },
+    "firebase": {
+      "match": ["firebase", "@firebase/app"],
+      "match_urls": [".*\\.firebaseio\\.com"],
+      "label": "Firebase"
+    },
+    "brave_search": {
+      "match": [],
+      "match_urls": ["api\\.search\\.brave\\.com"],
+      "label": "Brave"
+    },
+    "duckduckgo": {
+      "match": [],
+      "match_urls": ["api\\.duckduckgo\\.com", "duckduckgo\\.com"],
+      "label": "DuckDuckGo"
+    },
+    "context7": {
+      "match": [],
+      "match_urls": ["context7\\.com"],
+      "label": "Context7"
+    },
+    "aws": {
+      "match": ["boto3", "botocore", "@aws-sdk/client-s3"],
+      "match_urls": [".*\\.amazonaws\\.com"],
+      "label": "AWS"
+    },
+    "sendgrid": {
+      "match": ["sendgrid", "@sendgrid/mail"],
+      "match_urls": ["api\\.sendgrid\\.com"],
+      "label": "SendGrid"
+    },
+    "twilio": {
+      "match": ["twilio"],
+      "match_urls": ["api\\.twilio\\.com"],
+      "label": "Twilio"
+    },
+    "github_api": {
+      "match": [],
+      "match_urls": ["api\\.github\\.com"],
+      "label": "GitHub API"
+    },
+    "huggingface": {
+      "match": ["huggingface_hub", "transformers"],
+      "match_urls": ["api-inference\\.huggingface\\.co", "huggingface\\.co"],
+      "label": "HuggingFace"
     }
   },
   "definitions": [

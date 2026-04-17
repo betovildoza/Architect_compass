@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-04-16 17:09:56",
+    "generated_at": "2026-04-16 21:49:17",
     "project_name": "Architect_compass",
     "identities": [
         {
@@ -14,7 +14,7 @@
     },
     "summary": {
         "total_files": 15,
-        "relevant_files": 6,
+        "relevant_files": 7,
         "scanned_files": 15,
         "reused_from_cache": 0
     },
@@ -39,16 +39,18 @@
             "compass/core.py -> compass/graph_emitter.py",
             "compass/core.py -> compass/graph_emitter.py",
             "compass/core.py -> compass/validation.py",
+            "compass/graph_emitter.py -> [EXTERNAL:unpkg.com]",
             "compass/scanners/html.py -> compass/scanners/base.py",
             "compass/scanners/python.py -> compass/scanners/base.py",
             "compass/scanners/regex_fallback.py -> compass/scanners/base.py",
             "compass/scanners/regex_fallback.py -> compass/scanners/base.py",
             "compass/scanners/treesitter.py -> compass/scanners/base.py",
+            "compass/scanners/treesitter.py -> compass/scanners/base.py",
             "compass/scanners/treesitter.py -> compass/scanners/base.py"
         ]
     },
     "audit": {
-        "structural_health": 40.0,
+        "structural_health": 46.67,
         "warnings": []
     },
     "anomalies": [],
@@ -79,12 +81,14 @@
             "metadata": {
                 "calls": [
                     "os",
+                    "sys",
                     "json",
                     "re",
                     "fnmatch",
                     "hashlib",
                     "pathlib:Path",
-                    "datetime:datetime"
+                    "datetime:datetime",
+                    "urllib.parse:urlparse"
                 ],
                 "filtered_refs": [
                     "compass/scanners/__init__.py"
@@ -146,8 +150,10 @@
             "stack": "Python",
             "metadata": {
                 "calls": [
+                    "re",
                     "abc:ABC",
-                    "abc:abstractmethod"
+                    "abc:abstractmethod",
+                    "urllib.parse:urlparse"
                 ]
             }
         },
@@ -183,7 +189,8 @@
             "orphan_reason": "no_inbound",
             "metadata": {
                 "calls": [
-                    "importlib"
+                    "importlib",
+                    "re"
                 ]
             }
         }
@@ -200,7 +207,7 @@
     ],
     "cycles": [],
     "health": {
-        "total": 73.67,
+        "total": 73.09,
         "weights": {
             "orphans": 0.4,
             "connectivity": 0.3,
@@ -223,8 +230,8 @@
         },
         "connectivity": {
             "score": 100.0,
-            "avg_inbound": 1.6,
-            "total_inbound_edges": 24
+            "avg_inbound": 1.67,
+            "total_inbound_edges": 25
         },
         "dead_exports": {
             "score": 66.67,
@@ -238,69 +245,36 @@
             ]
         },
         "external_deps": {
-            "score": 100.0,
-            "external_targets": 0,
-            "total_targets": 24
+            "score": 96.15,
+            "external_targets": 1,
+            "total_targets": 26
         }
     },
     "delta": {
-        "previous_generated_at": "2026-04-16 16:51:44",
+        "previous_generated_at": "2026-04-16 20:33:49",
         "files": {
             "added": [],
-            "removed": [
-                ".quarantine/.legacy-v1/core.v2-pre-ses-6a.py",
-                ".quarantine/.legacy-v1/core.v2-pre-ses-6b.py",
-                ".quarantine/.legacy-v1/core.v2-pre-ses-6c.py",
-                ".quarantine/.legacy-v1/graph_emitter.v2-pre-ses-6c.py",
-                ".quarantine/.legacy-v1/mapper_config.v2-pre-def-025.json",
-                ".quarantine/.legacy-v1/mapper_config.v2-pre-ses-6c.json",
-                ".quarantine/.legacy-v1/metrics.v2-pre-ses-6c.py",
-                ".quarantine/.legacy-v1/scanners_base.v2-pre-ses-6c.py",
-                ".quarantine/.legacy-v3/_LOCAL_TEMPLATE.pre-ux031.json",
-                ".quarantine/.legacy-v4/_LOCAL_TEMPLATE.pre-md-split.json"
-            ]
+            "removed": []
         },
         "edges": {
             "added": [],
-            "removed": [
-                ".quarantine/.legacy-v1/core.v2-pre-ses-6a.py -> compass/path_resolver.py",
-                ".quarantine/.legacy-v1/core.v2-pre-ses-6a.py -> compass/stack_detector.py",
-                ".quarantine/.legacy-v1/core.v2-pre-ses-6b.py -> compass/metrics.py",
-                ".quarantine/.legacy-v1/core.v2-pre-ses-6b.py -> compass/path_resolver.py",
-                ".quarantine/.legacy-v1/core.v2-pre-ses-6b.py -> compass/stack_detector.py",
-                ".quarantine/.legacy-v1/core.v2-pre-ses-6c.py -> compass/graph_emitter.py",
-                ".quarantine/.legacy-v1/core.v2-pre-ses-6c.py -> compass/metrics.py",
-                ".quarantine/.legacy-v1/core.v2-pre-ses-6c.py -> compass/path_resolver.py",
-                ".quarantine/.legacy-v1/core.v2-pre-ses-6c.py -> compass/scanners/base.py",
-                ".quarantine/.legacy-v1/core.v2-pre-ses-6c.py -> compass/stack_detector.py"
-            ],
+            "removed": [],
             "added_count": 0,
-            "removed_count": 10
+            "removed_count": 0
         },
         "orphans": {
             "added": [],
-            "removed": [
-                ".quarantine/.legacy-v1/core.v2-pre-ses-6a.py",
-                ".quarantine/.legacy-v1/core.v2-pre-ses-6b.py",
-                ".quarantine/.legacy-v1/core.v2-pre-ses-6c.py",
-                ".quarantine/.legacy-v1/graph_emitter.v2-pre-ses-6c.py",
-                ".quarantine/.legacy-v1/mapper_config.v2-pre-def-025.json",
-                ".quarantine/.legacy-v1/mapper_config.v2-pre-ses-6c.json",
-                ".quarantine/.legacy-v1/metrics.v2-pre-ses-6c.py",
-                ".quarantine/.legacy-v1/scanners_base.v2-pre-ses-6c.py",
-                ".quarantine/.legacy-v3/_LOCAL_TEMPLATE.pre-ux031.json",
-                ".quarantine/.legacy-v4/_LOCAL_TEMPLATE.pre-md-split.json"
-            ]
+            "removed": []
         },
         "cycles": {
             "added": [],
             "removed": []
         },
         "health_delta": {
-            "total": 7.27,
-            "orphans": 18.67,
+            "total": 0.0,
+            "orphans": 0.0,
             "connectivity": 0.0,
-            "dead_exports": -1.33,
+            "dead_exports": 0.0,
             "external_deps": 0.0
         }
     },
@@ -309,7 +283,7 @@
         "ignored": 1,
         "self_edge": 0,
         "ignore_outbound": 0,
-        "rendered_edges": 11,
-        "raw_edges": 24
+        "rendered_edges": 12,
+        "raw_edges": 26
     }
 }
