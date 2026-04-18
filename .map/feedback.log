@@ -1,3 +1,27 @@
+[2026-04-17 20:25:13] COMPASS RUN
+  - Salud Estructural (relevant/total): 48.0%
+  - Health Score (breakdown): 84.53
+  - Archivos: 25 (Relevantes: 12)
+  - Ciclos detectados: 0
+  - Delta vs run previo: total=+2.09, files +3/-0, orphans +0/-0
+========================================
+
+[2026-04-17 19:59:40] COMPASS RUN
+  - Salud Estructural (relevant/total): 45.45%
+  - Health Score (breakdown): 82.44
+  - Archivos: 22 (Relevantes: 10)
+  - Ciclos detectados: 0
+  - Delta vs run previo: total=+5.25, files +5/-0, orphans +0/-0
+========================================
+
+[2026-04-17 19:19:27] COMPASS RUN
+  - Salud Estructural (relevant/total): 41.18%
+  - Health Score (breakdown): 77.19
+  - Archivos: 17 (Relevantes: 7)
+  - Ciclos detectados: 0
+  - Delta vs run previo: total=+0.0, files +0/-0, orphans +0/-0
+========================================
+
 [2026-04-17 11:44:51] COMPASS RUN
   - Salud Estructural (relevant/total): 41.18%
   - Health Score (breakdown): 77.19
