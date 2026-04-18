@@ -78,21 +78,51 @@ class ArchitectCompass(
     solo wirea el estado compartido (`self.*`) y expone el API público.
     """
 
-    def __init__(self, force_full=False):
+    def __init__(
+        self,
+        force_full=False,
+        project_root=None,
+        config_path=None,
+        output_dir=None,
+        progress_callback=None,
+    ):
         """Inicializa el contexto del run.
 
         Parámetros:
             force_full: si True, ignora el cache de fingerprints y re-escanea
-                todos los archivos. Reservado para CLI-015 (--full).
+                todos los archivos (CLI-015 --full).
+            project_root: Path raíz del proyecto a escanear. Default: cwd.
+                Permite que la CLI fije --root sin tener que cambiar cwd.
+            config_path: Path a un mapper_config.json explícito que reemplaza
+                al global del repo de Compass. Si None usa el global default.
+                Es la opción 1 de la jerarquía de config (CLI-015 --config).
+            output_dir: Path al directorio de salida (.map/). Default:
+                <project_root>/.map. Permite que la CLI fije --output sin
+                contaminar el árbol del proyecto.
+            progress_callback: callable opcional `cb(rel_path, scanned, reused)`
+                invocado por el scan loop tras procesar cada archivo. Sirve
+                para que la CLI muestre progress bars sin cambiar la
+                semántica del análisis. Default None = no-op.
         """
         self.force_full = bool(force_full)
         self.script_dir = Path(__file__).parent.parent.absolute()
-        self.global_config_path = self.script_dir / "mapper_config.json"
-        self.project_root = Path.cwd()
-        self.map_dir = self.project_root / ".map"
+        if config_path is not None:
+            self.global_config_path = Path(config_path).resolve()
+        else:
+            self.global_config_path = self.script_dir / "mapper_config.json"
+        if project_root is not None:
+            self.project_root = Path(project_root).resolve()
+        else:
+            self.project_root = Path.cwd()
+        if output_dir is not None:
+            self.map_dir = Path(output_dir).resolve()
+        else:
+            self.map_dir = self.project_root / ".map"
         self.local_config_path = self.map_dir / LOCAL_CONFIG_NAME
         self.legacy_local_config_path = self.map_dir / LEGACY_LOCAL_CONFIG_NAME
         self.fingerprints_path = self.map_dir / FINGERPRINTS_NAME
+        # Hook de observabilidad para CLI (no afecta atlas output).
+        self._progress_callback = progress_callback
 
         self.config = self.load_config_hierarchy()
 

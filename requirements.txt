@@ -1,0 +1,14 @@
+# Architect's Compass — runtime dependencies (CLI-015).
+#
+# La librería de análisis usa solo stdlib. La única dependencia externa es
+# `rich`, agregada en CLI-015 para la salida visual (progress bars, tablas
+# y colores semánticos en la CLI).
+#
+# rich es opcional desde el punto de vista del análisis: la CLI detecta su
+# ausencia y cae a output plano sin colores, así que `pip install -r
+# requirements.txt` no es estrictamente necesario para ejecutar el scan;
+# solo lo es si querés la UX visual del CLI moderno.
+#
+# Python target: 3.8+ (rich 13.x soporta 3.7+, sin restricciones).
+
+rich>=13.0

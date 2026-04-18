@@ -357,6 +357,17 @@ class AnalyzePipelineMixin:
                 except Exception as e:
                     self.atlas["anomalies"].append(f"{rel_path}: {str(e)}")
 
+                # CLI-015 — hook de progreso opcional (no-op si no se setea).
+                # El callback recibe (rel_path, scanned_count, reused_count)
+                # — la CLI lo usa para alimentar el progress bar de rich.
+                cb = getattr(self, "_progress_callback", None)
+                if cb is not None:
+                    try:
+                        cb(rel_path, scanned, reused)
+                    except Exception:
+                        # Defensivo: un bug en la UI no debe romper el scan.
+                        pass
+
         # INC-008: dejar visible cuántos archivos se reutilizaron del cache.
         self.atlas["summary"]["scanned_files"] = scanned
         self.atlas["summary"]["reused_from_cache"] = reused

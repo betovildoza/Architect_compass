@@ -1,22 +1,22 @@
 {
   "version": 1,
-  "generated_at": "2026-04-17 20:25:13",
+  "generated_at": "2026-04-18 00:46:55",
   "config_fingerprint": "afb3dbb17548f09985c6e75bfc41b7bd516f2bf1e0ccab9aa6f024f68cea19b4",
   "files": {
     "architect_compass.py": {
-      "fingerprint": "5320e4205346dff59f23592bc2d3d7b358be1d51a4bc083883f855f764ae4dfd",
+      "fingerprint": "ea633eceb01e0eb48d45c9294b156191e109781dff2f19ca7d98cb7138542971",
       "outbound_targets": [
-        "compass/core.py"
+        "compass/cli.py"
       ],
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": true,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "sys"
       ],
       "edge_types": {
-        "compass/core.py": "import"
+        "compass/cli.py": "import"
       },
       "metadata_assets": [],
       "metadata_filtered_refs": []
@@ -27,7 +27,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": false,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "__future__:annotations",
         "argparse",
@@ -58,9 +58,27 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": false,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [],
       "edge_types": {},
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
+    },
+    "compass.py": {
+      "fingerprint": "0bb2f15466064ff08e392909d3eca550df55bbcbe2dce57152308bf8c53b38f8",
+      "outbound_targets": [
+        "compass/cli.py"
+      ],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": true,
+      "stack": "AI-Agent-Framework",
+      "metadata_calls": [
+        "sys"
+      ],
+      "edge_types": {
+        "compass/cli.py": "import"
+      },
       "metadata_assets": [],
       "metadata_filtered_refs": []
     },
@@ -70,7 +88,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": false,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [],
       "edge_types": {},
       "metadata_assets": [],
@@ -82,9 +100,83 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": false,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [],
       "edge_types": {},
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
+    },
+    "compass/cli.py": {
+      "fingerprint": "4233840a68870add02c14d7736d84660889b327499d2d131c998a9988e0a5383",
+      "outbound_targets": [
+        "compass/cli_ui.py",
+        "compass/cli_ui.py",
+        "compass/cli_ui.py",
+        "compass/cli_ui.py",
+        "compass/cli_ui.py",
+        "compass/core.py",
+        "compass/template_io.py",
+        "compass/template_io.py",
+        "compass/template_io.py",
+        "compass/graph_emitter.py",
+        "architect_symbols.py"
+      ],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": true,
+      "stack": "AI-Agent-Framework",
+      "metadata_calls": [
+        "__future__:annotations",
+        "argparse",
+        "json",
+        "sys",
+        "time",
+        "pathlib:Path",
+        "typing:Any",
+        "typing:Dict",
+        "typing:List",
+        "typing:Optional",
+        "traceback"
+      ],
+      "edge_types": {
+        "compass/cli_ui.py": "import",
+        "compass/core.py": "import",
+        "compass/template_io.py": "import",
+        "compass/graph_emitter.py": "import",
+        "architect_symbols.py": "import"
+      },
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
+    },
+    "compass/cli_ui.py": {
+      "fingerprint": "ccce35ce7d19171affc1f114fd987a60bb4eda97d1a34684c62786987577b518",
+      "outbound_targets": [
+        "[EXTERNAL:rich]",
+        "[EXTERNAL:rich]",
+        "[EXTERNAL:rich]",
+        "[EXTERNAL:rich]",
+        "[EXTERNAL:rich]",
+        "[EXTERNAL:rich]",
+        "[EXTERNAL:rich]"
+      ],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": true,
+      "stack": "AI-Agent-Framework",
+      "metadata_calls": [
+        "__future__:annotations",
+        "fnmatch",
+        "os",
+        "re",
+        "pathlib:Path",
+        "typing:Any",
+        "typing:Callable",
+        "typing:Dict",
+        "typing:Optional"
+      ],
+      "edge_types": {
+        "[EXTERNAL:rich]": "import"
+      },
       "metadata_assets": [],
       "metadata_filtered_refs": []
     },
@@ -97,7 +189,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": true,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "hashlib",
         "json"
@@ -114,7 +206,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": false,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "__future__:annotations"
       ],
@@ -123,7 +215,7 @@
       "metadata_filtered_refs": []
     },
     "compass/core.py": {
-      "fingerprint": "f9963b293d84526b209a5f7b5dee2f2a056bb493396a8bdde1b230819a05f82f",
+      "fingerprint": "d77599900066cb7e5c7e1136258003d1ccab6c88903a952ab683fb0d6c68c1c8",
       "outbound_targets": [
         "compass/config_loader.py",
         "compass/entry_points.py",
@@ -150,7 +242,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": true,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "datetime:datetime",
         "pathlib:Path"
@@ -176,7 +268,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": false,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "json",
         "re",
@@ -207,7 +299,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": true,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "hashlib",
         "json",
@@ -231,7 +323,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": true,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "__future__:annotations",
         "json",
@@ -249,7 +341,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": false,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "__future__:annotations",
         "json",
@@ -267,7 +359,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": true,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "fnmatch",
         "os",
@@ -287,7 +379,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": false,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "ast",
         "os",
@@ -299,14 +391,14 @@
       "metadata_filtered_refs": []
     },
     "compass/pipeline.py": {
-      "fingerprint": "821ccaaafa2e0b13c4a8758dd5e258cee40b5332f9d9543da66f5c97d7c50ac8",
+      "fingerprint": "d15c0d4ce64f8c0bedff543353cec094fa0e34440fae0154acb18910bb26057c",
       "outbound_targets": [
         "compass/stack_detector.py"
       ],
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": true,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "fnmatch",
         "os",
@@ -330,7 +422,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": true,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [],
       "edge_types": {
         "compass/scanners/base.py": "import",
@@ -347,7 +439,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": false,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "os",
         "fnmatch",
@@ -364,7 +456,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": false,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "sys"
       ],
@@ -378,7 +470,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": false,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "json"
       ],
@@ -392,7 +484,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": false,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "__future__:annotations",
         "json",
@@ -408,7 +500,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": false,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "re",
         "abc:ABC",
@@ -428,7 +520,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": true,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "re"
       ],
@@ -446,7 +538,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": true,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "ast"
       ],
@@ -466,7 +558,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": true,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "re"
       ],
@@ -490,7 +582,7 @@
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": true,
-      "stack": "Python",
+      "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "importlib",
         "re"
@@ -505,6 +597,7 @@
     }
   },
   "external_tiers": {
+    "[EXTERNAL:rich]": "package",
     "[EXTERNAL:unpkg.com]": "service"
   }
 }

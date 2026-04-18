@@ -1,12 +1,12 @@
 {
   "version": "1.0",
-  "generated_at": "2026-04-17T14:24:08+00:00",
+  "generated_at": "2026-04-18T01:35:29+00:00",
   "project_name": "Architect_compass",
   "stats": {
-    "files_scanned": 14,
-    "files_with_symbols": 13,
-    "functions": 180,
-    "classes": 9,
+    "files_scanned": 26,
+    "files_with_symbols": 24,
+    "functions": 220,
+    "classes": 18,
     "warnings": 0
   },
   "files": {
@@ -297,6 +297,515 @@
         }
       ]
     },
+    "compass/cli.py": {
+      "language": "python",
+      "functions": [
+        {
+          "name": "cmd_scan",
+          "args": [
+            "args"
+          ],
+          "decorators": [],
+          "line": 65,
+          "async": false
+        },
+        {
+          "name": "_apply_finalize_skips",
+          "args": [
+            "compass",
+            "args"
+          ],
+          "decorators": [],
+          "line": 146,
+          "async": false
+        },
+        {
+          "name": "cmd_symbols",
+          "args": [
+            "args"
+          ],
+          "decorators": [],
+          "line": 166,
+          "async": false
+        },
+        {
+          "name": "cmd_init",
+          "args": [
+            "args"
+          ],
+          "decorators": [],
+          "line": 218,
+          "async": false
+        },
+        {
+          "name": "cmd_graph",
+          "args": [
+            "args"
+          ],
+          "decorators": [],
+          "line": 260,
+          "async": false
+        },
+        {
+          "name": "_rebuild_edges_from_atlas",
+          "args": [
+            "atlas"
+          ],
+          "decorators": [],
+          "line": 341,
+          "async": false
+        },
+        {
+          "name": "_rebuild_external_nodes_from_atlas",
+          "args": [
+            "atlas"
+          ],
+          "decorators": [],
+          "line": 372,
+          "async": false
+        },
+        {
+          "name": "_resolve_root",
+          "args": [
+            "args"
+          ],
+          "decorators": [],
+          "line": 382,
+          "async": false
+        },
+        {
+          "name": "_resolve_config",
+          "args": [
+            "args"
+          ],
+          "decorators": [],
+          "line": 391,
+          "async": false
+        },
+        {
+          "name": "_resolve_output",
+          "args": [
+            "args",
+            "root"
+          ],
+          "decorators": [],
+          "line": 398,
+          "async": false
+        },
+        {
+          "name": "_err",
+          "args": [
+            "msg"
+          ],
+          "decorators": [],
+          "line": 405,
+          "async": false
+        },
+        {
+          "name": "_fatal",
+          "args": [
+            "console",
+            "prefix",
+            "exc",
+            "verbose"
+          ],
+          "decorators": [],
+          "line": 409,
+          "async": false
+        },
+        {
+          "name": "_add_global_flags",
+          "args": [
+            "parser"
+          ],
+          "decorators": [],
+          "line": 424,
+          "async": false
+        },
+        {
+          "name": "_make_parser",
+          "args": [],
+          "decorators": [],
+          "line": 448,
+          "async": false
+        },
+        {
+          "name": "_normalize_default_argv",
+          "args": [
+            "argv"
+          ],
+          "decorators": [],
+          "line": 542,
+          "async": false
+        },
+        {
+          "name": "main",
+          "args": [
+            "argv"
+          ],
+          "decorators": [],
+          "line": 567,
+          "async": false
+        },
+        {
+          "name": "main_scan",
+          "args": [
+            "argv"
+          ],
+          "decorators": [],
+          "line": 586,
+          "async": false
+        },
+        {
+          "name": "main_symbols",
+          "args": [
+            "argv"
+          ],
+          "decorators": [],
+          "line": 593,
+          "async": false
+        }
+      ],
+      "classes": [],
+      "constants": []
+    },
+    "compass/cli_ui.py": {
+      "language": "python",
+      "functions": [
+        {
+          "name": "_import_rich",
+          "args": [],
+          "decorators": [],
+          "line": 33,
+          "async": false
+        },
+        {
+          "name": "make_console",
+          "args": [
+            "quiet",
+            "force_no_rich"
+          ],
+          "decorators": [],
+          "line": 80,
+          "async": false
+        },
+        {
+          "name": "make_progress",
+          "args": [
+            "total",
+            "console",
+            "bundle",
+            "quiet"
+          ],
+          "decorators": [],
+          "line": 149,
+          "async": false
+        },
+        {
+          "name": "count_scannable_files",
+          "args": [
+            "project_root",
+            "text_extensions",
+            "ignore_folders",
+            "ignore_files",
+            "ignore_patterns"
+          ],
+          "decorators": [],
+          "line": 160,
+          "async": false
+        },
+        {
+          "name": "health_color",
+          "args": [
+            "score"
+          ],
+          "decorators": [],
+          "line": 193,
+          "async": false
+        },
+        {
+          "name": "print_summary_table",
+          "args": [
+            "console",
+            "bundle",
+            "atlas"
+          ],
+          "decorators": [],
+          "line": 204,
+          "async": false
+        },
+        {
+          "name": "print_symbols_table",
+          "args": [
+            "console",
+            "bundle",
+            "stats",
+            "elapsed",
+            "output"
+          ],
+          "decorators": [],
+          "line": 271,
+          "async": false
+        }
+      ],
+      "classes": [
+        {
+          "name": "_PlainConsole",
+          "bases": [],
+          "decorators": [],
+          "methods": [
+            {
+              "name": "__init__",
+              "args": [
+                "self",
+                "quiet"
+              ],
+              "decorators": [],
+              "line": 62,
+              "async": false
+            },
+            {
+              "name": "print",
+              "args": [
+                "self",
+                "*args",
+                "**kwargs"
+              ],
+              "decorators": [],
+              "line": 65,
+              "async": false
+            },
+            {
+              "name": "rule",
+              "args": [
+                "self",
+                "title",
+                "**kwargs"
+              ],
+              "decorators": [],
+              "line": 74,
+              "async": false
+            }
+          ],
+          "init_args": [
+            "quiet"
+          ],
+          "line": 57
+        },
+        {
+          "name": "_NullProgress",
+          "bases": [],
+          "decorators": [],
+          "methods": [
+            {
+              "name": "__enter__",
+              "args": [
+                "self"
+              ],
+              "decorators": [],
+              "line": 98,
+              "async": false
+            },
+            {
+              "name": "__exit__",
+              "args": [
+                "self",
+                "*a"
+              ],
+              "decorators": [],
+              "line": 101,
+              "async": false
+            },
+            {
+              "name": "callback",
+              "args": [
+                "self"
+              ],
+              "decorators": [],
+              "line": 104,
+              "async": false
+            }
+          ],
+          "init_args": [],
+          "line": 97
+        },
+        {
+          "name": "_RichProgress",
+          "bases": [],
+          "decorators": [],
+          "methods": [
+            {
+              "name": "__init__",
+              "args": [
+                "self",
+                "total",
+                "console",
+                "bundle"
+              ],
+              "decorators": [],
+              "line": 109,
+              "async": false
+            },
+            {
+              "name": "__enter__",
+              "args": [
+                "self"
+              ],
+              "decorators": [],
+              "line": 128,
+              "async": false
+            },
+            {
+              "name": "__exit__",
+              "args": [
+                "self",
+                "*a"
+              ],
+              "decorators": [],
+              "line": 137,
+              "async": false
+            },
+            {
+              "name": "callback",
+              "args": [
+                "self"
+              ],
+              "decorators": [],
+              "line": 140,
+              "async": false
+            }
+          ],
+          "init_args": [
+            "total",
+            "console",
+            "bundle"
+          ],
+          "line": 108
+        }
+      ],
+      "constants": []
+    },
+    "compass/config_loader.py": {
+      "language": "python",
+      "functions": [],
+      "classes": [
+        {
+          "name": "ConfigLoaderMixin",
+          "bases": [],
+          "decorators": [],
+          "methods": [
+            {
+              "name": "load_config_hierarchy",
+              "args": [
+                "self"
+              ],
+              "decorators": [],
+              "line": 74,
+              "async": false
+            },
+            {
+              "name": "_apply_removal_directives",
+              "args": [
+                "cls",
+                "config",
+                "local_config"
+              ],
+              "decorators": [
+                "@classmethod"
+              ],
+              "line": 88,
+              "async": false
+            },
+            {
+              "name": "_load_global_config",
+              "args": [
+                "self"
+              ],
+              "decorators": [],
+              "line": 110,
+              "async": false
+            },
+            {
+              "name": "_load_local_config",
+              "args": [
+                "self"
+              ],
+              "decorators": [],
+              "line": 127,
+              "async": false
+            },
+            {
+              "name": "_resolve_local_config_path",
+              "args": [
+                "self"
+              ],
+              "decorators": [],
+              "line": 139,
+              "async": false
+            },
+            {
+              "name": "_merge_local_into",
+              "args": [
+                "self",
+                "config",
+                "local_config"
+              ],
+              "decorators": [],
+              "line": 150,
+              "async": false
+            },
+            {
+              "name": "_merge_definitions",
+              "args": [
+                "config",
+                "local_defs"
+              ],
+              "decorators": [
+                "@staticmethod"
+              ],
+              "line": 172,
+              "async": false
+            },
+            {
+              "name": "_merge_section_dict",
+              "args": [
+                "config",
+                "section",
+                "local_section"
+              ],
+              "decorators": [
+                "@staticmethod"
+              ],
+              "line": 183,
+              "async": false
+            },
+            {
+              "name": "_config_fingerprint",
+              "args": [
+                "self"
+              ],
+              "decorators": [],
+              "line": 206,
+              "async": false
+            }
+          ],
+          "init_args": [],
+          "line": 61
+        }
+      ],
+      "constants": [
+        {
+          "name": "_SCHEMA_SECTIONS",
+          "kind": "tuple",
+          "line": 39
+        },
+        {
+          "name": "_REMOVAL_KEYS",
+          "kind": "tuple",
+          "line": 54
+        }
+      ]
+    },
     "compass/consolidator.py": {
       "language": "python",
       "functions": [
@@ -333,59 +842,32 @@
     },
     "compass/core.py": {
       "language": "python",
-      "functions": [
-        {
-          "name": "_language_for_file",
-          "args": [
-            "filename"
-          ],
-          "decorators": [],
-          "line": 68,
-          "async": false
-        },
-        {
-          "name": "_definition_applies_to_stack",
-          "args": [
-            "definition",
-            "file_stack"
-          ],
-          "decorators": [],
-          "line": 74,
-          "async": false
-        },
-        {
-          "name": "_tier_rank",
-          "args": [
-            "tier"
-          ],
-          "decorators": [],
-          "line": 237,
-          "async": false
-        },
-        {
-          "name": "_is_python_stdlib",
-          "args": [
-            "module_head"
-          ],
-          "decorators": [],
-          "line": 241,
-          "async": false
-        }
-      ],
+      "functions": [],
       "classes": [
         {
           "name": "ArchitectCompass",
-          "bases": [],
+          "bases": [
+            "ConfigLoaderMixin",
+            "OutboundResolverMixin",
+            "AnalyzePipelineMixin",
+            "ScanWorkerMixin",
+            "EntryPointsMixin",
+            "FinalizeMixin"
+          ],
           "decorators": [],
           "methods": [
             {
               "name": "__init__",
               "args": [
                 "self",
-                "force_full"
+                "force_full",
+                "project_root",
+                "config_path",
+                "output_dir",
+                "progress_callback"
               ],
               "decorators": [],
-              "line": 365,
+              "line": 81,
               "async": false
             },
             {
@@ -394,7 +876,7 @@
                 "self"
               ],
               "decorators": [],
-              "line": 508,
+              "line": 254,
               "async": false
             },
             {
@@ -403,7 +885,7 @@
                 "self"
               ],
               "decorators": [],
-              "line": 525,
+              "line": 262,
               "async": false
             },
             {
@@ -412,110 +894,79 @@
                 "self"
               ],
               "decorators": [],
-              "line": 535,
+              "line": 267,
               "async": false
-            },
+            }
+          ],
+          "init_args": [
+            "force_full",
+            "project_root",
+            "config_path",
+            "output_dir",
+            "progress_callback"
+          ],
+          "line": 61
+        }
+      ],
+      "constants": [
+        {
+          "name": "__all__",
+          "kind": "list",
+          "line": 46
+        }
+      ]
+    },
+    "compass/entry_points.py": {
+      "language": "python",
+      "functions": [],
+      "classes": [
+        {
+          "name": "EntryPointsMixin",
+          "bases": [],
+          "decorators": [],
+          "methods": [
             {
-              "name": "load_config_hierarchy",
+              "name": "_detect_entry_points",
               "args": [
                 "self"
               ],
               "decorators": [],
-              "line": 551,
+              "line": 45,
               "async": false
             },
             {
-              "name": "_apply_removal_directives",
-              "args": [
-                "cls",
-                "config",
-                "local_config"
-              ],
-              "decorators": [
-                "@classmethod"
-              ],
-              "line": 587,
-              "async": false
-            },
-            {
-              "name": "_load_global_config",
-              "args": [
-                "self"
-              ],
-              "decorators": [],
-              "line": 609,
-              "async": false
-            },
-            {
-              "name": "_load_local_config",
-              "args": [
-                "self"
-              ],
-              "decorators": [],
-              "line": 626,
-              "async": false
-            },
-            {
-              "name": "_resolve_local_config_path",
-              "args": [
-                "self"
-              ],
-              "decorators": [],
-              "line": 638,
-              "async": false
-            },
-            {
-              "name": "_merge_local_into",
+              "name": "_normalize_entry_candidate",
               "args": [
                 "self",
-                "config",
-                "local_config"
+                "raw"
               ],
               "decorators": [],
-              "line": 649,
+              "line": 142,
               "async": false
-            },
-            {
-              "name": "_merge_definitions",
-              "args": [
-                "config",
-                "local_defs"
-              ],
-              "decorators": [
-                "@staticmethod"
-              ],
-              "line": 671,
-              "async": false
-            },
-            {
-              "name": "_merge_section_dict",
-              "args": [
-                "config",
-                "section",
-                "local_section"
-              ],
-              "decorators": [
-                "@staticmethod"
-              ],
-              "line": 682,
-              "async": false
-            },
+            }
+          ],
+          "init_args": [],
+          "line": 27
+        }
+      ],
+      "constants": []
+    },
+    "compass/finalize.py": {
+      "language": "python",
+      "functions": [],
+      "classes": [
+        {
+          "name": "FinalizeMixin",
+          "bases": [],
+          "decorators": [],
+          "methods": [
             {
               "name": "_load_fingerprints",
               "args": [
                 "self"
               ],
               "decorators": [],
-              "line": 708,
-              "async": false
-            },
-            {
-              "name": "_config_fingerprint",
-              "args": [
-                "self"
-              ],
-              "decorators": [],
-              "line": 747,
+              "line": 62,
               "async": false
             },
             {
@@ -526,7 +977,7 @@
               "decorators": [
                 "@staticmethod"
               ],
-              "line": 760,
+              "line": 102,
               "async": false
             },
             {
@@ -535,336 +986,7 @@
                 "self"
               ],
               "decorators": [],
-              "line": 771,
-              "async": false
-            },
-            {
-              "name": "_normalize_dynamic_deps",
-              "args": [
-                "raw"
-              ],
-              "decorators": [
-                "@staticmethod"
-              ],
-              "line": 794,
-              "async": false
-            },
-            {
-              "name": "_dynamic_target_set",
-              "args": [
-                "self"
-              ],
-              "decorators": [],
-              "line": 830,
-              "async": false
-            },
-            {
-              "name": "_index_existing_files",
-              "args": [
-                "self"
-              ],
-              "decorators": [],
-              "line": 845,
-              "async": false
-            },
-            {
-              "name": "_is_ignored",
-              "args": [
-                "self",
-                "rel_path",
-                "filename"
-              ],
-              "decorators": [],
-              "line": 861,
-              "async": false
-            },
-            {
-              "name": "_resolve_identity",
-              "args": [
-                "self",
-                "raw_name"
-              ],
-              "decorators": [],
-              "line": 884,
-              "async": false
-            },
-            {
-              "name": "_detect_wp_roots",
-              "args": [
-                "self"
-              ],
-              "decorators": [],
-              "line": 905,
-              "async": false
-            },
-            {
-              "name": "resolve_stack_for",
-              "args": [
-                "self",
-                "rel_path"
-              ],
-              "decorators": [],
-              "line": 971,
-              "async": false
-            },
-            {
-              "name": "analyze",
-              "args": [
-                "self"
-              ],
-              "decorators": [],
-              "line": 978,
-              "async": false
-            },
-            {
-              "name": "_compile_inbound_patterns",
-              "args": [
-                "self"
-              ],
-              "decorators": [],
-              "line": 1147,
-              "async": false
-            },
-            {
-              "name": "_scan_file",
-              "args": [
-                "self",
-                "file_path",
-                "rel_path",
-                "filename",
-                "language",
-                "file_stack",
-                "inbound_index",
-                "tech_scores",
-                "unify_lower",
-                "compiled_ignore_outbound"
-              ],
-              "decorators": [],
-              "line": 1168,
-              "async": false
-            },
-            {
-              "name": "_apply_cached_scan",
-              "args": [
-                "self",
-                "rel_path",
-                "cached",
-                "tech_scores"
-              ],
-              "decorators": [],
-              "line": 1306,
-              "async": false
-            },
-            {
-              "name": "_reclassify_cached_target",
-              "args": [
-                "self",
-                "tgt"
-              ],
-              "decorators": [],
-              "line": 1384,
-              "async": false
-            },
-            {
-              "name": "_build_external_index",
-              "args": [
-                "services"
-              ],
-              "decorators": [
-                "@staticmethod"
-              ],
-              "line": 1403,
-              "async": false
-            },
-            {
-              "name": "_match_external_service",
-              "args": [
-                "self",
-                "cleaned"
-              ],
-              "decorators": [],
-              "line": 1433,
-              "async": false
-            },
-            {
-              "name": "_build_external_url_index",
-              "args": [
-                "services"
-              ],
-              "decorators": [
-                "@staticmethod"
-              ],
-              "line": 1459,
-              "async": false
-            },
-            {
-              "name": "_match_external_by_url",
-              "args": [
-                "self",
-                "hostname"
-              ],
-              "decorators": [],
-              "line": 1491,
-              "async": false
-            },
-            {
-              "name": "_is_local_hostname",
-              "args": [
-                "host"
-              ],
-              "decorators": [
-                "@staticmethod"
-              ],
-              "line": 1508,
-              "async": false
-            },
-            {
-              "name": "_classify_outbound",
-              "args": [
-                "self",
-                "raw",
-                "language",
-                "source_abs",
-                "unify_lower"
-              ],
-              "decorators": [],
-              "line": 1535,
-              "async": false
-            },
-            {
-              "name": "_auto_promote_external",
-              "args": [
-                "self",
-                "cleaned",
-                "language"
-              ],
-              "decorators": [],
-              "line": 1668,
-              "async": false
-            },
-            {
-              "name": "_register_edge",
-              "args": [
-                "self",
-                "src_rel",
-                "target_label",
-                "kind",
-                "edge_type"
-              ],
-              "decorators": [],
-              "line": 1744,
-              "async": false
-            },
-            {
-              "name": "_is_asset_target",
-              "args": [
-                "self",
-                "rel_path"
-              ],
-              "decorators": [],
-              "line": 1754,
-              "async": false
-            },
-            {
-              "name": "_is_ignored_target",
-              "args": [
-                "self",
-                "rel_path"
-              ],
-              "decorators": [],
-              "line": 1778,
-              "async": false
-            },
-            {
-              "name": "_register_external_node",
-              "args": [
-                "self",
-                "node_label",
-                "display_label",
-                "tier"
-              ],
-              "decorators": [],
-              "line": 1803,
-              "async": false
-            },
-            {
-              "name": "_classify_external_tier",
-              "args": [
-                "self",
-                "display_label",
-                "language",
-                "is_service"
-              ],
-              "decorators": [],
-              "line": 1829,
-              "async": false
-            },
-            {
-              "name": "_tier_from_display",
-              "args": [
-                "self",
-                "display_label",
-                "language"
-              ],
-              "decorators": [],
-              "line": 1845,
-              "async": false
-            },
-            {
-              "name": "_is_external_wrapper",
-              "args": [
-                "self",
-                "display_label",
-                "language"
-              ],
-              "decorators": [],
-              "line": 1873,
-              "async": false
-            },
-            {
-              "name": "_detect_entry_points",
-              "args": [
-                "self"
-              ],
-              "decorators": [],
-              "line": 1907,
-              "async": false
-            },
-            {
-              "name": "_normalize_entry_candidate",
-              "args": [
-                "self",
-                "raw"
-              ],
-              "decorators": [],
-              "line": 2015,
-              "async": false
-            },
-            {
-              "name": "_compute_orphans",
-              "args": [
-                "self"
-              ],
-              "decorators": [],
-              "line": 2047,
-              "async": false
-            },
-            {
-              "name": "_file_registry_paths_set",
-              "args": [
-                "self"
-              ],
-              "decorators": [],
-              "line": 2087,
-              "async": false
-            },
-            {
-              "name": "run_audit",
-              "args": [
-                "self"
-              ],
-              "decorators": [],
-              "line": 2100,
+              "line": 113,
               "async": false
             },
             {
@@ -873,7 +995,7 @@
                 "self"
               ],
               "decorators": [],
-              "line": 2136,
+              "line": 148,
               "async": false
             },
             {
@@ -882,7 +1004,7 @@
                 "self"
               ],
               "decorators": [],
-              "line": 2150,
+              "line": 162,
               "async": false
             },
             {
@@ -891,7 +1013,7 @@
                 "self"
               ],
               "decorators": [],
-              "line": 2160,
+              "line": 172,
               "async": false
             },
             {
@@ -900,7 +1022,7 @@
                 "self"
               ],
               "decorators": [],
-              "line": 2179,
+              "line": 191,
               "async": false
             },
             {
@@ -909,7 +1031,7 @@
                 "self"
               ],
               "decorators": [],
-              "line": 2208,
+              "line": 222,
               "async": false
             },
             {
@@ -918,7 +1040,7 @@
                 "self"
               ],
               "decorators": [],
-              "line": 2226,
+              "line": 240,
               "async": false
             },
             {
@@ -927,7 +1049,7 @@
                 "self"
               ],
               "decorators": [],
-              "line": 2262,
+              "line": 276,
               "async": false
             },
             {
@@ -936,7 +1058,7 @@
                 "self"
               ],
               "decorators": [],
-              "line": 2288,
+              "line": 302,
               "async": false
             },
             {
@@ -946,7 +1068,7 @@
                 "rel_path"
               ],
               "decorators": [],
-              "line": 2310,
+              "line": 324,
               "async": false
             },
             {
@@ -955,7 +1077,7 @@
                 "self"
               ],
               "decorators": [],
-              "line": 2323,
+              "line": 337,
               "async": false
             },
             {
@@ -964,7 +1086,7 @@
                 "self"
               ],
               "decorators": [],
-              "line": 2372,
+              "line": 386,
               "async": false
             },
             {
@@ -973,7 +1095,7 @@
                 "self"
               ],
               "decorators": [],
-              "line": 2377,
+              "line": 391,
               "async": false
             },
             {
@@ -982,7 +1104,7 @@
                 "self"
               ],
               "decorators": [],
-              "line": 2391,
+              "line": 405,
               "async": false
             },
             {
@@ -991,81 +1113,24 @@
                 "self"
               ],
               "decorators": [],
-              "line": 2425,
+              "line": 439,
               "async": false
             }
           ],
-          "init_args": [
-            "force_full"
-          ],
-          "line": 364
+          "init_args": [],
+          "line": 51
         }
       ],
       "constants": [
         {
-          "name": "_EXTENSION_LANGUAGE",
-          "kind": "dict",
-          "line": 48
-        },
-        {
-          "name": "LOCAL_CONFIG_NAME",
-          "kind": "str",
-          "line": 125
-        },
-        {
-          "name": "LEGACY_LOCAL_CONFIG_NAME",
-          "kind": "str",
-          "line": 126
-        },
-        {
-          "name": "LOCAL_TEMPLATE_NAME",
-          "kind": "str",
-          "line": 127
-        },
-        {
-          "name": "LOCAL_HELP_NAME",
-          "kind": "str",
-          "line": 128
-        },
-        {
-          "name": "LOCAL_HELP_TEMPLATE",
-          "kind": "str",
-          "line": 129
-        },
-        {
           "name": "FINGERPRINTS_NAME",
           "kind": "str",
-          "line": 130
+          "line": 47
         },
         {
           "name": "FINGERPRINTS_VERSION",
           "kind": "int",
-          "line": 131
-        },
-        {
-          "name": "_SCHEMA_SECTIONS",
-          "kind": "tuple",
-          "line": 133
-        },
-        {
-          "name": "_EXAMPLE_WARNING",
-          "kind": "str",
-          "line": 162
-        },
-        {
-          "name": "_PYTHON_STDLIB_FALLBACK",
-          "kind": null,
-          "line": 193
-        },
-        {
-          "name": "_TIER_RANK",
-          "kind": "dict",
-          "line": 234
-        },
-        {
-          "name": "_LOCAL_TEMPLATE",
-          "kind": "dict",
-          "line": 259
+          "line": 48
         }
       ]
     },
@@ -1439,6 +1504,241 @@
         }
       ]
     },
+    "compass/outbound_resolver.py": {
+      "language": "python",
+      "functions": [
+        {
+          "name": "_tier_rank",
+          "args": [
+            "tier"
+          ],
+          "decorators": [],
+          "line": 36,
+          "async": false
+        },
+        {
+          "name": "build_external_index",
+          "args": [
+            "services"
+          ],
+          "decorators": [],
+          "line": 59,
+          "async": false
+        },
+        {
+          "name": "build_external_url_index",
+          "args": [
+            "services"
+          ],
+          "decorators": [],
+          "line": 90,
+          "async": false
+        },
+        {
+          "name": "_is_local_hostname",
+          "args": [
+            "host"
+          ],
+          "decorators": [],
+          "line": 126,
+          "async": false
+        }
+      ],
+      "classes": [
+        {
+          "name": "OutboundResolverMixin",
+          "bases": [],
+          "decorators": [],
+          "methods": [
+            {
+              "name": "_build_external_index",
+              "args": [
+                "services"
+              ],
+              "decorators": [
+                "@staticmethod"
+              ],
+              "line": 164,
+              "async": false
+            },
+            {
+              "name": "_build_external_url_index",
+              "args": [
+                "services"
+              ],
+              "decorators": [
+                "@staticmethod"
+              ],
+              "line": 168,
+              "async": false
+            },
+            {
+              "name": "_is_local_hostname",
+              "args": [
+                "host"
+              ],
+              "decorators": [
+                "@staticmethod"
+              ],
+              "line": 172,
+              "async": false
+            },
+            {
+              "name": "_match_external_service",
+              "args": [
+                "self",
+                "cleaned"
+              ],
+              "decorators": [],
+              "line": 175,
+              "async": false
+            },
+            {
+              "name": "_match_external_by_url",
+              "args": [
+                "self",
+                "hostname"
+              ],
+              "decorators": [],
+              "line": 200,
+              "async": false
+            },
+            {
+              "name": "_classify_outbound",
+              "args": [
+                "self",
+                "raw",
+                "language",
+                "source_abs",
+                "unify_lower"
+              ],
+              "decorators": [],
+              "line": 212,
+              "async": false
+            },
+            {
+              "name": "_auto_promote_external",
+              "args": [
+                "self",
+                "cleaned",
+                "language"
+              ],
+              "decorators": [],
+              "line": 319,
+              "async": false
+            },
+            {
+              "name": "_is_asset_target",
+              "args": [
+                "self",
+                "rel_path"
+              ],
+              "decorators": [],
+              "line": 392,
+              "async": false
+            },
+            {
+              "name": "_is_ignored_target",
+              "args": [
+                "self",
+                "rel_path"
+              ],
+              "decorators": [],
+              "line": 399,
+              "async": false
+            },
+            {
+              "name": "_classify_external_tier",
+              "args": [
+                "self",
+                "display_label",
+                "language",
+                "is_service"
+              ],
+              "decorators": [],
+              "line": 421,
+              "async": false
+            },
+            {
+              "name": "_tier_from_display",
+              "args": [
+                "self",
+                "display_label",
+                "language"
+              ],
+              "decorators": [],
+              "line": 444,
+              "async": false
+            },
+            {
+              "name": "_is_external_wrapper",
+              "args": [
+                "self",
+                "display_label",
+                "language"
+              ],
+              "decorators": [],
+              "line": 472,
+              "async": false
+            },
+            {
+              "name": "_reclassify_cached_target",
+              "args": [
+                "self",
+                "tgt"
+              ],
+              "decorators": [],
+              "line": 491,
+              "async": false
+            },
+            {
+              "name": "_register_edge",
+              "args": [
+                "self",
+                "src_rel",
+                "target_label",
+                "kind",
+                "edge_type"
+              ],
+              "decorators": [],
+              "line": 509,
+              "async": false
+            },
+            {
+              "name": "_register_external_node",
+              "args": [
+                "self",
+                "node_label",
+                "display_label",
+                "tier"
+              ],
+              "decorators": [],
+              "line": 519,
+              "async": false
+            }
+          ],
+          "init_args": [],
+          "line": 150
+        }
+      ],
+      "constants": [
+        {
+          "name": "_TIER_RANK",
+          "kind": "dict",
+          "line": 33
+        },
+        {
+          "name": "_PY_IDENT_RE",
+          "kind": null,
+          "line": 43
+        },
+        {
+          "name": "_DOTFILE_TARGET_PATTERNS",
+          "kind": "tuple",
+          "line": 50
+        }
+      ]
+    },
     "compass/path_resolver.py": {
       "language": "python",
       "functions": [
@@ -1769,6 +2069,198 @@
         }
       ]
     },
+    "compass/pipeline.py": {
+      "language": "python",
+      "functions": [
+        {
+          "name": "_language_for_file",
+          "args": [
+            "filename"
+          ],
+          "decorators": [],
+          "line": 48,
+          "async": false
+        },
+        {
+          "name": "_definition_applies_to_stack",
+          "args": [
+            "definition",
+            "file_stack"
+          ],
+          "decorators": [],
+          "line": 54,
+          "async": false
+        }
+      ],
+      "classes": [
+        {
+          "name": "AnalyzePipelineMixin",
+          "bases": [],
+          "decorators": [],
+          "methods": [
+            {
+              "name": "_index_existing_files",
+              "args": [
+                "self"
+              ],
+              "decorators": [],
+              "line": 96,
+              "async": false
+            },
+            {
+              "name": "_is_ignored",
+              "args": [
+                "self",
+                "rel_path",
+                "filename"
+              ],
+              "decorators": [],
+              "line": 112,
+              "async": false
+            },
+            {
+              "name": "_detect_wp_roots",
+              "args": [
+                "self"
+              ],
+              "decorators": [],
+              "line": 128,
+              "async": false
+            },
+            {
+              "name": "_normalize_dynamic_deps",
+              "args": [
+                "raw"
+              ],
+              "decorators": [
+                "@staticmethod"
+              ],
+              "line": 195,
+              "async": false
+            },
+            {
+              "name": "_dynamic_target_set",
+              "args": [
+                "self"
+              ],
+              "decorators": [],
+              "line": 221,
+              "async": false
+            },
+            {
+              "name": "resolve_stack_for",
+              "args": [
+                "self",
+                "rel_path"
+              ],
+              "decorators": [],
+              "line": 232,
+              "async": false
+            },
+            {
+              "name": "analyze",
+              "args": [
+                "self"
+              ],
+              "decorators": [],
+              "line": 239,
+              "async": false
+            },
+            {
+              "name": "_compile_inbound_patterns",
+              "args": [
+                "self"
+              ],
+              "decorators": [],
+              "line": 419,
+              "async": false
+            },
+            {
+              "name": "_compute_orphans",
+              "args": [
+                "self"
+              ],
+              "decorators": [],
+              "line": 446,
+              "async": false
+            },
+            {
+              "name": "_file_registry_paths_set",
+              "args": [
+                "self"
+              ],
+              "decorators": [],
+              "line": 486,
+              "async": false
+            },
+            {
+              "name": "run_audit",
+              "args": [
+                "self"
+              ],
+              "decorators": [],
+              "line": 499,
+              "async": false
+            }
+          ],
+          "init_args": [],
+          "line": 85
+        }
+      ],
+      "constants": [
+        {
+          "name": "_EXTENSION_LANGUAGE",
+          "kind": "dict",
+          "line": 28
+        }
+      ]
+    },
+    "compass/scan_worker.py": {
+      "language": "python",
+      "functions": [],
+      "classes": [
+        {
+          "name": "ScanWorkerMixin",
+          "bases": [],
+          "decorators": [],
+          "methods": [
+            {
+              "name": "_scan_file",
+              "args": [
+                "self",
+                "file_path",
+                "rel_path",
+                "filename",
+                "language",
+                "file_stack",
+                "inbound_index",
+                "tech_scores",
+                "unify_lower",
+                "compiled_ignore_outbound"
+              ],
+              "decorators": [],
+              "line": 29,
+              "async": false
+            },
+            {
+              "name": "_apply_cached_scan",
+              "args": [
+                "self",
+                "rel_path",
+                "cached",
+                "tech_scores"
+              ],
+              "decorators": [],
+              "line": 167,
+              "async": false
+            }
+          ],
+          "init_args": [],
+          "line": 26
+        }
+      ],
+      "constants": []
+    },
     "compass/stack_detector.py": {
       "language": "python",
       "functions": [
@@ -1939,6 +2431,100 @@
           "name": "_CONTENT_SCAN_SKIP_EXTENSIONS",
           "kind": "set",
           "line": 46
+        }
+      ]
+    },
+    "compass/stdlib_filter.py": {
+      "language": "python",
+      "functions": [
+        {
+          "name": "is_python_stdlib",
+          "args": [
+            "module_head"
+          ],
+          "decorators": [],
+          "line": 64,
+          "async": false
+        }
+      ],
+      "classes": [],
+      "constants": [
+        {
+          "name": "_PYTHON_STDLIB_FALLBACK",
+          "kind": null,
+          "line": 26
+        }
+      ]
+    },
+    "compass/template_io.py": {
+      "language": "python",
+      "functions": [
+        {
+          "name": "ensure_local_template",
+          "args": [
+            "map_dir",
+            "script_dir"
+          ],
+          "decorators": [],
+          "line": 161,
+          "async": false
+        },
+        {
+          "name": "_ensure_local_json",
+          "args": [
+            "map_dir"
+          ],
+          "decorators": [],
+          "line": 177,
+          "async": false
+        },
+        {
+          "name": "_ensure_local_help_md",
+          "args": [
+            "map_dir",
+            "script_dir"
+          ],
+          "decorators": [],
+          "line": 188,
+          "async": false
+        }
+      ],
+      "classes": [],
+      "constants": [
+        {
+          "name": "LOCAL_CONFIG_NAME",
+          "kind": "str",
+          "line": 24
+        },
+        {
+          "name": "LEGACY_LOCAL_CONFIG_NAME",
+          "kind": "str",
+          "line": 25
+        },
+        {
+          "name": "LOCAL_TEMPLATE_NAME",
+          "kind": "str",
+          "line": 26
+        },
+        {
+          "name": "LOCAL_HELP_NAME",
+          "kind": "str",
+          "line": 27
+        },
+        {
+          "name": "LOCAL_HELP_TEMPLATE",
+          "kind": "str",
+          "line": 28
+        },
+        {
+          "name": "_EXAMPLE_WARNING",
+          "kind": "str",
+          "line": 48
+        },
+        {
+          "name": "_LOCAL_TEMPLATE",
+          "kind": "dict",
+          "line": 56
         }
       ]
     },
@@ -2433,8 +3019,40 @@
           "line": 65
         }
       ]
+    },
+    "_baselines/diff.py": {
+      "language": "python",
+      "functions": [],
+      "classes": [],
+      "constants": [
+        {
+          "name": "a",
+          "kind": null,
+          "line": 4
+        },
+        {
+          "name": "b",
+          "kind": null,
+          "line": 5
+        },
+        {
+          "name": "sa",
+          "kind": null,
+          "line": 9
+        },
+        {
+          "name": "sb",
+          "kind": null,
+          "line": 10
+        },
+        {
+          "name": "diffs",
+          "kind": null,
+          "line": 14
+        }
+      ]
     }
   },
   "warnings": [],
-  "elapsed_seconds": 0.14
+  "elapsed_seconds": 0.169
 }

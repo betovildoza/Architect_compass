@@ -1,17 +1,21 @@
-"""Architect's Compass — entry point.
+"""Architect's Compass — legacy entry point (CLI-015 wrapper).
 
-La lógica vive en el paquete `compass/`. Este archivo solo instancia la clase
-principal y corre el flujo de auditoría. La CLI estructurada llega en CLI-015.
+La CLI real vive en `compass/cli.py` (subcomandos scan/symbols/init/graph).
+Este archivo se conserva como wrapper delgado por backward-compat:
+cualquier script externo, .bat, CI pipeline o cron que invoque
+`python architect_compass.py [args]` sigue funcionando y es equivalente a
+`compass scan [args]`.
 """
 
 import sys
 
-sys.stdout.reconfigure(encoding="utf-8")
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
 
-from compass.core import ArchitectCompass
+from compass.cli import main_scan
 
 
 if __name__ == "__main__":
-    compass = ArchitectCompass()
-    compass.analyze()
-    compass.finalize()
+    sys.exit(main_scan())
