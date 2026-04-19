@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "generated_at": "2026-04-18 00:46:55",
-  "config_fingerprint": "afb3dbb17548f09985c6e75bfc41b7bd516f2bf1e0ccab9aa6f024f68cea19b4",
+  "generated_at": "2026-04-19 05:56:28",
+  "config_fingerprint": "ff37e1dad0f87f16321958dedeb8d2fd643d9e19551c2c6dd42223582ff61842",
   "files": {
     "architect_compass.py": {
       "fingerprint": "ea633eceb01e0eb48d45c9294b156191e109781dff2f19ca7d98cb7138542971",
@@ -23,10 +23,13 @@
     },
     "architect_symbols.py": {
       "fingerprint": "eb6f87b9d61ce92f6755d739f8d684bd54e5f3ead9bba5091eb36fd877787729",
-      "outbound_targets": [],
+      "outbound_targets": [
+        "mapper_config.json",
+        ".map/compass.local.json"
+      ],
       "inbound_patterns": [],
       "tech_scores": {},
-      "is_relevant": false,
+      "is_relevant": true,
       "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "__future__:annotations",
@@ -46,9 +49,13 @@
         "typing:Iterable",
         "typing:List",
         "typing:Optional",
-        "typing:Tuple"
+        "typing:Tuple",
+        "@@LOADER@@path_literal@@LOADER@@\".map/mapper_config.json"
       ],
-      "edge_types": {},
+      "edge_types": {
+        "mapper_config.json": "load",
+        ".map/compass.local.json": "load"
+      },
       "metadata_assets": [],
       "metadata_filtered_refs": []
     },
@@ -83,7 +90,7 @@
       "metadata_filtered_refs": []
     },
     "mapper_config.example.json": {
-      "fingerprint": "9ecad5244c2f5ccde03e8477a874b08d84640e1f49c1b8d3ecc25c4140fdf377",
+      "fingerprint": "9dd4a2e3d76a854e7781a61dea40bd68f3478a9d6325b63ac35e1f5ceb6ff04f",
       "outbound_targets": [],
       "inbound_patterns": [],
       "tech_scores": {},
@@ -95,7 +102,7 @@
       "metadata_filtered_refs": []
     },
     "mapper_config.json": {
-      "fingerprint": "e87b1b301b20de59017ebd1dc9fc209e7d0442f02c976a71271a4bebad426bb7",
+      "fingerprint": "640b5868d768f57f7adf96f70f304a3dded0aab6e4478c3d243549341c2c7c8c",
       "outbound_targets": [],
       "inbound_patterns": [],
       "tech_scores": {},
@@ -136,7 +143,10 @@
         "typing:Dict",
         "typing:List",
         "typing:Optional",
-        "traceback"
+        "traceback",
+        "@@LOADER@@path_literal@@LOADER@@\"atlas.json",
+        "@@LOADER@@path_literal@@LOADER@@\"connectivity.dot",
+        "@@LOADER@@path_literal@@LOADER@@\"graph.html"
       ],
       "edge_types": {
         "compass/cli_ui.py": "import",
@@ -201,21 +211,25 @@
       "metadata_filtered_refs": []
     },
     "compass/consolidator.py": {
-      "fingerprint": "3f8b854180299321ddae950dfd01bb68e790b62049475a553bd9a9aa9e1ab81c",
-      "outbound_targets": [],
+      "fingerprint": "4dc4b503e706385c97ee5f16c4e193c0b6619c4964c0464593c3d236ee9a9ef6",
+      "outbound_targets": [
+        "compass/stdlib_filter.py"
+      ],
       "inbound_patterns": [],
       "tech_scores": {},
-      "is_relevant": false,
+      "is_relevant": true,
       "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "__future__:annotations"
       ],
-      "edge_types": {},
+      "edge_types": {
+        "compass/stdlib_filter.py": "import"
+      },
       "metadata_assets": [],
       "metadata_filtered_refs": []
     },
     "compass/core.py": {
-      "fingerprint": "d77599900066cb7e5c7e1136258003d1ccab6c88903a952ab683fb0d6c68c1c8",
+      "fingerprint": "4f5787b9a50547974cc774640a40bc11e31056115845f3cd5357e62d24d66f36",
       "outbound_targets": [
         "compass/config_loader.py",
         "compass/entry_points.py",
@@ -262,15 +276,14 @@
       "metadata_assets": [],
       "metadata_filtered_refs": []
     },
-    "compass/entry_points.py": {
-      "fingerprint": "a67fec636556b8351d083cf3ba9375a2dc1b066044b9cd40be100c73dc97489e",
+    "compass/dashboard_detector.py": {
+      "fingerprint": "31dc18426eecfc7c94e5397a44a4db3952b1ed7749c227c74a9285fb9eac2303",
       "outbound_targets": [],
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": false,
       "stack": "AI-Agent-Framework",
       "metadata_calls": [
-        "json",
         "re",
         "pathlib:Path"
       ],
@@ -278,14 +291,48 @@
       "metadata_assets": [],
       "metadata_filtered_refs": []
     },
+    "compass/defaults.py": {
+      "fingerprint": "7ab80fca886e7989bfec44b2f7fba8fc145a317ec124346b22c177c4f31341d7",
+      "outbound_targets": [],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": false,
+      "stack": "AI-Agent-Framework",
+      "metadata_calls": [],
+      "edge_types": {},
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
+    },
+    "compass/entry_points.py": {
+      "fingerprint": "a636efcdeb6ffd75142d1df728e62c8a2233f5653ab525c2a04288df15b8c9d3",
+      "outbound_targets": [
+        "compass/framework_mounts.py"
+      ],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": true,
+      "stack": "AI-Agent-Framework",
+      "metadata_calls": [
+        "json",
+        "re",
+        "pathlib:Path",
+        "@@LOADER@@path_literal@@LOADER@@\"package.json"
+      ],
+      "edge_types": {
+        "compass/framework_mounts.py": "import"
+      },
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
+    },
     "compass/finalize.py": {
-      "fingerprint": "1de8e03c164dc68ba1c5aa9036d2cd69a5b9b9566626ccb33a9a994c4ea68240",
+      "fingerprint": "61936b0ba33f4dd24df566b659f5d6b264eb6a7c090a598dfe2005cb7f12bd20",
       "outbound_targets": [
         "compass/consolidator.py",
         "compass/consolidator.py",
         "compass/graph_emitter.py",
         "compass/graph_emitter.py",
         "compass/graph_emitter.py",
+        "compass/dashboard_detector.py",
         "compass/metrics.py",
         "compass/metrics.py",
         "compass/metrics.py",
@@ -294,7 +341,9 @@
         "compass/metrics.py",
         "compass/metrics.py",
         "compass/validation.py",
-        "compass/template_io.py"
+        "compass/template_io.py",
+        "compass/wordpress_detector.py",
+        "compass/wordpress_detector.py"
       ],
       "inbound_patterns": [],
       "tech_scores": {},
@@ -303,21 +352,42 @@
       "metadata_calls": [
         "hashlib",
         "json",
-        "datetime:datetime"
+        "datetime:datetime",
+        "@@LOADER@@path_literal@@LOADER@@\"atlas.json",
+        "@@LOADER@@path_literal@@LOADER@@\"feedback.log"
       ],
       "edge_types": {
         "compass/consolidator.py": "import",
         "compass/graph_emitter.py": "import",
+        "compass/dashboard_detector.py": "import",
         "compass/metrics.py": "import",
         "compass/validation.py": "import",
-        "compass/template_io.py": "import"
+        "compass/template_io.py": "import",
+        "compass/wordpress_detector.py": "import"
       },
       "metadata_assets": [],
       "metadata_filtered_refs": []
     },
+    "compass/framework_mounts.py": {
+      "fingerprint": "9d7f21f245534f5fad8c9dd9218dde5e4ec37eaea8199cfb2c48d4d98fe1b7b5",
+      "outbound_targets": [],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": false,
+      "stack": "AI-Agent-Framework",
+      "metadata_calls": [
+        "re",
+        "pathlib:Path",
+        "typing:Dict"
+      ],
+      "edge_types": {},
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
+    },
     "compass/graph_emitter.py": {
-      "fingerprint": "9c140151ad0aaad653a30d7b9581c752d400c86c1a117fcc3af90ad3dabe28e6",
+      "fingerprint": "b67a789de1d1727b49d3eb3715dff38c4887d8381700c9b64bc1da9ce5f80fe2",
       "outbound_targets": [
+        "compass/templates/graph.html.tpl",
         "[EXTERNAL:unpkg.com]"
       ],
       "inbound_patterns": [],
@@ -330,6 +400,7 @@
         "pathlib:Path"
       ],
       "edge_types": {
+        "compass/templates/graph.html.tpl": "load",
         "[EXTERNAL:unpkg.com]": "fetch"
       },
       "metadata_assets": [],
@@ -346,6 +417,23 @@
         "__future__:annotations",
         "json",
         "pathlib:Path"
+      ],
+      "edge_types": {},
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
+    },
+    "compass/orphan_classifier.py": {
+      "fingerprint": "378ad2696db213faa51d264d72ea1cc8eafbe7c695fada0ca26cda3a9e92db3f",
+      "outbound_targets": [],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": false,
+      "stack": "AI-Agent-Framework",
+      "metadata_calls": [
+        "pathlib:Path",
+        "typing:Dict",
+        "typing:List",
+        "typing:Set"
       ],
       "edge_types": {},
       "metadata_assets": [],
@@ -374,11 +462,14 @@
       "metadata_filtered_refs": []
     },
     "compass/path_resolver.py": {
-      "fingerprint": "917a7e685646c020ba3edaf6ca1496664e1af781a1a5780dc3a944006f36f579",
-      "outbound_targets": [],
+      "fingerprint": "1a5a8fc0f4f1e4a20838198e20f801f3320283cc900802b1b410e6e08c088abe",
+      "outbound_targets": [
+        "compass/framework_mounts.py",
+        "compass/defaults.py"
+      ],
       "inbound_patterns": [],
       "tech_scores": {},
-      "is_relevant": false,
+      "is_relevant": true,
       "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "ast",
@@ -386,14 +477,22 @@
         "re",
         "pathlib:Path"
       ],
-      "edge_types": {},
+      "edge_types": {
+        "compass/framework_mounts.py": "import",
+        "compass/defaults.py": "import"
+      },
       "metadata_assets": [],
       "metadata_filtered_refs": []
     },
     "compass/pipeline.py": {
-      "fingerprint": "d15c0d4ce64f8c0bedff543353cec094fa0e34440fae0154acb18910bb26057c",
+      "fingerprint": "a3ff05b77b8238082ffcd3791a1175ef6f599fa579d2cc899df53d7caa14d504",
       "outbound_targets": [
-        "compass/stack_detector.py"
+        "compass/scanners/__init__.py",
+        "compass/scanners/__init__.py",
+        "compass/stack_detector.py",
+        "compass/defaults.py",
+        "compass/orphan_classifier.py",
+        "compass/orphan_classifier.py"
       ],
       "inbound_patterns": [],
       "tech_scores": {},
@@ -403,19 +502,24 @@
         "fnmatch",
         "os",
         "re",
-        "pathlib:Path"
+        "pathlib:Path",
+        "@@LOADER@@path_literal@@LOADER@@\"themes",
+        "@@LOADER@@path_literal@@LOADER@@\"wp-content/themes"
       ],
       "edge_types": {
-        "compass/stack_detector.py": "import"
+        "compass/scanners/__init__.py": "import",
+        "compass/stack_detector.py": "import",
+        "compass/defaults.py": "import",
+        "compass/orphan_classifier.py": "import"
       },
       "metadata_assets": [],
-      "metadata_filtered_refs": [
-        "compass/scanners/__init__.py"
-      ]
+      "metadata_filtered_refs": []
     },
     "compass/scan_worker.py": {
       "fingerprint": "2892a82534a8847a50e032557c335db931775d4961a05fdce34746147b6d6791",
       "outbound_targets": [
+        "compass/scanners/__init__.py",
+        "compass/scanners/__init__.py",
         "compass/scanners/base.py",
         "compass/pipeline.py"
       ],
@@ -425,13 +529,12 @@
       "stack": "AI-Agent-Framework",
       "metadata_calls": [],
       "edge_types": {
+        "compass/scanners/__init__.py": "import",
         "compass/scanners/base.py": "import",
         "compass/pipeline.py": "import"
       },
       "metadata_assets": [],
-      "metadata_filtered_refs": [
-        "compass/scanners/__init__.py"
-      ]
+      "metadata_filtered_refs": []
     },
     "compass/stack_detector.py": {
       "fingerprint": "fa96711f8d125bb26557cbe0381e4035b12b5755d45394dfb466c8489d7b2f0d",
@@ -494,6 +597,46 @@
       "metadata_assets": [],
       "metadata_filtered_refs": []
     },
+    "compass/wordpress_detector.py": {
+      "fingerprint": "267ec4e7445a5526e0d414595d5ab59f988c3ba9e57c709e473a31ffb2001d29",
+      "outbound_targets": [],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": false,
+      "stack": "AI-Agent-Framework",
+      "metadata_calls": [
+        "fnmatch",
+        "pathlib:Path",
+        "typing:Set",
+        "typing:Optional"
+      ],
+      "edge_types": {},
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
+    },
+    "compass/__init__.py": {
+      "fingerprint": "33f98177f193e989471809126bbb368aa9d44c0a7ec040dffc10318fc3e686a8",
+      "outbound_targets": [
+        "compass/core.py",
+        "compass/stack_detector.py",
+        "compass/stack_detector.py",
+        "compass/path_resolver.py",
+        "compass/scanners/__init__.py"
+      ],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": true,
+      "stack": "AI-Agent-Framework",
+      "metadata_calls": [],
+      "edge_types": {
+        "compass/core.py": "import",
+        "compass/stack_detector.py": "import",
+        "compass/path_resolver.py": "import",
+        "compass/scanners/__init__.py": "import"
+      },
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
+    },
     "compass/scanners/base.py": {
       "fingerprint": "0db1dcf818810506b5c8dc5ed4c30286b0885af9968462c16f7c05d65e6c6fd0",
       "outbound_targets": [],
@@ -531,9 +674,11 @@
       "metadata_filtered_refs": []
     },
     "compass/scanners/python.py": {
-      "fingerprint": "ea175f6b09a23fd040ea01f29df71ee2fc7afd9214cf4fa0572dbddac5bc8710",
+      "fingerprint": "a17242d6c53b3421fc467128c5f9d7f9f313fdf52ad05eac56f5b3808794f4cc",
       "outbound_targets": [
-        "compass/scanners/base.py"
+        "compass/scanners/base.py",
+        "compass/path_resolver.py",
+        "compass/defaults.py"
       ],
       "inbound_patterns": [],
       "tech_scores": {},
@@ -543,7 +688,9 @@
         "ast"
       ],
       "edge_types": {
-        "compass/scanners/base.py": "import"
+        "compass/scanners/base.py": "import",
+        "compass/path_resolver.py": "import",
+        "compass/defaults.py": "import"
       },
       "metadata_assets": [],
       "metadata_filtered_refs": []
@@ -591,6 +738,34 @@
         "compass/scanners/base.py": "import",
         "compass/path_resolver.py": "import",
         "compass/scanners/regex_fallback.py": "import"
+      },
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
+    },
+    "compass/scanners/__init__.py": {
+      "fingerprint": "18f43264297b633bef9fdf8442a8184fae19c239f176e47cecace0ee251a5ff2",
+      "outbound_targets": [
+        "compass/scanners/base.py",
+        "compass/scanners/base.py",
+        "compass/scanners/base.py",
+        "compass/scanners/base.py",
+        "compass/scanners/base.py",
+        "compass/scanners/html.py",
+        "compass/scanners/python.py",
+        "compass/scanners/regex_fallback.py",
+        "compass/scanners/treesitter.py"
+      ],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": true,
+      "stack": "AI-Agent-Framework",
+      "metadata_calls": [],
+      "edge_types": {
+        "compass/scanners/base.py": "import",
+        "compass/scanners/html.py": "import",
+        "compass/scanners/python.py": "import",
+        "compass/scanners/regex_fallback.py": "import",
+        "compass/scanners/treesitter.py": "import"
       },
       "metadata_assets": [],
       "metadata_filtered_refs": []

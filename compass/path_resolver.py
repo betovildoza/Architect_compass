@@ -54,6 +54,9 @@ import os
 import re
 from pathlib import Path
 
+from compass.framework_mounts import detect_framework_mounts
+from compass.defaults import DEFAULT_PYTHON_LOADERS
+
 
 # Constantes comunes que aparecen en imports PHP relativos al archivo fuente.
 _PHP_FILE_CONSTANTS = ("__DIR__", "__FILE__")
@@ -100,7 +103,7 @@ def encode_loader_raw(fn_name, call_body):
 class PathResolver:
     """Resuelve imports crudos a paths absolutos dentro del proyecto."""
 
-    def __init__(self, project_root, config=None, theme_root=None, plugins_root=None):
+    def __init__(self, project_root, config=None, theme_root=None, plugins_root=None, framework_mounts=None):
         self.project_root = Path(project_root).resolve()
         self.config = config or {}
         # SEM-020 — roots para substitución de tokens en path_functions.
@@ -113,10 +116,19 @@ class PathResolver:
             k: v for k, v in (self.config.get("path_functions") or {}).items()
             if isinstance(k, str) and isinstance(v, str)
         }
-        self._loader_calls = {
-            k: v for k, v in (self.config.get("loader_calls") or {}).items()
-            if isinstance(k, str) and isinstance(v, dict)
-        }
+        # LOAD-038 — inicializar con defaults universales (Python stdlib),
+        # luego mergear config (config extiende, nunca reemplaza).
+        self._loader_calls = dict(DEFAULT_PYTHON_LOADERS)  # Copiar defaults
+        for k, v in (self.config.get("loader_calls") or {}).items():
+            if isinstance(k, str) and isinstance(v, dict):
+                self._loader_calls[k] = v
+        # SEM-020 — Framework static mount points (Flask, FastAPI, Express).
+        # Si no se pasan, detectar automáticamente en init.
+        self._framework_mounts = framework_mounts or detect_framework_mounts(self.project_root)
+        # Flatten: dict[mount_point → absolute_path] consolidado de todos los frameworks
+        self._all_mounts = {}
+        for _fw_name, mounts_dict in self._framework_mounts.items():
+            self._all_mounts.update(mounts_dict)
 
     # ------------------------------------------------------------------
     # API pública
@@ -399,6 +411,13 @@ class PathResolver:
         spec = self._loader_calls.get(fn_name)
         if not spec:
             return None
+
+        # 18A.2 — Caso especial para send_from_directory
+        # El scanner emitió "dir/file" combinado en el body.
+        if fn_name == "send_from_directory":
+            literal = self._strip_quotes(body)
+            return self._resolve_relative_to_source(literal, source_file)
+
         arg_index = int(spec.get("arg", 1))
         ext_default = spec.get("ext_default")
         base_tok = spec.get("base")  # Opcional: fuerza base (ej. {theme_root}).
@@ -445,10 +464,20 @@ class PathResolver:
                     if resolved:
                         return resolved
             # Fallback: resolver por lenguaje normal.
+            # ESPECIAL: si es "path_literal" y Python, lo resolvemos como generic
+            # (búsqueda de archivo directo) en lugar de como módulo Python.
+            if fn_name == "path_literal":
+                return self._resolve_generic(candidate, source_file)
+            # 18A.2 — Loaders Flask como send_from_directory se resuelven relativo
+            # al archivo que hace el call (ej. static/index.html relativo a server.py)
+            if fn_name == "send_from_directory" and lang == "python":
+                return self._resolve_relative_to_source(candidate, source_file)
             if lang == "php":
                 return self._resolve_php(candidate, source_file, raw_original=candidate)
             if lang in ("javascript", "typescript"):
                 return self._resolve_js(candidate, source_file)
+            if lang == "python":
+                return self._resolve_python(candidate, source_file)
             return self._resolve_generic(candidate, source_file)
 
         # 3. Último recurso: extraer primer literal de la expresión + base.
@@ -676,6 +705,10 @@ class PathResolver:
         buscando re-exports de `name` (ej. `from .sub import name`, `from
         .sub import *` con `name` presente). Si existe, devolvemos el path
         del submódulo real.
+
+        LOAD-038 extendido — Si es un path simple (sin puntos iniciales),
+        intenta usar heurística de búsqueda en directorios cercanos para
+        capturar JSONs/configs asignados dinámicamente (ej. `VAR = DIR / "file.json"`).
         """
         if source_file is None:
             return None
@@ -745,6 +778,34 @@ class PathResolver:
         init_path = (base / candidate_rel / "__init__.py").resolve()
         if init_path.is_file() and self._is_inside_project(init_path):
             return init_path.as_posix()
+
+        # LOAD-038 — Fallback para paths simples (no-import): heurística.
+        # Si recibimos un path simple tipo "global_models.json" (sin puntos
+        # iniciales) y no es un módulo Python, intenta búsqueda heurística
+        # en directorios cercanos.
+        if dots == 0 and candidate_rel:
+            # No es relativo (sin puntos). Intenta como nombre de archivo literal.
+            result = self._find_file_in_parent_chain(candidate_rel, source_file, max_levels=3)
+            if result:
+                return result
+
+        # 18A.3 — Fallback para imports no-top-level (pragmático):
+        # Si el import simple no resolvió desde project_root, intenta buscar en
+        # directorios estándar como `src/`, `lib/`, `app/`, etc.
+        # Aplicable cuando un archivo hace `sys.path.insert(0, "/proyecto/src")`
+        # y luego importa `from subagente import...` sin ruta explícita.
+        if dots == 0 and candidate_rel and "/" not in candidate_rel:
+            standard_dirs = ("src", "lib", "app", "code", "source", "bin")
+            for std_dir in standard_dirs:
+                for ext in _PY_CANDIDATE_EXTS:
+                    p = (self.project_root / std_dir / (candidate_rel + ext)).resolve()
+                    if p.is_file() and self._is_inside_project(p):
+                        return p.as_posix()
+                # Intenta también como paquete
+                init_path = (self.project_root / std_dir / candidate_rel / "__init__.py").resolve()
+                if init_path.is_file() and self._is_inside_project(init_path):
+                    return init_path.as_posix()
+
         return None
 
     def _trace_reexport(self, init_py_path, name):
@@ -894,8 +955,41 @@ class PathResolver:
         if not candidate:
             return None
 
-        # 6. Ruta normal. Determinar base según root-relative vs. file-relative.
+        # 6. SEM-020 — Framework mount points (Flask /static, FastAPI /api/static, etc).
+        #    Si la ruta comienza con un mount point registrado, resolver contra
+        #    el absolute path del mount, no contra project_root.
         if candidate.startswith("/") or candidate.startswith("\\"):
+            # Intentar matchear contra los mount points conocidos.
+            matched_mount = None
+            matched_prefix = ""
+            for mount_point in self._all_mounts:
+                # Mount points siempre empiezan con /, candidate tambien (verificado arriba).
+                if candidate.startswith(mount_point):
+                    # Preferir el mount más largo (más específico) si hay múltiples matches.
+                    if len(mount_point) > len(matched_prefix):
+                        matched_mount = mount_point
+                        matched_prefix = mount_point
+
+            if matched_mount:
+                # El mount existe. Resolver el resto del path contra su base.
+                mount_base_path = Path(self._all_mounts[matched_mount])
+                rel_in_mount = candidate[len(matched_mount):].lstrip("/\\")
+                if rel_in_mount:
+                    target = (mount_base_path / rel_in_mount).resolve()
+                    if target.is_file():
+                        return self._to_posix_if_in_project(target)
+                    # Probar con extensiones conocidas
+                    for ext in _HTML_EXTENSIONLESS_EXTS:
+                        candidate_path = (mount_base_path / (rel_in_mount + ext)).resolve()
+                        if candidate_path.is_file():
+                            return self._to_posix_if_in_project(candidate_path)
+                    # Probar index
+                    for ext in _HTML_EXTENSIONLESS_EXTS:
+                        candidate_path = (mount_base_path / rel_in_mount / ("index" + ext)).resolve()
+                        if candidate_path.is_file():
+                            return self._to_posix_if_in_project(candidate_path)
+
+            # Si no hay mount, usar el comportamiento default (root-relative a project_root).
             base = self.project_root
             rel = candidate.lstrip("/\\")
         else:
@@ -939,16 +1033,28 @@ class PathResolver:
     # Generic (lenguajes sin resolver dedicado)
     # ------------------------------------------------------------------
     def _resolve_generic(self, raw, source_file):
-        """Último recurso: si parece path relativo, intenta resolverlo."""
+        """Último recurso: intenta resolver como path relativo o filename directo.
+
+        Cubre:
+          - Path relativos: ./foo, ../bar, subdir/file.ext
+          - Filenames simples: file.json (búsqueda heurística en directorios cercanos)
+        """
         if source_file is None:
             return None
+
         looks_like_path = raw.startswith(".") or "/" in raw or "\\" in raw
-        if not looks_like_path:
-            return None
-        for base in (source_file.parent, self.project_root):
-            resolved = self._try_resolve(base, raw, ())
+        if looks_like_path:
+            # Path relativo: intenta desde source_file.parent y project_root
+            for base in (source_file.parent, self.project_root):
+                resolved = self._try_resolve(base, raw, ())
+                if resolved:
+                    return resolved
+        else:
+            # Filename simple (ej. "global_models.json"). Intenta búsqueda heurística.
+            resolved = self._find_file_in_parent_chain(raw, source_file, max_levels=3)
             if resolved:
                 return resolved
+
         return None
 
     # ------------------------------------------------------------------
@@ -991,6 +1097,49 @@ class PathResolver:
             return True
         except ValueError:
             return False
+
+    def _resolve_relative_to_source(self, path_literal, source_file):
+        """18A.2 — Resuelve paths relativos al archivo fuente.
+
+        Usado para `send_from_directory(dir, file)` donde dir es relativo
+        al directorio del script Python que hace el call (ej. server.py).
+
+        Ej: server.py hace send_from_directory("static", "index.html")
+            → busca <dir-of-server.py>/static/index.html
+        """
+        if not source_file:
+            return None
+        base = source_file.parent.resolve()
+        candidate = (base / path_literal).resolve()
+        if candidate.is_file() and self._is_inside_project(candidate):
+            return candidate.as_posix()
+        return None
+
+    def _find_file_in_parent_chain(self, filename, source_file, max_levels=3):
+        """Busca un archivo por nombre en el árbol de directorios (heurística).
+
+        Intenta encontrar `filename` partiendo desde `source_file.parent` y
+        subiendo hasta `max_levels` niveles. Útil para capturar archivos
+        asignados como `VAR = SOME_DIR / "filename"` donde SOME_DIR es variable.
+
+        Devuelve path posix dentro del proyecto o None.
+        """
+        if not source_file:
+            return None
+
+        filename_lower = filename.lower()
+        current = source_file.parent.resolve()
+
+        for _ in range(max_levels + 1):
+            candidate = (current / filename).resolve()
+            if candidate.is_file() and self._is_inside_project(candidate):
+                return candidate.as_posix()
+
+            if current == self.project_root:
+                break
+            current = current.parent
+
+        return None
 
     @staticmethod
     def _strip_quotes(raw):

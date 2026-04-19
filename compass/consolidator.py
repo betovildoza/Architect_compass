@@ -99,6 +99,65 @@ def build_metadata_consolidated(atlas):
 #   }
 
 
+def _clean_metadata_for_compact(metadata):
+    """SESIÓN 20 (ITEM 3) — limpia metadata para LLM-friendly compact.
+
+    Transforma:
+      1. Sentinels @@LOADER@@: convierte keys como `@@LOADER@@open@@LOADER@@"/path"`
+         en estructura limpia `"file_loads": {"path": [callers]}`.
+      2. Stdlib: filtra calls que son builtin/stdlib (json., pathlib., etc.)
+      3. Campos vacíos: omite si list/dict vacío.
+
+    Devuelve: dict limpio con campos mínimos.
+    """
+    if not metadata or not isinstance(metadata, dict):
+        return {}
+
+    calls = metadata.get("calls", {}) or {}
+    cleaned_calls = {}
+    file_loads = {}
+
+    from compass.stdlib_filter import is_python_stdlib
+
+    for key, callers in calls.items():
+        # Saltar si está vacío
+        if not callers:
+            continue
+
+        # Detectar y separar loaders
+        if key.startswith("@@LOADER@@"):
+            # Parsear: @@LOADER@@<fn>@@LOADER@@"<path>
+            # Extraer path entre último quote y fin
+            parts = key.split("@@LOADER@@")
+            if len(parts) >= 3:
+                # parts = ['', '<fn>', '"<path>', rest...]
+                path_part = parts[-1].strip('"').rstrip('"')
+                file_loads[path_part] = callers
+            continue
+
+        # Filtrar stdlib: extraer head (primer módulo antes del punto)
+        call_head = key.split(".")[0] if "." in key else key.split()[0] if key else ""
+        if call_head and is_python_stdlib(call_head):
+            continue
+
+        # Agregar call válida
+        cleaned_calls[key] = callers
+
+    result = {}
+    if cleaned_calls:
+        result["calls"] = cleaned_calls
+    if file_loads:
+        result["file_loads"] = file_loads
+
+    # Otros campos (assets, filtered_refs, etc.) — omitir si vacíos
+    for field in ("assets", "filtered_refs"):
+        assets = metadata.get(field)
+        if assets:
+            result[field] = assets
+
+    return result
+
+
 def build_compact_atlas(
     atlas,
     edges,
@@ -128,6 +187,7 @@ def build_compact_atlas(
     """
     files = atlas.get("files", {}) or {}
     orphans = set(atlas.get("orphans", []) or [])
+    ambiguous = set(atlas.get("ambiguous", []) or [])
 
     # Pools de strings repetidos — pensado para recorte de tokens en LLM.
     label_pool = []
@@ -166,19 +226,23 @@ def build_compact_atlas(
             kind_pool.append(k)
         return kind_idx_map[k]
 
-    # orphan_flag: 0=no orphan, 1=no_inbound, 2=dynamic_declared.
-    _ORPHAN_CODE = {None: 0, "no_inbound": 1, "dynamic_declared": 2}
+    # tier_pool: índice de tiers para nodes. SESIÓN 20 (ITEM 1).
+    tier_pool = []
+    tier_idx_map = {}
 
-    # Nodes — tuple-form compacto con path pooled.
+    def _intern_tier(t):
+        if t not in tier_idx_map:
+            tier_idx_map[t] = len(tier_pool)
+            tier_pool.append(t)
+        return tier_idx_map[t]
+
+    # Nodes — tuple-form compacto con path, stack, tier pooled.
     nodes = []
     for rel_path in sorted(files.keys()):
         node = files[rel_path] or {}
         stack = node.get("stack") or "unknown"
-        reason = node.get("orphan_reason")
-        if rel_path in orphans and not reason:
-            reason = "no_inbound"
-        flag = _ORPHAN_CODE.get(reason, 0)
-        nodes.append([_intern_label(rel_path), _intern_stack(stack), flag])
+        tier = node.get("tier") or "connected"
+        nodes.append([_intern_label(rel_path), _intern_stack(stack), _intern_tier(tier)])
 
     # Externals — [label_idx, tier_or_empty].
     tiers = external_tiers or {}
@@ -219,7 +283,7 @@ def build_compact_atlas(
             health_compact[dim] = sub["score"]
 
     return {
-        "schema_version": "compact/1",
+        "schema_version": "compact/2",
         "project_name": atlas.get("project_name", ""),
         "generated_at": atlas.get("generated_at", ""),
         "summary": dict(atlas.get("summary", {}) or {}),
@@ -227,11 +291,14 @@ def build_compact_atlas(
         "entry_points": list(atlas.get("entry_points", []) or []),
         "labels": label_pool,
         "stacks": stack_pool,
+        "tiers": tier_pool,
         "edge_types": type_pool,
         "edge_kinds": kind_pool,
         "nodes": nodes,
         "externals": externals,
         "edges": compact_edges,
         "cycles": list(atlas.get("cycles", []) or []),
-        "metadata_consolidated": atlas.get("metadata_consolidated", {}) or {},
+        "metadata_consolidated": _clean_metadata_for_compact(
+            atlas.get("metadata_consolidated", {}) or {}
+        ),
     }

@@ -310,7 +310,7 @@ def _load_template():
 def build_graph_html(
     *, dot_content, project_name, generated_at,
     node_count, edge_count, cycle_count,
-    edges=None, external_nodes=None, orphans=None, cycles=None,
+    edges=None, external_nodes=None, orphans=None, ambiguous=None, cycles=None,
     graph_config=None,
     external_tiers=None, entry_points=None,
 ):
@@ -343,6 +343,7 @@ def build_graph_html(
     externals_list = sorted(external_nodes or {})
 
     orphans_list = sorted(orphans or [])
+    ambiguous_list = sorted(ambiguous or [])
 
     # Nodes en ciclos (planos, sin estructura de lista-de-ciclos).
     cycle_nodes = sorted(_nodes_in_cycles(cycles or []))
@@ -391,6 +392,7 @@ def build_graph_html(
         "{EDGES_RAW_JSON}": json.dumps(edges_raw, ensure_ascii=False),
         "{EXTERNALS_JSON}": json.dumps(externals_list, ensure_ascii=False),
         "{ORPHANS_JSON}": json.dumps(orphans_list, ensure_ascii=False),
+        "{AMBIGUOUS_JSON}": json.dumps(ambiguous_list, ensure_ascii=False),
         "{CYCLES_NODES_JSON}": json.dumps(cycle_nodes, ensure_ascii=False),
         "{EDGE_COLORS_JSON}": json.dumps(edge_colors, ensure_ascii=False),
         "{EXTERNAL_TIERS_JSON}": json.dumps(ext_tiers_map, ensure_ascii=False),

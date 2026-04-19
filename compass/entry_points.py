@@ -22,6 +22,7 @@ del pipeline.
 import json
 import re
 from pathlib import Path
+from compass.framework_mounts import detect_server_entry_points
 
 
 class EntryPointsMixin:
@@ -66,6 +67,17 @@ class EntryPointsMixin:
                 continue
             if self._PY_MAIN_RE.search(content):
                 entry_set.add(rel_path)
+
+        # 1b) 18A.2 — WSGI/ASGI servers (waitress, uvicorn, hypercorn, gunicorn)
+        # Detecta archivos que invocan servidores web y los marca como entry points.
+        try:
+            servers = detect_server_entry_points(self.project_root)
+            for rel_path in servers:
+                if rel_path in indexed:
+                    entry_set.add(rel_path)
+        except Exception:
+            # Si la detección falla, continuar sin bloquear
+            pass
 
         # 2) Shell/Batch en raíz — leer cada .bat/.sh directamente de disco
         # (no están indexados por `text_extensions` default).

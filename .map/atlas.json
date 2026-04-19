@@ -1,11 +1,11 @@
 {
-    "generated_at": "2026-04-18 00:46:54",
+    "generated_at": "2026-04-19 05:56:28",
     "project_name": "Architect_compass",
     "identities": [
         {
             "tech": "AI-Agent-Framework",
-            "confidence": 28,
-            "files": 28,
+            "confidence": 35,
+            "files": 35,
             "source": "stack_markers"
         }
     ],
@@ -13,15 +13,17 @@
         "": "AI-Agent-Framework"
     },
     "summary": {
-        "total_files": 28,
-        "relevant_files": 15,
-        "scanned_files": 1,
-        "reused_from_cache": 27
+        "total_files": 35,
+        "relevant_files": 21,
+        "scanned_files": 0,
+        "reused_from_cache": 35
     },
     "connectivity": {
         "inbound": [],
         "outbound": [
             "architect_compass.py -> compass/cli.py",
+            "architect_symbols.py -> mapper_config.json",
+            "architect_symbols.py -> .map/compass.local.json",
             "compass.py -> compass/cli.py",
             "compass/cli.py -> compass/cli_ui.py",
             "compass/cli.py -> compass/cli_ui.py",
@@ -43,6 +45,7 @@
             "compass/cli_ui.py -> [EXTERNAL:rich]",
             "compass/config_loader.py -> compass/template_io.py",
             "compass/config_loader.py -> compass/template_io.py",
+            "compass/consolidator.py -> compass/stdlib_filter.py",
             "compass/core.py -> compass/config_loader.py",
             "compass/core.py -> compass/entry_points.py",
             "compass/core.py -> compass/finalize.py",
@@ -64,11 +67,13 @@
             "compass/core.py -> compass/template_io.py",
             "compass/core.py -> compass/template_io.py",
             "compass/core.py -> compass/template_io.py",
+            "compass/entry_points.py -> compass/framework_mounts.py",
             "compass/finalize.py -> compass/consolidator.py",
             "compass/finalize.py -> compass/consolidator.py",
             "compass/finalize.py -> compass/graph_emitter.py",
             "compass/finalize.py -> compass/graph_emitter.py",
             "compass/finalize.py -> compass/graph_emitter.py",
+            "compass/finalize.py -> compass/dashboard_detector.py",
             "compass/finalize.py -> compass/metrics.py",
             "compass/finalize.py -> compass/metrics.py",
             "compass/finalize.py -> compass/metrics.py",
@@ -78,14 +83,33 @@
             "compass/finalize.py -> compass/metrics.py",
             "compass/finalize.py -> compass/validation.py",
             "compass/finalize.py -> compass/template_io.py",
+            "compass/finalize.py -> compass/wordpress_detector.py",
+            "compass/finalize.py -> compass/wordpress_detector.py",
+            "compass/graph_emitter.py -> compass/templates/graph.html.tpl",
             "compass/graph_emitter.py -> [EXTERNAL:unpkg.com]",
             "compass/outbound_resolver.py -> compass/stdlib_filter.py",
+            "compass/path_resolver.py -> compass/framework_mounts.py",
+            "compass/path_resolver.py -> compass/defaults.py",
+            "compass/pipeline.py -> compass/scanners/__init__.py",
+            "compass/pipeline.py -> compass/scanners/__init__.py",
             "compass/pipeline.py -> compass/stack_detector.py",
+            "compass/pipeline.py -> compass/defaults.py",
+            "compass/pipeline.py -> compass/orphan_classifier.py",
+            "compass/pipeline.py -> compass/orphan_classifier.py",
+            "compass/scan_worker.py -> compass/scanners/__init__.py",
+            "compass/scan_worker.py -> compass/scanners/__init__.py",
             "compass/scan_worker.py -> compass/scanners/base.py",
             "compass/scan_worker.py -> compass/pipeline.py",
+            "compass/__init__.py -> compass/core.py",
+            "compass/__init__.py -> compass/stack_detector.py",
+            "compass/__init__.py -> compass/stack_detector.py",
+            "compass/__init__.py -> compass/path_resolver.py",
+            "compass/__init__.py -> compass/scanners/__init__.py",
             "compass/scanners/html.py -> compass/scanners/base.py",
             "compass/scanners/html.py -> compass/scanners/base.py",
             "compass/scanners/python.py -> compass/scanners/base.py",
+            "compass/scanners/python.py -> compass/path_resolver.py",
+            "compass/scanners/python.py -> compass/defaults.py",
             "compass/scanners/regex_fallback.py -> compass/scanners/base.py",
             "compass/scanners/regex_fallback.py -> compass/scanners/base.py",
             "compass/scanners/regex_fallback.py -> compass/path_resolver.py",
@@ -94,18 +118,27 @@
             "compass/scanners/treesitter.py -> compass/scanners/base.py",
             "compass/scanners/treesitter.py -> compass/scanners/base.py",
             "compass/scanners/treesitter.py -> compass/path_resolver.py",
-            "compass/scanners/treesitter.py -> compass/scanners/regex_fallback.py"
+            "compass/scanners/treesitter.py -> compass/scanners/regex_fallback.py",
+            "compass/scanners/__init__.py -> compass/scanners/base.py",
+            "compass/scanners/__init__.py -> compass/scanners/base.py",
+            "compass/scanners/__init__.py -> compass/scanners/base.py",
+            "compass/scanners/__init__.py -> compass/scanners/base.py",
+            "compass/scanners/__init__.py -> compass/scanners/base.py",
+            "compass/scanners/__init__.py -> compass/scanners/html.py",
+            "compass/scanners/__init__.py -> compass/scanners/python.py",
+            "compass/scanners/__init__.py -> compass/scanners/regex_fallback.py",
+            "compass/scanners/__init__.py -> compass/scanners/treesitter.py"
         ]
     },
     "audit": {
-        "structural_health": 53.57,
+        "structural_health": 60.0,
         "warnings": []
     },
     "anomalies": [],
     "files": {
         "architect_compass.py": {
             "stack": "AI-Agent-Framework",
-            "orphan_reason": "no_inbound",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "sys"
@@ -114,6 +147,7 @@
         },
         "architect_symbols.py": {
             "stack": "AI-Agent-Framework",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "__future__:annotations",
@@ -133,17 +167,19 @@
                     "typing:Iterable",
                     "typing:List",
                     "typing:Optional",
-                    "typing:Tuple"
+                    "typing:Tuple",
+                    "@@LOADER@@path_literal@@LOADER@@\".map/mapper_config.json"
                 ]
             }
         },
         "cli_roadmap.html": {
             "stack": "AI-Agent-Framework",
-            "orphan_reason": "no_inbound"
+            "tier": "ambiguous",
+            "reason": "no_inbound_no_entry_point"
         },
         "compass.py": {
             "stack": "AI-Agent-Framework",
-            "orphan_reason": "no_inbound",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "sys"
@@ -152,14 +188,16 @@
         },
         "mapper_config.example.json": {
             "stack": "AI-Agent-Framework",
-            "orphan_reason": "no_inbound"
+            "tier": "ambiguous",
+            "reason": "no_inbound_no_entry_point"
         },
         "mapper_config.json": {
             "stack": "AI-Agent-Framework",
-            "orphan_reason": "no_inbound"
+            "tier": "connected"
         },
         "compass/cli.py": {
             "stack": "AI-Agent-Framework",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "__future__:annotations",
@@ -172,12 +210,16 @@
                     "typing:Dict",
                     "typing:List",
                     "typing:Optional",
-                    "traceback"
+                    "traceback",
+                    "@@LOADER@@path_literal@@LOADER@@\"atlas.json",
+                    "@@LOADER@@path_literal@@LOADER@@\"connectivity.dot",
+                    "@@LOADER@@path_literal@@LOADER@@\"graph.html"
                 ]
             }
         },
         "compass/cli_ui.py": {
             "stack": "AI-Agent-Framework",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "__future__:annotations",
@@ -194,6 +236,7 @@
         },
         "compass/config_loader.py": {
             "stack": "AI-Agent-Framework",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "hashlib",
@@ -203,6 +246,7 @@
         },
         "compass/consolidator.py": {
             "stack": "AI-Agent-Framework",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "__future__:annotations"
@@ -211,6 +255,7 @@
         },
         "compass/core.py": {
             "stack": "AI-Agent-Framework",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "datetime:datetime",
@@ -218,28 +263,59 @@
                 ]
             }
         },
-        "compass/entry_points.py": {
+        "compass/dashboard_detector.py": {
             "stack": "AI-Agent-Framework",
+            "tier": "connected",
             "metadata": {
                 "calls": [
-                    "json",
                     "re",
                     "pathlib:Path"
                 ]
             }
         },
+        "compass/defaults.py": {
+            "stack": "AI-Agent-Framework",
+            "tier": "connected"
+        },
+        "compass/entry_points.py": {
+            "stack": "AI-Agent-Framework",
+            "tier": "connected",
+            "metadata": {
+                "calls": [
+                    "json",
+                    "re",
+                    "pathlib:Path",
+                    "@@LOADER@@path_literal@@LOADER@@\"package.json"
+                ]
+            }
+        },
         "compass/finalize.py": {
             "stack": "AI-Agent-Framework",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "hashlib",
                     "json",
-                    "datetime:datetime"
+                    "datetime:datetime",
+                    "@@LOADER@@path_literal@@LOADER@@\"atlas.json",
+                    "@@LOADER@@path_literal@@LOADER@@\"feedback.log"
+                ]
+            }
+        },
+        "compass/framework_mounts.py": {
+            "stack": "AI-Agent-Framework",
+            "tier": "connected",
+            "metadata": {
+                "calls": [
+                    "re",
+                    "pathlib:Path",
+                    "typing:Dict"
                 ]
             }
         },
         "compass/graph_emitter.py": {
             "stack": "AI-Agent-Framework",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "__future__:annotations",
@@ -250,6 +326,7 @@
         },
         "compass/metrics.py": {
             "stack": "AI-Agent-Framework",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "__future__:annotations",
@@ -258,8 +335,21 @@
                 ]
             }
         },
+        "compass/orphan_classifier.py": {
+            "stack": "AI-Agent-Framework",
+            "tier": "connected",
+            "metadata": {
+                "calls": [
+                    "pathlib:Path",
+                    "typing:Dict",
+                    "typing:List",
+                    "typing:Set"
+                ]
+            }
+        },
         "compass/outbound_resolver.py": {
             "stack": "AI-Agent-Framework",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "fnmatch",
@@ -272,6 +362,7 @@
         },
         "compass/path_resolver.py": {
             "stack": "AI-Agent-Framework",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "ast",
@@ -283,28 +374,25 @@
         },
         "compass/pipeline.py": {
             "stack": "AI-Agent-Framework",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "fnmatch",
                     "os",
                     "re",
-                    "pathlib:Path"
-                ],
-                "filtered_refs": [
-                    "compass/scanners/__init__.py"
+                    "pathlib:Path",
+                    "@@LOADER@@path_literal@@LOADER@@\"themes",
+                    "@@LOADER@@path_literal@@LOADER@@\"wp-content/themes"
                 ]
             }
         },
         "compass/scan_worker.py": {
             "stack": "AI-Agent-Framework",
-            "metadata": {
-                "filtered_refs": [
-                    "compass/scanners/__init__.py"
-                ]
-            }
+            "tier": "connected"
         },
         "compass/stack_detector.py": {
             "stack": "AI-Agent-Framework",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "os",
@@ -316,6 +404,7 @@
         },
         "compass/stdlib_filter.py": {
             "stack": "AI-Agent-Framework",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "sys"
@@ -324,6 +413,7 @@
         },
         "compass/template_io.py": {
             "stack": "AI-Agent-Framework",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "json"
@@ -332,6 +422,7 @@
         },
         "compass/validation.py": {
             "stack": "AI-Agent-Framework",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "__future__:annotations",
@@ -340,8 +431,25 @@
                 ]
             }
         },
+        "compass/wordpress_detector.py": {
+            "stack": "AI-Agent-Framework",
+            "tier": "connected",
+            "metadata": {
+                "calls": [
+                    "fnmatch",
+                    "pathlib:Path",
+                    "typing:Set",
+                    "typing:Optional"
+                ]
+            }
+        },
+        "compass/__init__.py": {
+            "stack": "AI-Agent-Framework",
+            "tier": "connected"
+        },
         "compass/scanners/base.py": {
             "stack": "AI-Agent-Framework",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "re",
@@ -353,7 +461,7 @@
         },
         "compass/scanners/html.py": {
             "stack": "AI-Agent-Framework",
-            "orphan_reason": "no_inbound",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "re"
@@ -362,7 +470,7 @@
         },
         "compass/scanners/python.py": {
             "stack": "AI-Agent-Framework",
-            "orphan_reason": "no_inbound",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "ast"
@@ -371,6 +479,7 @@
         },
         "compass/scanners/regex_fallback.py": {
             "stack": "AI-Agent-Framework",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "re"
@@ -379,34 +488,59 @@
         },
         "compass/scanners/treesitter.py": {
             "stack": "AI-Agent-Framework",
-            "orphan_reason": "no_inbound",
+            "tier": "connected",
             "metadata": {
                 "calls": [
                     "importlib",
                     "re"
                 ]
             }
+        },
+        "compass/scanners/__init__.py": {
+            "stack": "AI-Agent-Framework",
+            "tier": "connected"
         }
     },
-    "orphans": [
-        "architect_compass.py",
+    "orphans": [],
+    "ambiguous": [
         "cli_roadmap.html",
-        "compass.py",
-        "mapper_config.example.json",
-        "mapper_config.json",
-        "compass/scanners/html.py",
-        "compass/scanners/python.py",
-        "compass/scanners/treesitter.py"
+        "mapper_config.example.json"
     ],
     "entry_points": [
         "architect_compass.py",
         "architect_symbols.py",
         "compass.py",
-        "compass/cli.py"
+        "compass/cli.py",
+        "compass/framework_mounts.py"
     ],
     "metadata_consolidated": {
         "assets": {},
         "calls": {
+            "@@LOADER@@path_literal@@LOADER@@\".map/mapper_config.json": [
+                "architect_symbols.py"
+            ],
+            "@@LOADER@@path_literal@@LOADER@@\"atlas.json": [
+                "compass/cli.py",
+                "compass/finalize.py"
+            ],
+            "@@LOADER@@path_literal@@LOADER@@\"connectivity.dot": [
+                "compass/cli.py"
+            ],
+            "@@LOADER@@path_literal@@LOADER@@\"feedback.log": [
+                "compass/finalize.py"
+            ],
+            "@@LOADER@@path_literal@@LOADER@@\"graph.html": [
+                "compass/cli.py"
+            ],
+            "@@LOADER@@path_literal@@LOADER@@\"package.json": [
+                "compass/entry_points.py"
+            ],
+            "@@LOADER@@path_literal@@LOADER@@\"themes": [
+                "compass/pipeline.py"
+            ],
+            "@@LOADER@@path_literal@@LOADER@@\"wp-content/themes": [
+                "compass/pipeline.py"
+            ],
             "__future__:annotations": [
                 "architect_symbols.py",
                 "compass/cli.py",
@@ -447,7 +581,8 @@
                 "compass/cli_ui.py",
                 "compass/outbound_resolver.py",
                 "compass/pipeline.py",
-                "compass/stack_detector.py"
+                "compass/stack_detector.py",
+                "compass/wordpress_detector.py"
             ],
             "hashlib": [
                 "compass/config_loader.py",
@@ -480,19 +615,25 @@
                 "compass/cli.py",
                 "compass/cli_ui.py",
                 "compass/core.py",
+                "compass/dashboard_detector.py",
                 "compass/entry_points.py",
+                "compass/framework_mounts.py",
                 "compass/graph_emitter.py",
                 "compass/metrics.py",
+                "compass/orphan_classifier.py",
                 "compass/outbound_resolver.py",
                 "compass/path_resolver.py",
                 "compass/pipeline.py",
                 "compass/stack_detector.py",
-                "compass/validation.py"
+                "compass/validation.py",
+                "compass/wordpress_detector.py"
             ],
             "re": [
                 "architect_symbols.py",
                 "compass/cli_ui.py",
+                "compass/dashboard_detector.py",
                 "compass/entry_points.py",
+                "compass/framework_mounts.py",
                 "compass/outbound_resolver.py",
                 "compass/path_resolver.py",
                 "compass/pipeline.py",
@@ -526,19 +667,27 @@
             "typing:Dict": [
                 "architect_symbols.py",
                 "compass/cli.py",
-                "compass/cli_ui.py"
+                "compass/cli_ui.py",
+                "compass/framework_mounts.py",
+                "compass/orphan_classifier.py"
             ],
             "typing:Iterable": [
                 "architect_symbols.py"
             ],
             "typing:List": [
                 "architect_symbols.py",
-                "compass/cli.py"
+                "compass/cli.py",
+                "compass/orphan_classifier.py"
             ],
             "typing:Optional": [
                 "architect_symbols.py",
                 "compass/cli.py",
-                "compass/cli_ui.py"
+                "compass/cli_ui.py",
+                "compass/wordpress_detector.py"
+            ],
+            "typing:Set": [
+                "compass/orphan_classifier.py",
+                "compass/wordpress_detector.py"
             ],
             "typing:Tuple": [
                 "architect_symbols.py"
@@ -548,16 +697,11 @@
                 "compass/scanners/base.py"
             ]
         },
-        "filtered_refs": {
-            "compass/scanners/__init__.py": [
-                "compass/pipeline.py",
-                "compass/scan_worker.py"
-            ]
-        }
+        "filtered_refs": {}
     },
     "cycles": [],
     "health": {
-        "total": 84.27,
+        "total": 97.59,
         "weights": {
             "orphans": 0.4,
             "connectivity": 0.3,
@@ -565,48 +709,69 @@
             "external_deps": 0.15
         },
         "orphans": {
-            "score": 71.43,
-            "count": 8,
-            "files": [
-                "architect_compass.py",
-                "cli_roadmap.html",
-                "compass.py",
-                "mapper_config.example.json",
-                "mapper_config.json",
-                "compass/scanners/html.py",
-                "compass/scanners/python.py",
-                "compass/scanners/treesitter.py"
-            ]
+            "score": 100.0,
+            "count": 0,
+            "files": []
         },
         "connectivity": {
             "score": 100.0,
-            "avg_inbound": 2.36,
-            "total_inbound_edges": 66
+            "avg_inbound": 2.77,
+            "total_inbound_edges": 97
         },
         "dead_exports": {
-            "score": 82.14,
-            "count": 5,
+            "score": 91.43,
+            "count": 3,
             "files": [
                 "architect_compass.py",
                 "compass.py",
-                "compass/scanners/html.py",
-                "compass/scanners/python.py",
-                "compass/scanners/treesitter.py"
+                "compass/__init__.py"
             ]
         },
         "external_deps": {
-            "score": 89.19,
+            "score": 92.52,
             "external_targets": 8,
-            "total_targets": 74
+            "total_targets": 107
+        }
+    },
+    "delta": {
+        "previous_generated_at": "2026-04-19 05:55:59",
+        "files": {
+            "added": [],
+            "removed": [
+                "test_old_backup.py"
+            ]
+        },
+        "edges": {
+            "added": [],
+            "removed": [],
+            "added_count": 0,
+            "removed_count": 0
+        },
+        "orphans": {
+            "added": [],
+            "removed": [
+                "test_old_backup.py"
+            ]
+        },
+        "cycles": {
+            "added": [],
+            "removed": []
+        },
+        "health_delta": {
+            "total": 1.07,
+            "orphans": 2.78,
+            "connectivity": 0.0,
+            "dead_exports": -0.24,
+            "external_deps": 0.0
         }
     },
     "graph_filters": {
         "asset": 0,
-        "ignored": 2,
+        "ignored": 0,
         "self_edge": 0,
         "ignore_outbound": 0,
-        "rendered_edges": 36,
-        "raw_edges": 74
+        "rendered_edges": 60,
+        "raw_edges": 107
     },
     "external_tiers": {
         "[EXTERNAL:rich]": "package",

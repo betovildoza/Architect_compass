@@ -214,10 +214,11 @@ class ArchitectCompass(
             "connectivity": {"inbound": [], "outbound": []},
             "audit": {"structural_health": 100.0, "warnings": []},
             "anomalies": [],
-            # DYN-007: nodos por archivo, con `orphan_reason` opcional cuando
-            # el archivo está marcado como dependencia dinámica declarada.
+            # DYN-007: nodos por archivo, con `tier` y `reason` para clasificación.
+            # SESIÓN 20 (ITEM 1): tier = "connected" | "orphan" | "ambiguous" | "dynamic"
             "files": {},
-            "orphans": []
+            "orphans": [],
+            "ambiguous": []
         }
         # EDG-023 — edges estructuradas: lista de tuplas
         # `(src_rel, target_label, edge_type, kind)`. El `.dot` se renderiza

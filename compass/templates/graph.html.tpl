@@ -43,9 +43,10 @@
 <body>
 <div id="legend">
   <strong>Architect's Compass — {PROJECT_NAME}</strong>
-  <span class="dot" style="background:#4fc3f7"></span>Archivo interno<br>
+  <span class="dot" style="background:#4fc3f7"></span>Conectado<br>
   <span class="dot" style="background:#ffb300"></span>Hub (≥5 inbound)<br>
-  <span class="dot" style="background:#fff3cd;border:1px solid #b7791f"></span>Huérfano<br>
+  <span class="dot" style="background:#ffc107;border:1px solid #f39c12"></span>Ambiguo (no detectado)<br>
+  <span class="dot" style="background:#fff3cd;border:1px solid #b7791f"></span>Huérfano (explícito)<br>
   <span class="dot" style="background:#fde0dc;border:1px solid #c0392b"></span>En ciclo<br>
   <span class="dot" style="background:#4fc3f7;border:3px solid {ENTRY_POINT_BORDER_COLOR}"></span>Entry point<br>
   <div id="tier-legend" style="margin-top:6px; border-top:1px solid #333; padding-top:6px;">
@@ -68,6 +69,7 @@
   const EDGES_RAW = {EDGES_RAW_JSON};
   const EXTERNALS = new Set({EXTERNALS_JSON});
   const ORPHANS = new Set({ORPHANS_JSON});
+  const AMBIGUOUS = new Set({AMBIGUOUS_JSON});
   const CYCLES_NODES = new Set({CYCLES_NODES_JSON});
   const EDGE_COLORS = {EDGE_COLORS_JSON};
   // TIER-035 — tier semántico por external label + colores por tier.
@@ -120,6 +122,7 @@
   EDGES_RAW.forEach(e => { allNames.add(e[0]); allNames.add(e[1]); });
   EXTERNALS.forEach(n => allNames.add(n));
   ORPHANS.forEach(n => allNames.add(n));
+  AMBIGUOUS.forEach(n => allNames.add(n));
   ENTRY_POINTS.forEach(n => allNames.add(n));
 
   // construir nodos únicos
@@ -129,6 +132,7 @@
     if (nodeMap[name]) return;
     const isExternal = EXTERNALS.has(name);
     const isOrphan  = ORPHANS.has(name);
+    const isAmbiguous = AMBIGUOUS.has(name);
     const isCycle   = CYCLES_NODES.has(name);
     const isHub     = (inbound[name]||0) >= 5;
     const isEntry   = ENTRY_POINTS.has(name);
@@ -142,6 +146,7 @@
       borderColor = _darken(color);
     }
     else if (isCycle)    { color = "#fde0dc"; borderColor = "#c0392b"; }
+    else if (isAmbiguous){ color = "#ffc107"; borderColor = "#f39c12"; }
     else if (isOrphan)   { color = "#fff3cd"; borderColor = "#b7791f"; }
     else if (isHub)      { color = "#ffb300"; borderColor = "#a07700"; }
     // GRAPH-036 — entry point: override borde + engordar.

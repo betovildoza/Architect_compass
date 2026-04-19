@@ -32,6 +32,7 @@ from compass.graph_emitter import (
     build_graph_html,
     validate_dot_syntax,
 )
+from compass.dashboard_detector import detect_dashboards_in_atlas
 from compass.metrics import (
     HISTORY_DIR_NAME,
     build_snapshot_name,
@@ -147,6 +148,8 @@ class FinalizeMixin:
     # funciones puras stdlib que espejan el patrón de compass/metrics.py.
     def finalize(self):
         self._run_config_validation()
+        self._detect_and_promote_dashboards()  # SESIÓN 20 (ITEM 2)
+        self._detect_and_promote_wp_templates()  # SESIÓN 21 (ITEM 3)
         self._attach_metadata_calls()
         self._consolidate_metadata()   # CONS-029 (Sesión 10)
         self._compute_metrics()
@@ -218,6 +221,78 @@ class FinalizeMixin:
         # consumidores puedan filtrarlos aparte de los warnings de audit.
         for w in warnings:
             self.atlas["audit"]["warnings"].append(f"config: {w}")
+
+    def _detect_and_promote_dashboards(self):
+        """SESIÓN 20 (ITEM 2) — detecta dashboards por markers de forma.
+
+        Analiza archivos HTML ambiguos para determinar si son dashboards servidos:
+        - HTML con estructura de controles (buttons, forms, inputs con handlers)
+        - Carga script(s) interno(s)
+        - Ese script contiene fetch/websocket a rutas locales (/api/..., /action/...)
+
+        Si se detecta, promociona el HTML a entry_point con reason "dashboard_markers"
+        y lo remueve de ambiguous.
+        """
+        result = detect_dashboards_in_atlas(
+            atlas=self.atlas,
+            project_root=self.project_root,
+        )
+
+        if result.get("promoted"):
+            promoted = result["promoted"]
+            reason = result.get("reason", "dashboard_markers")
+
+            for html_file in promoted:
+                # Remover de ambiguous
+                if html_file in self.atlas["ambiguous"]:
+                    self.atlas["ambiguous"].remove(html_file)
+
+                # Agregar a entry_points
+                if html_file not in self.atlas.get("entry_points", []):
+                    self.atlas["entry_points"].append(html_file)
+
+                # Marcar en files node
+                if html_file in self.atlas["files"]:
+                    self.atlas["files"][html_file]["tier"] = "connected"
+                    self.atlas["files"][html_file]["entry_point_reason"] = reason
+
+    def _detect_and_promote_wp_templates(self):
+        """SESIÓN 21 (ITEM 3) — detecta y marca templates WordPress como entry points.
+
+        Identifica proyectos WordPress por markers (style.css, functions.php, wp-config.php, wp-content/).
+        Para proyectos WP, clasifica archivos PHP que matchean la template hierarchy como entry points.
+
+        Ejemplos: index.php, front-page.php, single-*.php, archive-*.php, page-*.php, etc.
+        Son auto-cargados por WordPress según la URL, no orfans ni ambiguos.
+        """
+        from compass.wordpress_detector import (
+            detect_wordpress_project,
+            is_wp_template,
+        )
+
+        is_wp_project = detect_wordpress_project(self.project_root)
+
+        if not is_wp_project:
+            return
+
+        # Iterate over all files and mark WP templates as entry points
+        for rel_path in list(self.atlas.get("files", {}).keys()):
+            if not rel_path.endswith(".php"):
+                continue
+
+            if is_wp_template(rel_path):
+                # Remover de ambiguous si está ahí
+                if rel_path in self.atlas.get("ambiguous", []):
+                    self.atlas["ambiguous"].remove(rel_path)
+
+                # Agregar a entry_points
+                if rel_path not in self.atlas.get("entry_points", []):
+                    self.atlas["entry_points"].append(rel_path)
+
+                # Marcar en files node
+                if rel_path in self.atlas["files"]:
+                    self.atlas["files"][rel_path]["tier"] = "connected"
+                    self.atlas["files"][rel_path]["entry_point_reason"] = "wp_template_hierarchy"
 
     def _collect_graph_nodes(self):
         """Devuelve set de rel_paths que deben renderizarse en el grafo.
@@ -291,6 +366,7 @@ class FinalizeMixin:
             edges=self._edges,
             external_nodes=self._external_nodes,
             orphans=self.atlas.get("orphans", []),
+            ambiguous=self.atlas.get("ambiguous", []),
             cycles=cycles,
             graph_config=self.graph_rules,
             external_tiers=self._external_node_tiers,

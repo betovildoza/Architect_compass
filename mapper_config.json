@@ -37,7 +37,6 @@
     ],
     "ignore_files": [],
     "ignore_patterns": [
-      "__init__.py",
       "*.min.js",
       "*.min.css",
       "*.bundle.js",

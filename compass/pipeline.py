@@ -372,12 +372,6 @@ class AnalyzePipelineMixin:
         self.atlas["summary"]["scanned_files"] = scanned
         self.atlas["summary"]["reused_from_cache"] = reused
 
-        # DYN-007: clasificar orphans. Un archivo es huérfano cuando ningún
-        # otro archivo del proyecto lo referencia (no aparece como destino
-        # en outbound). Si está declarado como owner o como target en
-        # `dynamic_deps`, se marca con orphan_reason="dynamic_declared".
-        self._compute_orphans()
-
         # Feedback: lenguajes que no tuvieron scanner disponible.
         missing = {m for m in languages_without_scanner() if m}
         if missing:
@@ -408,8 +402,16 @@ class AnalyzePipelineMixin:
                 }
         self.atlas["identities"] = list(identity_index.values())
 
-        # GRAPH-036 — detectar entry points del proyecto.
+        # GRAPH-036 — detectar entry points del proyecto (ANTES de compute_orphans
+        # para que entry_points esté disponible en el check de exclusión de orphans).
         self._detect_entry_points()
+
+        # DYN-007: clasificar orphans. Un archivo es huérfano cuando ningún
+        # otro archivo del proyecto lo referencia (no aparece como destino
+        # en outbound). Si está declarado como owner o como target en
+        # `dynamic_deps`, se marca con orphan_reason="dynamic_declared".
+        # Entry points también se excluyen de ser marcados como huérfanos (BUG-1 fix).
+        self._compute_orphans()
 
         self.run_audit()
 
@@ -444,44 +446,98 @@ class AnalyzePipelineMixin:
     # Orphans (DYN-007) + audit
     # ------------------------------------------------------------------
     def _compute_orphans(self):
-        """DYN-007: clasifica archivos sin inbound real como huérfanos.
+        """DYN-007: clasifica archivos según participación y criterios explícitos.
 
-        Reglas:
-          - Archivo es candidato a huérfano si ningún edge outbound del
-            proyecto lo referencia como target.
-          - Si está declarado en `dynamic_deps` (como owner o como target),
-            se marca con `orphan_reason: dynamic_declared` y NO se cuenta
-            como huérfano "real" en el listado.
+        Reglas (SESIÓN 20 — ITEM 1):
+          - Archivo es "participante" si es source OR target de algún edge.
+          - Si NO participante Y NO es entry point → candidato a tier "ambiguous"
+            o "orphan", según criterio explícito.
+          - tier "orphan": archivo con evidencia explícita de descarte (patrón de
+            nombre, doc, config). Por ahora CONSERVADOR → vacío hasta criterios.
+          - tier "ambiguous": archivo SIN inbound, SIN entry point, SIN criterio
+            de descarte. Representa incertidumbre (puede ser legítimo no-usado,
+            puede ser muerto). Conservador por diseño.
+          - Si está en `dynamic_deps`, se marca con `tier: "dynamic"` (es una
+            categoría también).
           - Cada archivo se registra en `atlas.files[rel_path]` con su
-            stack y, si aplica, su `orphan_reason`.
+            stack, tier y, si aplica, razones.
+
+        18B fix: Incluir AMBOS sources y targets. Un archivo con outbound edges
+        (es source) no debe ser orphan aunque nadie lo importe.
         """
-        # Construir set de targets internos (paths relativos al proyecto).
+        # Construir set de sources Y targets internos (paths relativos al proyecto).
+        internal_sources = set()
         internal_targets = set()
+        file_registry = self._file_registry_paths_set()
         for edge in self.atlas["connectivity"]["outbound"]:
             try:
-                _, target = edge.split(" -> ", 1)
+                source, target = edge.split(" -> ", 1)
             except ValueError:
                 continue
+            source = source.strip()
             target = target.strip()
-            if target in self._file_registry_paths_set():
+            if source in file_registry:
+                internal_sources.add(source)
+            if target in file_registry:
                 internal_targets.add(target)
 
         dynamic_targets = self._dynamic_target_set()
         dynamic_owners = set(self._dynamic_deps.keys())
+        entry_points_set = set(self.atlas.get("entry_points", []))
+        # Un archivo es "participante" si es source OR target de algún edge
+        internal_participants = internal_sources | internal_targets
+
+        # Inicializar listas de tiers
+        self.atlas["ambiguous"] = []
 
         for rel_path in self._all_scanned_files:
             node = {
                 "stack": self.resolve_stack_for(rel_path),
             }
-            is_orphan = rel_path not in internal_targets
+            is_participant = rel_path in internal_participants
+            is_entry_point = rel_path in entry_points_set
+
+            # Clasificar según tier
             if rel_path in dynamic_owners or rel_path in dynamic_targets:
-                node["orphan_reason"] = "dynamic_declared"
+                node["tier"] = "dynamic"
+                node["reason"] = "declared_in_dynamic_deps"
                 if rel_path in dynamic_owners and self._dynamic_deps[rel_path]:
                     node["dynamic_targets"] = list(self._dynamic_deps[rel_path])
-            elif is_orphan:
-                node["orphan_reason"] = "no_inbound"
-                self.atlas["orphans"].append(rel_path)
+            elif is_participant or is_entry_point:
+                node["tier"] = "connected"
+            else:
+                # No participante, no entry point, no dynamic
+                # Aplicar criterio explícito para orphan vs ambiguous
+                if self._should_be_explicit_orphan(rel_path):
+                    node["tier"] = "orphan"
+                    node["reason"] = "explicit_pattern"
+                    self.atlas["orphans"].append(rel_path)
+                else:
+                    node["tier"] = "ambiguous"
+                    node["reason"] = "no_inbound_no_entry_point"
+                    self.atlas["ambiguous"].append(rel_path)
+
             self.atlas["files"][rel_path] = node
+
+    def _should_be_explicit_orphan(self, rel_path):
+        """SESIÓN 21 (ORP-1) — Clasifica archivos como orphan según patrones explícitos.
+
+        Devuelve True si el archivo matchea criterios universales de descarte:
+          - Extensión: .bak, .old, .orig, .tmp, .swp, .swo, .rej
+          - Sufijo de nombre: _old, _bak, _backup, _deprecated, _legacy, _orig, _tmp
+          - Segmento de carpeta: archive, backup, deprecated, old, trash, _trash, _old
+
+        Defaults en compass/defaults.py::DEFAULT_ORPHAN_PATTERNS.
+        Override vía mapper_config.json `orphan_patterns` (extend, no replace).
+        """
+        from compass.defaults import DEFAULT_ORPHAN_PATTERNS
+        from compass.orphan_classifier import merge_orphan_patterns, is_orphan
+
+        # Merge defaults with user config
+        user_patterns = self.config.get("orphan_patterns", {})
+        merged_patterns = merge_orphan_patterns(DEFAULT_ORPHAN_PATTERNS, user_patterns)
+
+        return is_orphan(rel_path, merged_patterns)
 
     def _file_registry_paths_set(self):
         """Set de paths relativos posix de los archivos indexados.

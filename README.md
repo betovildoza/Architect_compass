@@ -43,48 +43,62 @@ A veces, lo más útil es también lo más invisible.
 ## 🔬 Capacidades Core
 
 **🔍 Unificación por Identidad**  
-El motor indexa todos los archivos del proyecto antes de analizar imports. Si encuentra `from services.monitor import X`, sabe que se refiere al archivo físico `services/monitor.py` — y usa esa ruta como nodo en el grafo. Sin duplicados, sin nodos fantasma.
+El motor indexa todos los archivos del proyecto antes de analizar imports. Si encuentra `from services.monitor import X`, sabe que se refiere al archivo físico `services/monitor.py` — y usa esa ruta como nodo en el grafo. Sin duplicados, sin nodos fantasma. Incluye resolución semántica: re-exports en `__init__.py`, interpolación PHP (`"$dir/file.css"`), WordPress hooks (`wp_enqueue_*`, `get_template_directory_uri()`) y loaders Python (`open()`, `json.load()`, `Path.read_text()`).
 
-**🛡️ Auditoría de Salud Dinámica**  
-El score (0–100%) se calcula en base a la relación entre archivos totales y archivos con al menos una conexión detectada. Los huérfanos penalizan el score. Los duplicados también.
+**🛡️ Clasificación Inteligente de Archivos**  
+Cada archivo se clasifica en uno de 4 tiers:
+- **connected**: tiene inbound/outbound detectada o es entry_point
+- **ambiguous**: no tiene conexión detectada, pero es conservador (no asume descarte)
+- **orphan**: evidencia explícita de descarte (vacío hasta definir criterios por proyecto)
+- **dynamic**: declarado en `dynamic_deps` del config
+
+Visualización en graph.html con colores distintivos. Score de salud (0–100%) calcula relación archivos reales vs connected.
 
 **📂 Configuración Jerárquica**  
-Compass acepta un `mapper_config.json` global (en la carpeta de la herramienta) o uno local en `.map/mapper_config.json` dentro de cada proyecto. El local tiene prioridad, permitiendo definiciones de stack por proyecto sin tocar la configuración base.
+Compass acepta un `mapper_config.json` global (en la carpeta de la herramienta) o uno local en `.map/mapper_config.json` dentro de cada proyecto. El local tiene prioridad, permitiendo definiciones de stack por proyecto sin tocar la configuración base. Validación end-of-run si hay inconsistencias.
 
-**🕸️ Exportación Visual Limpia**  
-El grafo `.dot` solo contiene lógica de negocio. Las carpetas de entorno (`.venv`, `node_modules`, `__pycache__`) se excluyen por defecto, convirtiendo lo que sería una telaraña de librerías externas en un mapa legible de la arquitectura real.
+**🕸️ Exportación Visual Limpia + Dashboard Detection**  
+El grafo `.dot` solo contiene lógica de negocio. Las carpetas de entorno (`.venv`, `node_modules`, `__pycache__`) se excluyen por defecto, convirtiendo lo que sería una telaraña de librerías externas en un mapa legible de la arquitectura real. 
+
+Detector stack-agnóstico: HTML que carga JavaScript + ese JS hace fetch/websocket a rutas locales → auto-promovido a entry_point (útil para dashboards).
 
 ---
 
 ## 📊 Outputs generados
 
-Al ejecutar Compass en la raíz de tu proyecto, se crea la carpeta `.map/` con tres archivos:
+Al ejecutar `compass scan` en la raíz de tu proyecto, se crea la carpeta `.map/` con:
 
-**`atlas.json`** — El reporte completo. Incluye:
+**`atlas.json`** — El reporte completo (humano-amigable):
 ```json
 {
-  "generated_at": "2025-06-15 14:32:10",
+  "generated_at": "2026-04-18 14:32:10",
   "project_name": "mi-proyecto",
   "identities": [{ "tech": "WordPress-Development", "confidence": 90 }],
-  "summary": { "total_files": 84, "relevant_files": 31 },
-  "connectivity": { "inbound": [...], "outbound": [...] },
+  "summary": { "total_files": 84, "connected": 31, "ambiguous": 2, "orphan": 0 },
+  "entry_points": [{ "path": "index.php", "reason": "root static" }],
+  "connectivity": { "nodes": [...], "edges": [...] },
+  "metadata_consolidated": { "file_loads": {...}, "calls": {...} },
   "audit": {
     "structural_health": 87.5,
     "warnings": [
-      { "type": "ORPHAN", "file": "utils/old_helper.js", "description": "..." },
-      { "type": "AMBIGUITY", "files": ["api.php", "api_v2.php"], "description": "..." }
+      { "type": "AMBIGUOUS", "file": "utils/helper.js", "description": "..." },
+      { "type": "DUPLICATE", "files": ["api.php", "api_v2.php"], "description": "..." }
     ]
   }
 }
 ```
 
-**`connectivity.dot`** — Grafo de dependencias en formato Graphviz. Pegalo en [GraphvizOnline](https://dreampuf.github.io/GraphvizOnline) para visualizarlo.
+**`atlas.compact.json`** — Versión LLM-friendly (20-30% del size). Schema pooled: labels/stacks/edge_types como índices de cadenas; nodes/edges como tuplas.
 
-![Captura de pantalla de connectivity](/connectivity.dot.jpg)
+**`connectivity.dot`** — Grafo Graphviz con clasificación de nodos (connected=azul, ambiguous=naranja, entry_point=dorado). Compatible con [GraphvizOnline](https://dreampuf.github.io/GraphvizOnline).
+
+**`graph.html`** — Visualización interactiva (vis-network): zoom, pan, drag nativos. Compatible con todos los navegadores.
+
+**`symbols.json`** — Funciones, clases, firmas y constantes por archivo (output del subcomando `compass symbols`). Contexto para análisis LLM.
 
 **`feedback.log`** — Historial de ejecuciones con score y estadísticas por fecha.
 
-![Captura de pantalla de feedback](/feedback.log.jpg)
+**`fingerprints.json`** — Hashes por archivo para detección incremental en siguientes scans.
 ---
 
 ## 🚀 Instalación
@@ -94,12 +108,11 @@ No hay instalación. Solo necesitás Python 3.8+ en tu sistema.
 ```bash
 # Clona o descargá el repo en una carpeta de herramientas
 git clone https://github.com/betovildoza/Architect_compass C:\DevTools\ArchitectCompass
-
-# Copiá el config de ejemplo
-cp mapper_config.example.json mapper_config.json
 ```
 
-Editá `mapper_config.json` para adaptar las definiciones a tu stack (ver sección Configuración).
+Compass viene con `mapper_config.json` basal listo para usar (detectores universales de Python/JS/TS/PHP/HTML + stacks WordPress, Modern-Web, Tauri, etc.). No requiere configuración para empezar.
+
+**Overrides por proyecto** (opcionales): la primera vez que corrés `compass` en un proyecto, se genera `.map/compass.local.json` vacío con bloques `_example_*` de referencia. Editalo para agregar `dynamic_deps`, `external_services` custom, `definitions` propias o excluir ruido — tus overrides se mergean con el basal sin reemplazarlo. Documentación completa del schema en `.map/compass.local.md` (generado junto al JSON).
 
 ### Uso rápido
 
@@ -107,34 +120,50 @@ Editá `mapper_config.json` para adaptar las definiciones a tu stack (ver secci�
 # Navegá a la raíz del proyecto que querés auditar
 cd C:\Projects\mi-proyecto
 
-# Ejecutá el script
+# Ejecutá un scan
 python C:\DevTools\ArchitectCompass\architect_compass.py
+# O con la CLI: compass scan --full
 ```
 
-### Automatización con variable de entorno (Windows)
+### CLI Completa (Sesión 12+)
 
-Guardá el siguiente archivo como `compass.bat` en la misma carpeta del script:
+Compass incluye 4 subcomandos principales:
+
+```bash
+compass scan                  # Análisis de dependencias (default)
+compass scan --full           # Scan sin cache incremental
+compass scan --no-graph       # Skip HTML graph generation
+compass scan --no-history     # Skip history rotation
+
+compass symbols               # Extrae funciones/clases/firmas a .map/symbols.json
+compass init                  # Inicializa mapper_config.json local
+compass graph                 # Re-genera graph.html desde atlas.json existente
+
+compass --version             # Muestra versión
+compass -h / --help           # Ayuda general
+```
+
+### Windows Portable: compass.bat
+
+Guardá el siguiente archivo como `compass.bat` en la carpeta raíz de Compass:
 
 ```batch
 @echo off
-set SCRIPT_PATH="C:\DevTools\ArchitectCompass\architect_compass.py"
-
-if exist %SCRIPT_PATH% (
-    python %SCRIPT_PATH%
-) else (
-    echo [ERROR] No se encontro el motor en %SCRIPT_PATH%
-    echo Revisa la ruta en compass.bat
-)
-pause
+REM compass.bat — launcher portable
+REM Ejecuta desde %~dp0 (directorio del script)
+set COMPASS_ROOT=%~dp0
+python "%COMPASS_ROOT%architect_compass.py" %*
 ```
 
-Luego agregá esa carpeta al **PATH** del sistema:  
-`Variables de Entorno → Path → Editar → Nuevo → pegar la ruta`
+Agregá la carpeta al **PATH** del sistema:  
+`Variables de Entorno → Path → Editar → Nuevo → pegar ruta de Compass`
 
 A partir de ahí, desde cualquier terminal en la raíz de un proyecto:
 
 ```bash
-compass
+compass scan
+compass symbols
+compass graph
 ```
 
 ---
@@ -167,7 +196,7 @@ La potencia de la herramienta está en `mapper_config.json`. Tiene dos secciones
 }
 ```
 
-El archivo `mapper_config.example.json` incluye definiciones listas para usar: **PHP Backend**, **Vanilla Frontend** y **WordPress**.
+El archivo `mapper_config.json` basal incluye definiciones listas para usar para los stacks más comunes: **Python**, **JavaScript/TypeScript**, **PHP**, **HTML**, **WordPress-Development**, **Modern-Web-Stack**, **Tauri-Desktop-App** y **AI-Agent-Framework**. Para agregar patterns propios de tu proyecto sin tocar el basal, usá `.map/compass.local.json` (ver doc en `.map/compass.local.md`).
 
 ---
 
@@ -190,13 +219,48 @@ El archivo `mapper_config.example.json` incluye definiciones listas para usar: *
 
 ```
 ArchitectCompass/
-├── architect_compass.py       # Motor principal
-├── mapper_config.example.json # Configuración de referencia
+├── architect_compass.py       # Motor principal (wrapper legacy)
+├── compass.py                 # CLI dispatcher (CLI-015)
+├── compass/                   # Paquete del motor
+├── mapper_config.json         # Config basal del repo (defaults universales)
 ├── compass.bat                # Launcher para Windows con PATH
+├── PLAN.md                    # Roadmap de features
+├── SESSION_LOG.md             # Historial de sesiones de desarrollo
 └── README.md
 ```
 
-> **No se incluye `mapper_config.json`** en el repo. Cada instalación mantiene su propia configuración local.
+Por cada proyecto auditado, Compass genera en `<proyecto>/.map/`:
+- `atlas.json` / `atlas.compact.json` (LLM-friendly) — mapa de dependencias
+- `connectivity.dot` + `graph.html` — grafo visual
+- `compass.local.json` + `compass.local.md` — overrides del proyecto + doc del schema
+- `feedback.log` + `history/` — historial de runs
+
+> `.map/` es regenerable: cada run lo reconstruye. No commitear nada ahí.
+
+---
+
+## ✅ Lo que Compass resuelve bien
+
+| Caso | Soporte |
+|------|---------|
+| **Importes estáticos** — `from x import y`, `import x`, `require('x')`, `<script src>` | ✅ Completo AST/regex |
+| **Path resolution** — Rutas relativas, `__DIR__`, path templates | ✅ Semántico por lenguaje |
+| **WordPress** — `wp_enqueue_*`, `get_template_directory_uri()`, template hierarchy (parcial) | ✅ SEM-020 |
+| **Python loaders** — `open()`, `json.load()`, `Path.read_text()` | ✅ LOAD-038 |
+| **Dashboards** — HTML + JS con fetch/websocket local | ✅ DASH-042 |
+| **Entry points** — `if __name__`, `package.json:main`, `.bat` en raíz | ✅ Heurística por lenguaje |
+| **Framework static mounts** — Flask/FastAPI `/static` → filesystem | 🔲 Pendiente (WEB-039) |
+| **Dynamic registration** — `app.register_blueprint()`, Django `include()` | 🔲 Pendiente (REG-040) |
+
+## ⚠️ Límites Conocidos
+
+| Límite | Motivo | Workaround |
+|--------|--------|-----------|
+| **Imports construidos en runtime** | Requieren evaluación dinámica (ej: `__import__(variable)`) | Declarar en `dynamic_deps` |
+| **Reflection y metaprogramación** | Requieren ejecución para resolver (Django models, SQLAlchemy) | Idem `dynamic_deps` |
+| **Caracteres especiales en paths** | Regex limpiador elimina `@$~` silenciosamente | Evitar en nombres; charset permitido: `a-zA-Z0-9._/-` |
+| **URLs dinámicas en HTTP calls** | `fetch(baseURL + variable)` no se resuelve | NET-022 captura URLs literales |
+| **Importes con wildcard** | `import *` se canta pero edges son aproximadas | Scanner detecta; asumir conexión más laxa |
 
 ---
 
