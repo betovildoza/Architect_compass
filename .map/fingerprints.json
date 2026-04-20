@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-04-19 05:56:28",
+  "generated_at": "2026-04-19 21:50:57",
   "config_fingerprint": "ff37e1dad0f87f16321958dedeb8d2fd643d9e19551c2c6dd42223582ff61842",
   "files": {
     "architect_compass.py": {
@@ -86,18 +86,6 @@
       "edge_types": {
         "compass/cli.py": "import"
       },
-      "metadata_assets": [],
-      "metadata_filtered_refs": []
-    },
-    "mapper_config.example.json": {
-      "fingerprint": "9dd4a2e3d76a854e7781a61dea40bd68f3478a9d6325b63ac35e1f5ceb6ff04f",
-      "outbound_targets": [],
-      "inbound_patterns": [],
-      "tech_scores": {},
-      "is_relevant": false,
-      "stack": "AI-Agent-Framework",
-      "metadata_calls": [],
-      "edge_types": {},
       "metadata_assets": [],
       "metadata_filtered_refs": []
     },
@@ -325,7 +313,7 @@
       "metadata_filtered_refs": []
     },
     "compass/finalize.py": {
-      "fingerprint": "61936b0ba33f4dd24df566b659f5d6b264eb6a7c090a598dfe2005cb7f12bd20",
+      "fingerprint": "e349f4a8659534961590152feb4a75882c46e474b325a11041699d28863dab24",
       "outbound_targets": [
         "compass/consolidator.py",
         "compass/consolidator.py",
@@ -342,6 +330,7 @@
         "compass/metrics.py",
         "compass/validation.py",
         "compass/template_io.py",
+        "compass/wordpress_detector.py",
         "compass/wordpress_detector.py",
         "compass/wordpress_detector.py"
       ],
@@ -598,7 +587,7 @@
       "metadata_filtered_refs": []
     },
     "compass/wordpress_detector.py": {
-      "fingerprint": "267ec4e7445a5526e0d414595d5ab59f988c3ba9e57c709e473a31ffb2001d29",
+      "fingerprint": "f87bb52c6701e54b36d658b8d23ea339c230a3d8685020dd391cb3738cbfb216",
       "outbound_targets": [],
       "inbound_patterns": [],
       "tech_scores": {},
@@ -606,9 +595,7 @@
       "stack": "AI-Agent-Framework",
       "metadata_calls": [
         "fnmatch",
-        "pathlib:Path",
-        "typing:Set",
-        "typing:Optional"
+        "pathlib:Path"
       ],
       "edge_types": {},
       "metadata_assets": [],

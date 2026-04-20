@@ -1,11 +1,11 @@
 {
-    "generated_at": "2026-04-19 05:56:28",
+    "generated_at": "2026-04-19 21:50:57",
     "project_name": "Architect_compass",
     "identities": [
         {
             "tech": "AI-Agent-Framework",
-            "confidence": 35,
-            "files": 35,
+            "confidence": 34,
+            "files": 34,
             "source": "stack_markers"
         }
     ],
@@ -13,10 +13,10 @@
         "": "AI-Agent-Framework"
     },
     "summary": {
-        "total_files": 35,
+        "total_files": 34,
         "relevant_files": 21,
-        "scanned_files": 0,
-        "reused_from_cache": 35
+        "scanned_files": 2,
+        "reused_from_cache": 32
     },
     "connectivity": {
         "inbound": [],
@@ -85,6 +85,7 @@
             "compass/finalize.py -> compass/template_io.py",
             "compass/finalize.py -> compass/wordpress_detector.py",
             "compass/finalize.py -> compass/wordpress_detector.py",
+            "compass/finalize.py -> compass/wordpress_detector.py",
             "compass/graph_emitter.py -> compass/templates/graph.html.tpl",
             "compass/graph_emitter.py -> [EXTERNAL:unpkg.com]",
             "compass/outbound_resolver.py -> compass/stdlib_filter.py",
@@ -131,7 +132,7 @@
         ]
     },
     "audit": {
-        "structural_health": 60.0,
+        "structural_health": 61.76,
         "warnings": []
     },
     "anomalies": [],
@@ -185,11 +186,6 @@
                     "sys"
                 ]
             }
-        },
-        "mapper_config.example.json": {
-            "stack": "AI-Agent-Framework",
-            "tier": "ambiguous",
-            "reason": "no_inbound_no_entry_point"
         },
         "mapper_config.json": {
             "stack": "AI-Agent-Framework",
@@ -437,9 +433,7 @@
             "metadata": {
                 "calls": [
                     "fnmatch",
-                    "pathlib:Path",
-                    "typing:Set",
-                    "typing:Optional"
+                    "pathlib:Path"
                 ]
             }
         },
@@ -503,8 +497,7 @@
     },
     "orphans": [],
     "ambiguous": [
-        "cli_roadmap.html",
-        "mapper_config.example.json"
+        "cli_roadmap.html"
     ],
     "entry_points": [
         "architect_compass.py",
@@ -682,12 +675,10 @@
             "typing:Optional": [
                 "architect_symbols.py",
                 "compass/cli.py",
-                "compass/cli_ui.py",
-                "compass/wordpress_detector.py"
+                "compass/cli_ui.py"
             ],
             "typing:Set": [
-                "compass/orphan_classifier.py",
-                "compass/wordpress_detector.py"
+                "compass/orphan_classifier.py"
             ],
             "typing:Tuple": [
                 "architect_symbols.py"
@@ -701,7 +692,7 @@
     },
     "cycles": [],
     "health": {
-        "total": 97.59,
+        "total": 97.57,
         "weights": {
             "orphans": 0.4,
             "connectivity": 0.3,
@@ -715,11 +706,11 @@
         },
         "connectivity": {
             "score": 100.0,
-            "avg_inbound": 2.77,
-            "total_inbound_edges": 97
+            "avg_inbound": 2.88,
+            "total_inbound_edges": 98
         },
         "dead_exports": {
-            "score": 91.43,
+            "score": 91.18,
             "count": 3,
             "files": [
                 "architect_compass.py",
@@ -728,40 +719,40 @@
             ]
         },
         "external_deps": {
-            "score": 92.52,
+            "score": 92.59,
             "external_targets": 8,
-            "total_targets": 107
+            "total_targets": 108
         }
     },
     "delta": {
-        "previous_generated_at": "2026-04-19 05:55:59",
+        "previous_generated_at": "2026-04-19 21:31:13",
         "files": {
             "added": [],
             "removed": [
-                "test_old_backup.py"
+                "validate_fix.py"
             ]
         },
         "edges": {
             "added": [],
-            "removed": [],
+            "removed": [
+                "validate_fix.py -> compass/core.py"
+            ],
             "added_count": 0,
-            "removed_count": 0
+            "removed_count": 1
         },
         "orphans": {
             "added": [],
-            "removed": [
-                "test_old_backup.py"
-            ]
+            "removed": []
         },
         "cycles": {
             "added": [],
             "removed": []
         },
         "health_delta": {
-            "total": 1.07,
-            "orphans": 2.78,
+            "total": 0.4,
+            "orphans": 0.0,
             "connectivity": 0.0,
-            "dead_exports": -0.24,
+            "dead_exports": 2.61,
             "external_deps": 0.0
         }
     },
@@ -771,7 +762,7 @@
         "self_edge": 0,
         "ignore_outbound": 0,
         "rendered_edges": 60,
-        "raw_edges": 107
+        "raw_edges": 108
     },
     "external_tiers": {
         "[EXTERNAL:rich]": "package",

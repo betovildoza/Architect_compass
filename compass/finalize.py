@@ -257,42 +257,64 @@ class FinalizeMixin:
                     self.atlas["files"][html_file]["entry_point_reason"] = reason
 
     def _detect_and_promote_wp_templates(self):
-        """SESIÓN 21 (ITEM 3) — detecta y marca templates WordPress como entry points.
+        """SESIÓN 21 (ITEM 3) — detecta theme roots WP y marca templates como entry points.
 
-        Identifica proyectos WordPress por markers (style.css, functions.php, wp-config.php, wp-content/).
-        Para proyectos WP, clasifica archivos PHP que matchean la template hierarchy como entry points.
+        Busca recursivamente theme roots (carpetas con style.css +
+        functions.php/index.php). Para cada archivo PHP que esté DENTRO de un
+        theme root y cuyo basename matchee la template hierarchy, lo promueve
+        a entry_point con reason `wp_template_hierarchy`.
 
-        Ejemplos: index.php, front-page.php, single-*.php, archive-*.php, page-*.php, etc.
-        Son auto-cargados por WordPress según la URL, no orfans ni ambiguos.
+        Cubre proyectos donde el tema WP está en subcarpeta (ej. ETCA:
+        sitio estático + API PHP + tema en themes/etca-aula/).
         """
         from compass.wordpress_detector import (
-            detect_wordpress_project,
+            find_wp_theme_roots,
             is_wp_template,
+            iter_wp_theme_implicit_paths,
         )
 
-        is_wp_project = detect_wordpress_project(self.project_root)
-
-        if not is_wp_project:
+        theme_roots = find_wp_theme_roots(self.project_root)
+        if not theme_roots:
             return
 
-        # Iterate over all files and mark WP templates as entry points
+        # 1) Template hierarchy: PHPs en el theme cuyo basename matchea la
+        #    hierarchy estándar (index.php, single-*.php, etc.).
         for rel_path in list(self.atlas.get("files", {}).keys()):
             if not rel_path.endswith(".php"):
                 continue
 
-            if is_wp_template(rel_path):
-                # Remover de ambiguous si está ahí
-                if rel_path in self.atlas.get("ambiguous", []):
-                    self.atlas["ambiguous"].remove(rel_path)
+            if not is_wp_template(rel_path, theme_roots=theme_roots,
+                                  project_root=self.project_root):
+                continue
 
-                # Agregar a entry_points
-                if rel_path not in self.atlas.get("entry_points", []):
-                    self.atlas["entry_points"].append(rel_path)
+            self._promote_wp_entry(rel_path, "wp_template_hierarchy")
 
-                # Marcar en files node
-                if rel_path in self.atlas["files"]:
-                    self.atlas["files"][rel_path]["tier"] = "connected"
-                    self.atlas["files"][rel_path]["entry_point_reason"] = "wp_template_hierarchy"
+        # 2) Theme-implicit files: style.css, theme.json, functions.php, etc.
+        #    WP los carga por convención sin que ningún PHP los referencie.
+        for rel_path, _basename in iter_wp_theme_implicit_paths(
+            theme_roots, self.project_root,
+        ):
+            if rel_path not in self.atlas.get("files", {}):
+                continue
+            self._promote_wp_entry(rel_path, "wp_theme_implicit")
+
+    def _promote_wp_entry(self, rel_path, reason):
+        """Promueve un archivo a entry_point con la razón dada (wp_*)."""
+        if rel_path in self.atlas.get("ambiguous", []):
+            self.atlas["ambiguous"].remove(rel_path)
+
+        if rel_path not in self.atlas.get("entry_points", []):
+            self.atlas["entry_points"].append(rel_path)
+
+        if rel_path in self.atlas["files"]:
+            self.atlas["files"][rel_path]["tier"] = "connected"
+            existing = self.atlas["files"][rel_path].get("entry_point_reason")
+            if existing is None:
+                self.atlas["files"][rel_path]["entry_point_reason"] = reason
+            elif isinstance(existing, str) and existing != reason:
+                self.atlas["files"][rel_path]["entry_point_reason"] = [existing, reason]
+            elif isinstance(existing, list) and reason not in existing:
+                existing.append(reason)
 
     def _collect_graph_nodes(self):
         """Devuelve set de rel_paths que deben renderizarse en el grafo.
