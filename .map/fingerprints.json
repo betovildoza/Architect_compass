@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-04-19 21:50:57",
+  "generated_at": "2026-04-19 22:09:50",
   "config_fingerprint": "ff37e1dad0f87f16321958dedeb8d2fd643d9e19551c2c6dd42223582ff61842",
   "files": {
     "architect_compass.py": {
@@ -683,7 +683,7 @@
       "metadata_filtered_refs": []
     },
     "compass/scanners/regex_fallback.py": {
-      "fingerprint": "22cec9b658c880aaae956b8ed74f145e7cb6bcc382544d8ca8d3712a8b376360",
+      "fingerprint": "f509b6bb456a7524becf7382324215188a683ff9a366e093c7f46d053d630a03",
       "outbound_targets": [
         "compass/scanners/base.py",
         "compass/scanners/base.py",
@@ -694,7 +694,8 @@
       "is_relevant": true,
       "stack": "AI-Agent-Framework",
       "metadata_calls": [
-        "re"
+        "re",
+        "pathlib:Path"
       ],
       "edge_types": {
         "compass/scanners/base.py": "import",

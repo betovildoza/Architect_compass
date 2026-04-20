@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-04-19 21:50:57",
+    "generated_at": "2026-04-19 22:09:46",
     "project_name": "Architect_compass",
     "identities": [
         {
@@ -15,8 +15,8 @@
     "summary": {
         "total_files": 34,
         "relevant_files": 21,
-        "scanned_files": 2,
-        "reused_from_cache": 32
+        "scanned_files": 34,
+        "reused_from_cache": 0
     },
     "connectivity": {
         "inbound": [],
@@ -476,7 +476,8 @@
             "tier": "connected",
             "metadata": {
                 "calls": [
-                    "re"
+                    "re",
+                    "pathlib:Path"
                 ]
             }
         },
@@ -617,6 +618,7 @@
                 "compass/outbound_resolver.py",
                 "compass/path_resolver.py",
                 "compass/pipeline.py",
+                "compass/scanners/regex_fallback.py",
                 "compass/stack_detector.py",
                 "compass/validation.py",
                 "compass/wordpress_detector.py"
@@ -725,20 +727,16 @@
         }
     },
     "delta": {
-        "previous_generated_at": "2026-04-19 21:31:13",
+        "previous_generated_at": "2026-04-19 21:50:57",
         "files": {
             "added": [],
-            "removed": [
-                "validate_fix.py"
-            ]
+            "removed": []
         },
         "edges": {
             "added": [],
-            "removed": [
-                "validate_fix.py -> compass/core.py"
-            ],
+            "removed": [],
             "added_count": 0,
-            "removed_count": 1
+            "removed_count": 0
         },
         "orphans": {
             "added": [],
@@ -749,10 +747,10 @@
             "removed": []
         },
         "health_delta": {
-            "total": 0.4,
+            "total": 0.0,
             "orphans": 0.0,
             "connectivity": 0.0,
-            "dead_exports": 2.61,
+            "dead_exports": 0.0,
             "external_deps": 0.0
         }
     },

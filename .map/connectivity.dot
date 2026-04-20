@@ -4,6 +4,13 @@ digraph G {
     graph [fontname="Arial", fontsize=12, labelloc="t", label="Architect's Compass — Connectivity Graph"];
     node [style="rounded,filled", fontname="Arial", fontsize=10];
     edge [arrowsize=0.7];
+    subgraph "cluster__map" {
+        label=".map";
+        style="rounded,filled";
+        fillcolor="#fafafa"; color="#cccccc";
+        fontname="Arial"; fontsize=11;
+        ".map/compass.local.json" [shape=box, fillcolor="#f5f5f5", color="#333333"];
+    }
     subgraph "cluster_<root>" {
         label="<root>";
         style="rounded,filled";
@@ -46,6 +53,7 @@ digraph G {
         "compass/stack_detector.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
         "compass/stdlib_filter.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
         "compass/template_io.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
+        "compass/templates/graph.html.tpl" [shape=box, fillcolor="#f5f5f5", color="#333333"];
         "compass/validation.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
         "compass/wordpress_detector.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
     }

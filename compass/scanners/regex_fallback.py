@@ -25,12 +25,109 @@ compass/core.py::analyze() antes de SCN-003.
 """
 
 import re
+from pathlib import Path
 
 from compass.scanners.base import Scanner as _BaseScanner, DEFAULT_EDGE_TYPE
 from compass.path_resolver import encode_loader_raw
 
 # URL-SCAN — regex para capturar URL literals en source text.
 _URL_LITERAL_RE = re.compile(r'''["'](https?://[^"'\s)]+)["']''')
+
+# PHP-018b — detección de `require`/`include` con variable PHP asignada
+# previamente a una expresión resoluble estáticamente.
+#
+# Patrón común en bootstraps PHP:
+#     $config_path = dirname(__DIR__, 2) . '/etca_config.php';
+#     require_once $config_path;
+#
+# El scanner regex normal no captura esto porque el `require_once` usa
+# variable, no literal. Este pass hace dos sub-pases:
+#   1. Detectar asignaciones `$var = dirname(__DIR__[, N]) . 'literal'` o
+#      `$var = __DIR__ . 'literal'` — acumula candidatos por varname.
+#   2. Detectar `require|require_once|include|include_once $var;` — emite
+#      un edge por cada candidato asociado al varname, usando el source_file
+#      para resolver `dirname(__DIR__, N)` a un path absoluto.
+#
+# Reasignaciones condicionales (pattern fallback típico: primero prueba
+# path A, si no existe prueba B) acumulan ambos candidatos. Los que no
+# resuelvan a un archivo real los descartará el PathResolver.
+_PHP_VAR_ASSIGN_RE = re.compile(
+    r"""\$([A-Za-z_]\w*)\s*=\s*"""      # $varname =
+    r"""(dirname\s*\(\s*__DIR__(?:\s*,\s*(\d+))?\s*\)|__DIR__)"""  # dirname(__DIR__[, N]) | __DIR__
+    r"""\s*\.\s*['"]([^'"]+)['"]""",    # . 'literal' o . "literal"
+    re.IGNORECASE,
+)
+
+_PHP_REQUIRE_VAR_RE = re.compile(
+    r"""\b(?:require|require_once|include|include_once)\s+\$([A-Za-z_]\w*)""",
+    re.IGNORECASE,
+)
+
+
+def _collect_php_var_assignments(content):
+    """PHP-018b — Extrae asignaciones a variables con expresiones path-like.
+
+    Devuelve dict `{varname: [(levels_up, literal), ...]}` donde levels_up es
+    el argumento de dirname (0 = __DIR__ sin dirname, 1 = dirname(__DIR__),
+    2 = dirname(__DIR__, 2), etc.). Múltiples asignaciones al mismo var
+    acumulan en la lista (maneja el patrón de fallback condicional).
+    """
+    assigns = {}
+    for m in _PHP_VAR_ASSIGN_RE.finditer(content):
+        var = m.group(1)
+        base_expr = m.group(2).lower().replace(" ", "")
+        levels_str = m.group(3)
+        literal = m.group(4)
+        if base_expr.startswith("dirname"):
+            levels = int(levels_str) if levels_str else 1
+        else:
+            levels = 0
+        assigns.setdefault(var, []).append((levels, literal))
+    return assigns
+
+
+def _resolve_dirname_levels(source_file, levels):
+    """PHP-018b — Resuelve `dirname(__DIR__, levels)` a path absoluto posix.
+
+    __DIR__ = source_file.parent. dirname() sube un nivel por cada unidad.
+    levels=0 → __DIR__ (sin dirname), levels=1 → dirname(__DIR__), etc.
+    """
+    if source_file is None:
+        return None
+    base = Path(source_file).resolve().parent
+    for _ in range(levels):
+        base = base.parent
+    return base
+
+
+def _php_require_var_sentinels(content, file_path):
+    """PHP-018b — Genera candidatos resueltos para `require $var` con
+    asignación previa.
+
+    Args:
+        content: source PHP crudo.
+        file_path: ruta absoluta del archivo fuente (para resolver __DIR__).
+
+    Yields:
+        tuples `(target, "require")` con el path candidato como string.
+        Los paths son absolutos posix; el PathResolver los valida contra
+        el proyecto y descarta los que no existan.
+    """
+    assigns = _collect_php_var_assignments(content)
+    if not assigns:
+        return
+    for m in _PHP_REQUIRE_VAR_RE.finditer(content):
+        var = m.group(1)
+        candidates = assigns.get(var)
+        if not candidates:
+            continue
+        for levels, literal in candidates:
+            base = _resolve_dirname_levels(file_path, levels)
+            if base is None:
+                continue
+            literal_clean = literal.lstrip("/\\")
+            candidate_path = (base / literal_clean).as_posix()
+            yield candidate_path, "require"
 
 # Mini-S10.5 — detectar array literal PHP tipo `['a.php', 'b.php']` o
 # `array('a.php', 'b.php')` como primer argumento. Solo match si TODOS los
@@ -186,5 +283,13 @@ class RegexFallbackScanner(_BaseScanner):
             if len(url) > 10 and url not in seen_urls:
                 seen_urls.add(url)
                 out.append((url, "fetch"))
+
+        # PHP-018b — `require|include $var` con asignación previa
+        # `$var = dirname(__DIR__[, N]) . 'literal'`. Emite candidato ya
+        # resuelto a path absoluto (sin sentinel) — PathResolver valida
+        # existencia y descarta si no cae dentro del proyecto.
+        if str(file_path).lower().endswith(".php"):
+            for target, edge_type in _php_require_var_sentinels(content, file_path):
+                out.append((target, edge_type))
 
         return out
