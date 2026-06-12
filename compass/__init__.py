@@ -11,12 +11,18 @@ Submódulos:
     scanners/       — dispatcher get_scanner + Scanner base + tiers (SCN-003)
 """
 
+# Fuente única de verdad de la versión del producto (CLI-051).
+# semver: banda 0.x — herramienta funcional pero pre-estable.
+# NO confundir con architect_symbols.VERSION ("1.1"), que es el schema de symbols.json.
+__version__ = "0.1.0"
+
 from compass.core import ArchitectCompass
 from compass.stack_detector import StackDetector, resolve_file_stack
 from compass.path_resolver import PathResolver
 from compass.scanners import get_scanner
 
 __all__ = [
+    "__version__",
     "ArchitectCompass",
     "StackDetector",
     "resolve_file_stack",

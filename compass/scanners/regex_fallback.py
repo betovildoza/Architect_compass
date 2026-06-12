@@ -129,6 +129,14 @@ def _php_require_var_sentinels(content, file_path):
             candidate_path = (base / literal_clean).as_posix()
             yield candidate_path, "require"
 
+
+# TSD-045 (D4) — alias público compartido. PHP-018b vive en una única
+# implementación (la de arriba) y la consumen DOS scanners: RegexFallback
+# (Tier 3, abajo) y TreeSitterScanner (Tier 2). Mismo precedente que
+# `_expand_loader_body`, que treesitter ya importa de este módulo. Cero
+# duplicación de lógica probada.
+php_require_var_sentinels = _php_require_var_sentinels
+
 # Mini-S10.5 — detectar array literal PHP tipo `['a.php', 'b.php']` o
 # `array('a.php', 'b.php')` como primer argumento. Solo match si TODOS los
 # elementos son string literals (no variables ni concatenaciones). Extrae

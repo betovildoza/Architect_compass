@@ -1,27 +1,48 @@
-"""tree-sitter scanner (Tier 2) — SCN-003 + NET-022 + URL-SCAN.
+"""tree-sitter scanner (Tier 2, default) — SCN-003 + NET-022 + URL-SCAN + TSD-045.
 
-Scanner genérico que recibe una grammar como parámetro (string tipo
-`tree_sitter_php`). Un único módulo cubre PHP, JS, TS, Ruby, Go, etc.
+Scanner genérico que recibe una grammar como parámetro. Un único módulo
+cubre PHP, JS, TS, HTML, CSS, etc.
 
-Opt-in: si el módulo de grammar no está instalado, el constructor levanta
-ImportError y el dispatcher cae a Tier 3 (regex_fallback).
+Tier 2 es el scanner de PREFERENCIA (default) para estos lenguajes cuando
+el binding tree-sitter está instalado: el dispatcher lo intenta PRIMERO,
+vía `tree_sitter_language_pack.get_language(lang)` (loader primario). Sin
+binding, cae automáticamente a Tier 3 (regex_fallback) sin cambios de
+resultado — promesa zero-install intacta. No es un fallback ni una opción
+secundaria: es el tier por defecto cuando hay binding.
 
-Hoy el módulo trae queries triviales para PHP y JS. El resto de lenguajes
-se dejan sin query explícita — caen a Tier 3 aunque la grammar esté
-instalada. Agregar una query es una edición local de `_QUERIES_BY_LANGUAGE`.
+Carga de grammar (TSD-045 D1) — dos fuentes, en orden, una vez por run
+(memoizado por el `_SCANNER_CACHE` del dispatcher):
 
-NET-022 — Después del walk AST, si `http_loaders` en config tiene entries
-para el lenguaje, se ejecuta un regex pass sobre el source text para
-capturar URLs literales en llamadas HTTP con edge_type `"fetch"`.
+  1. `tree_sitter_language_pack.get_language(lang)` + `tree_sitter.Parser`
+     — fuente primaria. Una sola dep opcional cubre php/js/ts/html/css (y
+     futuros Go/Rust/Ruby sin tocar código). Se usa `get_language` (no
+     `get_parser`, que devuelve el Parser del binding Rust con API
+     incompatible) y se construye el Parser con la API Python, igual que
+     la Fuente 2. Detección defensiva con `getattr` (R2: si una 2.x cambia
+     la API, se cae a regex en vez de romper).
+  2. Módulo de grammar individual (`tree_sitter_php`, ...) — loader
+     secundario que prueba candidatos de entry point: `language()`, luego
+     `language_<lang>()` (corrige el fallo silencioso de php/ts, cuyos
+     repos upstream exponen `language_php()` / `language_typescript()` en
+     vez de `language()`).
 
-URL-SCAN — Después de NET-022, un pass adicional busca TODOS los string
-literals que sean URLs (http:// o https://) en el tree-sitter AST. Emite
-con edge_type "fetch", deduplicado contra URLs ya capturadas por NET-022.
+Si ninguna fuente carga, el constructor levanta ImportError y el
+dispatcher cae a Tier 3 (regex_fallback). Promesa zero-install intacta:
+sin binding instalado, comportamiento idéntico al actual.
 
-Nota: tree-sitter Python tiene dos APIs históricas (pre y post 0.22).
-Este módulo implementa la más conservadora: cargar el language object y
-recorrer el árbol manualmente buscando nodos por tipo. Si la librería no
-está disponible, el scanner ni siquiera se construye.
+EDG-023 — JS/TS extracción field-aware (D3): se emite el SPECIFIER del
+import (texto del string source), no el statement completo. El walk plano
+anterior emitía `import { x } from './m';` entero, que `_resolve_js`
+descartaba como bare specifier → 0 edges internos. Ahora se navega por
+`child_by_field_name("source")` y se emite `./m`.
+
+PHP — se conserva la captura de `*_expression` completa (el resolver ya
+digiere literales de la expresión); además se porta PHP-018b
+(`require $var` con asignación previa) vía el helper compartido de
+regex_fallback (D4): una implementación, dos consumidores.
+
+NET-022 / URL-SCAN / SEM-020 loader_calls — passes regex post-AST, ya en
+paridad con Tier 3. No los toca el switch de tier.
 """
 
 import importlib
@@ -34,29 +55,25 @@ from compass.scanners.base import (
     build_loader_call_regex,
 )
 from compass.path_resolver import encode_loader_raw
-from compass.scanners.regex_fallback import _expand_loader_body
+from compass.scanners.regex_fallback import (
+    _expand_loader_body,
+    php_require_var_sentinels,
+)
 
 # URL-SCAN — regex para capturar URL literals en source text.
 # Captura strings entre comillas simples o dobles que empiezan con http(s)://.
 _URL_LITERAL_RE = re.compile(r'''["'](https?://[^"'\s)]+)["']''')
 
 
-# EDG-023 — mapping node_type → edge_type por lenguaje. Lista acumulable.
-# Conservador: si un node type no aparece acá, cae al DEFAULT_EDGE_TYPE.
+# EDG-023 — mapping node_type → edge_type por lenguaje (solo PHP usa el
+# walk plano por node.type). JS/TS usan extracción field-aware dedicada
+# (ver `_walk_js`), no este mapping.
 _NODE_TYPE_EDGE = {
     "php": {
         "include_expression":      "include",
         "include_once_expression": "include",
         "require_expression":      "require",
         "require_once_expression": "require",
-    },
-    "javascript": {
-        "import_statement": "import",
-        "call_expression":  "use",   # fetch/axios se capturan pero el AST no distingue sin lookup
-    },
-    "typescript": {
-        "import_statement": "import",
-        "call_expression":  "use",
     },
 }
 
@@ -66,46 +83,166 @@ _NODE_TYPES_BY_LANGUAGE = {
     lang: tuple(mapping.keys()) for lang, mapping in _NODE_TYPE_EDGE.items()
 }
 
+# D3 — lenguajes con extractor field-aware dedicado (JS/TS family).
+_JS_FAMILY = {"javascript", "typescript", "tsx", "jsx"}
+
+# TSD-045 (D1) — memoización a nivel módulo del intento de import del
+# language-pack (un intento por proceso, patrón `_TS_AVAILABLE`). Se limpia
+# en `reset_pack_cache()` para tests.
+_PACK_MODULE = None        # módulo importado, o None si no disponible
+_PACK_RESOLVED = False     # True una vez intentado el import
+
+
+def _get_language_pack():
+    """Importa `tree_sitter_language_pack` una vez por proceso.
+
+    Devuelve el módulo si expone `get_language` (R2: detección defensiva),
+    o None si no está instalado / la API no es la esperada.
+    """
+    global _PACK_MODULE, _PACK_RESOLVED
+    if _PACK_RESOLVED:
+        return _PACK_MODULE
+    _PACK_RESOLVED = True
+    try:
+        mod = importlib.import_module("tree_sitter_language_pack")
+    except ImportError:
+        _PACK_MODULE = None
+        return None
+    # R2 — pin <2.0 + detección defensiva. Si una 2.x cambió la API
+    # (rewrite kreuzberg-dev con `process()`), `get_language` no existe →
+    # tratamos el pack como no disponible y caemos al loader secundario.
+    # Usamos `get_language` (no `get_parser`): `get_parser` devuelve el
+    # Parser del binding Rust (builtins.Parser), cuya API es incompatible
+    # con la API Python de tree_sitter (`.parse(bytes)` lanza TypeError).
+    # `get_language` devuelve un `tree_sitter.Language` legítimo que sí
+    # construye un `tree_sitter.Parser` Python funcional.
+    if getattr(mod, "get_language", None) is None:
+        _PACK_MODULE = None
+        return None
+    _PACK_MODULE = mod
+    return mod
+
+
+def reset_pack_cache():
+    """Limpia la memoización del language-pack — usado por tests/smoke."""
+    global _PACK_MODULE, _PACK_RESOLVED
+    _PACK_MODULE = None
+    _PACK_RESOLVED = False
+
+
+# D1 — nombre del lenguaje del pack. Para "javascript"/"typescript" el
+# pack usa esos mismos nombres; para tsx usa "tsx" (R4).
+_PACK_LANG_ALIAS = {
+    "javascript": "javascript",
+    "typescript": "typescript",
+    "tsx": "tsx",
+    "jsx": "javascript",   # jsx lo parsea la grammar javascript del pack
+    "php": "php",
+    "html": "html",
+    "css": "css",
+}
+
+
+def _load_parser(grammar_module_name, language):
+    """TSD-045 (D1) — carga un `Parser` para `language`.
+
+    Devuelve `(parser, tier_name)` donde tier_name ∈
+    {"tree-sitter-pack", "tree-sitter"}. Levanta ImportError si ninguna
+    fuente carga.
+
+    `grammar_module_name`:
+        - "@pack" → solo intentar el language-pack (html/css).
+        - otro string → intentar pack primero, luego el módulo individual.
+    """
+    lang = (language or "").lower()
+
+    # Fuente 1 — language-pack.
+    pack = _get_language_pack()
+    if pack is not None:
+        pack_lang = _PACK_LANG_ALIAS.get(lang, lang)
+        try:
+            # `pack.get_language()` devuelve un `tree_sitter.Language` —
+            # NO usar `pack.get_parser()`, que devuelve el Parser del
+            # binding Rust (builtins.Parser) con API incompatible
+            # (`.parse(bytes)` lanza TypeError). Construimos el Parser con
+            # la API Python de tree_sitter, igual que la Fuente 2.
+            ts_core = importlib.import_module("tree_sitter")
+            lang_obj = pack.get_language(pack_lang)
+            if lang_obj is not None:
+                parser = ts_core.Parser(lang_obj)
+                return parser, "tree-sitter-pack"
+        except Exception:
+            # Lenguaje no soportado por el pack o error de carga → seguir.
+            pass
+
+    # "@pack" significa: SOLO pack. Si falló, no hay loader secundario.
+    if grammar_module_name == "@pack":
+        raise ImportError(
+            f"language '{lang}' no disponible en tree-sitter-language-pack."
+        )
+
+    # Fuente 2 — módulo de grammar individual.
+    try:
+        ts_core = importlib.import_module("tree_sitter")
+        grammar_mod = importlib.import_module(grammar_module_name)
+    except ImportError as e:
+        raise ImportError(
+            f"tree-sitter o la grammar '{grammar_module_name}' no están "
+            f"instaladas: {e}"
+        )
+
+    Parser = getattr(ts_core, "Parser", None)
+    Language = getattr(ts_core, "Language", None)
+    if Parser is None or Language is None:
+        raise ImportError(
+            "tree-sitter instalado pero incompatible (falta Parser/Language)."
+        )
+
+    # D1 — candidatos de entry point. tree_sitter_javascript expone
+    # `language()`; tree_sitter_php expone `language_php()`; tree_sitter_
+    # typescript expone `language_typescript()` / `language_tsx()`.
+    candidates = ["language", f"language_{lang}"]
+    if lang in ("typescript", "tsx"):
+        candidates = [f"language_{lang}", "language_typescript", "language"]
+    elif lang == "php":
+        candidates = ["language_php", "language", "language_php_only"]
+
+    language_fn = None
+    for attr in candidates:
+        fn = getattr(grammar_mod, attr, None)
+        if fn is not None:
+            language_fn = fn
+            break
+    if language_fn is None:
+        raise ImportError(
+            f"El módulo '{grammar_module_name}' no expone ningún entry point "
+            f"de grammar conocido (probados: {candidates})."
+        )
+
+    lang_obj = Language(language_fn())
+    parser = Parser(lang_obj)
+    return parser, "tree-sitter"
+
 
 class TreeSitterScanner(_BaseScanner):
-    """Scanner Tier 2. Carga una grammar dinámicamente.
+    """Scanner Tier 2. Carga una grammar dinámicamente (D1).
 
     Parámetros:
         grammar_module_name: nombre del módulo Python de la grammar
-            (ej: 'tree_sitter_php').
+            (ej: 'tree_sitter_php') o "@pack" (solo language-pack).
         language: string del lenguaje ('php', 'javascript', ...) — se usa
-            para elegir los tipos de nodo relevantes.
-        config: dict de config completo (opcional). NET-022 lo usa para
-            extraer `http_loaders[language]` y compilar el regex de URLs.
+            para elegir los tipos de nodo relevantes y el alias del pack.
+        config: dict de config completo (opcional). NET-022/SEM-020 lo usan.
+
+    Atributo público `tier_name` (D5): "tree-sitter" | "tree-sitter-pack".
     """
 
     def __init__(self, grammar_module_name, language, config=None):
-        try:
-            ts_core = importlib.import_module("tree_sitter")
-            grammar_mod = importlib.import_module(grammar_module_name)
-        except ImportError as e:
-            raise ImportError(
-                f"tree-sitter o la grammar '{grammar_module_name}' no están "
-                f"instaladas: {e}"
-            )
-
-        Parser = getattr(ts_core, "Parser", None)
-        Language = getattr(ts_core, "Language", None)
-        if Parser is None or Language is None:
-            raise ImportError(
-                "tree-sitter instalado pero incompatible (falta Parser/Language)."
-            )
-
-        # Cada grammar expone `language()` que retorna el puntero.
-        language_fn = getattr(grammar_mod, "language", None)
-        if language_fn is None:
-            raise ImportError(
-                f"El módulo '{grammar_module_name}' no expone language()."
-            )
-
-        lang_obj = Language(language_fn())
-        self._parser = Parser(lang_obj)
+        self._parser, self.tier_name = _load_parser(
+            grammar_module_name, language,
+        )
         self._language = (language or "").lower()
+        self._is_js = self._language in _JS_FAMILY
         self._edge_map = dict(_NODE_TYPE_EDGE.get(self._language, {}))
         self._node_types = set(self._edge_map.keys())
 
@@ -146,11 +283,24 @@ class TreeSitterScanner(_BaseScanner):
             return []
 
         out = []
-        if self._node_types:
+        if self._is_js:
+            # D3 — extracción field-aware del specifier (no el statement).
+            self._walk_js(tree.root_node, data, out)
+        elif self._node_types:
+            # PHP — walk plano por node.type (el resolver digiere la
+            # expresión completa).
             self._walk(tree.root_node, data, out)
 
-        # NET-022 — segundo pass: extraer URLs literales de llamadas HTTP.
         source_text = data.decode("utf-8", errors="ignore")
+
+        # PHP-018b (D4) — `require|include $var` con asignación previa.
+        # Misma implementación que Tier 3, vía helper compartido.
+        if self._language == "php":
+            for target, edge_type in php_require_var_sentinels(
+                source_text, file_path,
+            ):
+                out.append((target, edge_type))
+
         # SEM-020 — loader_calls.
         # Mini-S10.5 — expand array literals (accepts_array).
         if self._loader_regex:
@@ -162,6 +312,8 @@ class TreeSitterScanner(_BaseScanner):
                     fn, body, self._loader_specs,
                 ):
                     out.append((encode_loader_raw(fn, emitted_body), edge_type))
+
+        # NET-022 — extraer URLs literales de llamadas HTTP.
         if self._http_regex:
             for match in self._http_regex.finditer(source_text):
                 url = match.group(1)
@@ -181,6 +333,7 @@ class TreeSitterScanner(_BaseScanner):
         return out
 
     def _walk(self, node, source_bytes, out):
+        """PHP — walk plano: emite el texto del nodo include/require."""
         if node.type in self._node_types:
             text = source_bytes[node.start_byte:node.end_byte].decode(
                 "utf-8", errors="ignore"
@@ -190,3 +343,83 @@ class TreeSitterScanner(_BaseScanner):
             out.append((text, edge_type))
         for child in node.children:
             self._walk(child, source_bytes, out)
+
+    def _walk_js(self, node, source_bytes, out):
+        """D3 — JS/TS: emite el SPECIFIER (texto del string source), no el
+        statement completo.
+
+        Cubre:
+          - import_statement / export_statement con campo `source` (string)
+            → edge "import".  Incluye `export ... from '...'`.
+          - call_expression cuyo callee es `require` o `import` (dynamic)
+            con primer arg string → edge "require" / "import".
+
+        Elimina el ruido del antiguo `call_expression → "use"`: las
+        llamadas HTTP / wrappers ya las cubren NET-022 + URL-SCAN +
+        loader_calls.
+        """
+        ntype = node.type
+        if ntype in ("import_statement", "export_statement"):
+            spec = self._js_string_specifier(node, source_bytes)
+            if spec is not None:
+                out.append((spec, "import"))
+        elif ntype == "call_expression":
+            edge = self._js_call_edge(node, source_bytes)
+            if edge is not None:
+                spec, edge_type = edge
+                out.append((spec, edge_type))
+        for child in node.children:
+            self._walk_js(child, source_bytes, out)
+
+    @staticmethod
+    def _node_text(node, source_bytes):
+        return source_bytes[node.start_byte:node.end_byte].decode(
+            "utf-8", errors="ignore"
+        )
+
+    @staticmethod
+    def _strip_quotes(text):
+        text = text.strip()
+        if len(text) >= 2 and text[0] in "'\"`" and text[-1] == text[0]:
+            return text[1:-1]
+        return text
+
+    def _js_string_specifier(self, node, source_bytes):
+        """Extrae el specifier del campo `source` de un import/export.
+
+        Si el statement no tiene `source` (ej: `export const x = ...`),
+        devuelve None — no es un re-export desde módulo.
+        """
+        src = node.child_by_field_name("source")
+        if src is None:
+            return None
+        spec = self._strip_quotes(self._node_text(src, source_bytes))
+        return spec or None
+
+    def _js_call_edge(self, node, source_bytes):
+        """`require('x')` / `import('x')` (dynamic) → (specifier, edge_type).
+
+        Solo emite cuando el callee es exactamente `require` o `import` y
+        el primer argumento es un string literal. Cualquier otra call
+        (fetch, axios, etc.) la ignora — esas las cubren los passes regex.
+        """
+        callee = node.child_by_field_name("function")
+        if callee is None:
+            return None
+        callee_text = self._node_text(callee, source_bytes).strip()
+        if callee_text == "require":
+            edge_type = "require"
+        elif callee_text == "import":
+            edge_type = "import"
+        else:
+            return None
+        args = node.child_by_field_name("arguments")
+        if args is None:
+            return None
+        for child in args.named_children:
+            if child.type in ("string", "template_string"):
+                spec = self._strip_quotes(self._node_text(child, source_bytes))
+                return (spec, edge_type) if spec else None
+            # Primer arg no-string (variable, expresión) → no resoluble.
+            return None
+        return None

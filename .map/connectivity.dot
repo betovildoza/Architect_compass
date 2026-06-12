@@ -46,12 +46,15 @@ digraph G {
         "compass/scan_worker.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
         "compass/scanners/__init__.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
         "compass/scanners/base.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
+        "compass/scanners/css.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
         "compass/scanners/html.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
+        "compass/scanners/html_treesitter.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
         "compass/scanners/python.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
         "compass/scanners/regex_fallback.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
         "compass/scanners/treesitter.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
         "compass/stack_detector.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
         "compass/stdlib_filter.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
+        "compass/symbols_treesitter.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
         "compass/template_io.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
         "compass/templates/graph.html.tpl" [shape=box, fillcolor="#f5f5f5", color="#333333"];
         "compass/validation.py" [shape=box, fillcolor="#f5f5f5", color="#333333"];
@@ -61,6 +64,7 @@ digraph G {
     "[EXTERNAL:unpkg.com]" [label="unpkg.com", shape=cylinder, style=filled, fillcolor="#ffcccc", color="#cc0000", fontname="Arial"];
     "architect_compass.py" -> "compass/cli.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "architect_symbols.py" -> ".map/compass.local.json" [label="load", color="#888888", fontname="Arial", fontsize=9];
+    "architect_symbols.py" -> "compass/symbols_treesitter.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "architect_symbols.py" -> "mapper_config.json" [label="load", color="#888888", fontname="Arial", fontsize=9];
     "compass.py" -> "compass/cli.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/__init__.py" -> "compass/core.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
@@ -68,9 +72,11 @@ digraph G {
     "compass/__init__.py" -> "compass/scanners/__init__.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/__init__.py" -> "compass/stack_detector.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/cli.py" -> "architect_symbols.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/cli.py" -> "compass/__init__.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/cli.py" -> "compass/cli_ui.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/cli.py" -> "compass/core.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/cli.py" -> "compass/graph_emitter.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/cli.py" -> "compass/symbols_treesitter.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/cli.py" -> "compass/template_io.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/cli_ui.py" -> "[EXTERNAL:rich]" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/config_loader.py" -> "compass/template_io.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
@@ -105,12 +111,19 @@ digraph G {
     "compass/scan_worker.py" -> "compass/pipeline.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scan_worker.py" -> "compass/scanners/__init__.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scan_worker.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/scanners/__init__.py" -> "compass/defaults.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scanners/__init__.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/scanners/__init__.py" -> "compass/scanners/css.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scanners/__init__.py" -> "compass/scanners/html.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/scanners/__init__.py" -> "compass/scanners/html_treesitter.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scanners/__init__.py" -> "compass/scanners/python.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scanners/__init__.py" -> "compass/scanners/regex_fallback.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scanners/__init__.py" -> "compass/scanners/treesitter.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/scanners/css.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/scanners/css.py" -> "compass/scanners/treesitter.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scanners/html.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/scanners/html_treesitter.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/scanners/html_treesitter.py" -> "compass/scanners/treesitter.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scanners/python.py" -> "compass/defaults.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scanners/python.py" -> "compass/path_resolver.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scanners/python.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
@@ -119,6 +132,7 @@ digraph G {
     "compass/scanners/treesitter.py" -> "compass/path_resolver.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scanners/treesitter.py" -> "compass/scanners/base.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     "compass/scanners/treesitter.py" -> "compass/scanners/regex_fallback.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
+    "compass/symbols_treesitter.py" -> "compass/scanners/treesitter.py" [label="import", color="#1f7a1f", fontname="Arial", fontsize=9];
     subgraph "cluster_legend" {
         label="Leyenda"; style="rounded,filled";
         fillcolor="#ffffff"; color="#999999";

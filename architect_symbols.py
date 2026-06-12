@@ -13,14 +13,16 @@ Uso:
     python architect_symbols.py --help
 
 Lenguajes cubiertos:
-    Python → stdlib `ast`.
-    JavaScript/TypeScript → regex fallback (tree-sitter opcional).
-    PHP → regex fallback (tree-sitter opcional).
+    Python → stdlib `ast` (Tier 1).
+    JavaScript/TypeScript → tree-sitter AST (Tier 2, default si binding
+                            instalado) → regex fallback (Tier 3, caso contrario).
+    PHP → tree-sitter AST (Tier 2, default si binding instalado)
+       → regex fallback (Tier 3, caso contrario).
     HTML / CSS / JSON → skip (no tienen símbolos).
 
 Shape del output (`.map/symbols.json`):
     {
-      "version": "1.0",
+      "version": "1.1",   # TSD-047: + kind/range/signature (aditivo)
       "generated_at": "ISO-8601",
       "project_name": "basename del root (solo identificador, nunca path absoluto)",
       "stats": {"files_scanned": N, "functions": N, "classes": N, "warnings": N},
@@ -61,10 +63,12 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 
-# MEDIO — VERSION del shape de symbols.json. Si el formato cambia a 1.1,
-# actualizar también el docstring arriba. Default razonable: pocos bumps
-# esperados en el año; no justifica hoy un config externo.
-VERSION = "1.0"
+# MEDIO — VERSION del shape de symbols.json.
+# TSD-047 (D8) — 1.1: campos ADITIVOS `kind`/`range`/`signature` (emitidos
+# solo cuando hay dato). Aditivo: no rompe consumidores 1.0. `range` se
+# emite también en Python (end_lineno, paridad gratis). Los campos
+# enriquecidos solo aparecen con el binding tree-sitter instalado (js/ts/php).
+VERSION = "1.1"
 
 # FUENTE ÚNICA de extensiones manejadas por cada extractor. Los archivos
 # cuya extensión no aparece en este mapa son ignorados (aunque estén en
@@ -325,6 +329,8 @@ def extract_python(source: str, rel_path: str) -> Dict[str, Any]:
                 "args": _python_args(node),
                 "decorators": [_format_decorator(d) for d in node.decorator_list],
                 "line": node.lineno,
+                # TSD-047 (D8) — range exacto vía end_lineno (ast 3.8+).
+                "range": [node.lineno, getattr(node, "end_lineno", node.lineno)],
                 "async": isinstance(node, ast.AsyncFunctionDef),
             })
         elif isinstance(node, ast.ClassDef):
@@ -338,6 +344,7 @@ def extract_python(source: str, rel_path: str) -> Dict[str, Any]:
                         "args": m_args,
                         "decorators": [_format_decorator(d) for d in inner.decorator_list],
                         "line": inner.lineno,
+                        "range": [inner.lineno, getattr(inner, "end_lineno", inner.lineno)],
                         "async": isinstance(inner, ast.AsyncFunctionDef),
                     })
                     if inner.name == "__init__":
@@ -349,6 +356,7 @@ def extract_python(source: str, rel_path: str) -> Dict[str, Any]:
                 "methods": methods,
                 "init_args": init_args,
                 "line": node.lineno,
+                "range": [node.lineno, getattr(node, "end_lineno", node.lineno)],
             })
         elif isinstance(node, ast.Assign):
             # Constantes top-level con nombre UPPER_SNAKE o similar.
@@ -885,6 +893,37 @@ def extract_php(source: str, rel_path: str) -> Dict[str, Any]:
 # Dispatcher + main loop
 # ---------------------------------------------------------------------------
 
+def _language_for_symbols_ext(ext: str) -> Optional[str]:
+    """Mapea extensión → lenguaje para el extractor tree-sitter (TSD-047)."""
+    if ext in (".ts", ".tsx"):
+        return "typescript"
+    if ext in (".js", ".mjs", ".jsx"):
+        return "javascript"
+    if ext == ".php":
+        return "php"
+    return None
+
+
+def _try_treesitter_symbols(
+    source: str, rel_posix: str, ext: str,
+) -> Optional[Dict[str, Any]]:
+    """TSD-047 (D8) — intenta el extractor tree-sitter enriquecido.
+
+    Devuelve el dict de símbolos si el binding está disponible Y el parse
+    produjo resultado; None si el binding no está (→ caller cae a regex).
+    El import se guarda: sin tree-sitter, esto es siempre None y el
+    comportamiento es idéntico al actual.
+    """
+    language = _language_for_symbols_ext(ext)
+    if language is None:
+        return None
+    try:
+        from compass.symbols_treesitter import extract_symbols
+    except ImportError:
+        return None
+    return extract_symbols(source, rel_posix, language)
+
+
 def extract_file(abs_path: Path, rel_posix: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
     """Devuelve (symbols_dict, error_or_none) para un archivo dado.
 
@@ -901,8 +940,16 @@ def extract_file(abs_path: Path, rel_posix: str) -> Tuple[Optional[Dict[str, Any
         if ext in _PYTHON_EXTS:
             return extract_python(source, rel_posix), None
         if ext in _JS_EXTS:
+            # TSD-047 (D8) — extractor tree-sitter enriquecido si el binding
+            # está disponible (detección una vez por proceso). Si no, regex.
+            enriched = _try_treesitter_symbols(source, rel_posix, ext)
+            if enriched is not None:
+                return enriched, None
             return extract_js(source, rel_posix), None
         if ext in _PHP_EXTS:
+            enriched = _try_treesitter_symbols(source, rel_posix, ext)
+            if enriched is not None:
+                return enriched, None
             return extract_php(source, rel_posix), None
     except SyntaxError as e:
         return None, f"syntax-error L{e.lineno}: {e.msg}"

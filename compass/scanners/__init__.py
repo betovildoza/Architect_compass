@@ -24,6 +24,7 @@ from compass.scanners.base import (
 from compass.scanners.html import HtmlScanner
 from compass.scanners.python import PythonScanner
 from compass.scanners.regex_fallback import RegexFallbackScanner
+from compass.defaults import DEFAULT_LANGUAGE_GRAMMARS
 
 # El import de treesitter es barato (no carga grammars); las grammars se
 # cargan sólo al instanciar TreeSitterScanner. Pero aislamos por si el
@@ -37,6 +38,37 @@ except ImportError:
 
 _SCANNER_CACHE = {}
 _FEEDBACK_NO_SCANNER = set()
+
+# TSD-045 (D5) — registro positivo del tier que corrió por lenguaje.
+# Valores: "ast" | "tree-sitter" | "tree-sitter-pack" | "regex" |
+# "html-regex" | "none". Poblado en `_build_scanner` (una vez por lenguaje
+# por run, gracias al cache). `analyze()` lo escribe en
+# atlas["audit"]["scanner_tiers"].
+_SCANNER_TIERS = {}
+
+# TSD-045 (D6) — tier ACTIVO por lenguaje, consultado por el cache
+# incremental para invalidar entries cuyo tier cacheado ya no coincide.
+# Es el mismo dato que `_SCANNER_TIERS` pero expuesto vía helper estable.
+
+# Valores que en config.language_grammars significan "opt-out" (forzar
+# Tier 3 regex para ese lenguaje, aunque el binding esté instalado).
+_OPT_OUT_GRAMMARS = {"regex", "regex_only", "stdlib_ast", "none"}
+
+
+def _resolve_grammar(language, config):
+    """TSD-045 (D2) — merge `DEFAULT_LANGUAGE_GRAMMARS <- config` (config
+    gana). Devuelve el nombre de grammar a usar, o None si opt-out / sin
+    entrada.
+    """
+    grammar = DEFAULT_LANGUAGE_GRAMMARS.get(language)
+    config_grammars = (config.get("language_grammars") or {}) if config else {}
+    if language in config_grammars:
+        grammar = config_grammars[language]  # override explícito del proyecto
+    if grammar is None:
+        return None
+    if isinstance(grammar, str) and grammar.lower() in _OPT_OUT_GRAMMARS:
+        return None
+    return grammar
 
 
 def get_scanner(language, config):
@@ -55,20 +87,56 @@ def get_scanner(language, config):
     return scanner
 
 
+def _record_tier(language, tier):
+    """D5 — registra el tier resuelto para `language` (último gana; el
+    cache garantiza una resolución por lenguaje por run)."""
+    if language:
+        _SCANNER_TIERS[language] = tier
+
+
 def _build_scanner(language, config):
     if language == "python":
+        _record_tier(language, "ast")
         return PythonScanner(config=config)
+
     if language in ("html", "htm"):
+        # TSD-046 (D7) — intentar Tier 2 tree-sitter (vía language-pack)
+        # primero; si no está disponible, fallback al HtmlScanner probado
+        # (no-regresión). El default HTML pasa a tree-sitter solo cuando el
+        # binding está instalado; el gate de paridad es TSD-048.
+        if _TS_AVAILABLE and _resolve_grammar("html", config):
+            try:
+                from compass.scanners.html_treesitter import (
+                    TreeSitterHtmlScanner,
+                )
+                scanner = TreeSitterHtmlScanner(config=config)
+                _record_tier(
+                    language, getattr(scanner, "tier_name", "tree-sitter-pack"),
+                )
+                return scanner
+            except Exception:
+                pass  # grammar html no disponible → HtmlScanner.
+        _record_tier(language, "html-regex")
         return HtmlScanner(config=config)
 
-    grammars = (config.get("language_grammars") or {}) if config else {}
-    grammar_name = grammars.get(language)
+    if language == "css":
+        # TSD-046 (D7) — CssScanner dual-tier. Reemplaza el NullScanner que
+        # generaba el warning "Sin scanner disponible: css".
+        if _resolve_grammar("css", config):
+            from compass.scanners.css import CssScanner
+            scanner = CssScanner(config=config)
+            _record_tier(language, getattr(scanner, "tier_name", "regex"))
+            return scanner
 
-    if grammar_name and grammar_name != "stdlib_ast" and _TS_AVAILABLE:
+    grammar_name = _resolve_grammar(language, config)
+
+    if grammar_name and _TS_AVAILABLE:
         try:
-            return TreeSitterScanner(grammar_name, language, config=config)
+            scanner = TreeSitterScanner(grammar_name, language, config=config)
+            _record_tier(language, getattr(scanner, "tier_name", "tree-sitter"))
+            return scanner
         except ImportError:
-            # La grammar no está instalada — caemos a Tier 3.
+            # La grammar no está instalada / no disponible — caemos a Tier 3.
             pass
 
     # Tier 3: recoger patterns de las definitions aplicables.
@@ -95,6 +163,7 @@ def _build_scanner(language, config):
                 for name, spec in lang_loaders.items()
             }
     if patterns.get("outbound") or http_regex or loader_regex:
+        _record_tier(language, "regex")
         return RegexFallbackScanner(
             patterns,
             http_regex=http_regex,
@@ -104,6 +173,7 @@ def _build_scanner(language, config):
         )
 
     # Nada aplicable.
+    _record_tier(language, "none")
     if language not in _FEEDBACK_NO_SCANNER:
         _FEEDBACK_NO_SCANNER.add(language)
     return NullScanner()
@@ -172,10 +242,36 @@ def languages_without_scanner():
     return set(_FEEDBACK_NO_SCANNER)
 
 
+def active_scanner_tiers():
+    """TSD-045 (D5) — devuelve `{language: tier}` con el tier que corrió en
+    este run. Vacío al inicio de cada `analyze()` (lo limpia
+    `reset_cache()`). `analyze()` lo escribe en
+    atlas["audit"]["scanner_tiers"].
+    """
+    return dict(_SCANNER_TIERS)
+
+
+def scanner_tier_for(language):
+    """TSD-045 (D6) — tier activo para `language` (o None si aún no se
+    resolvió en este run). Consultado por el cache incremental para
+    invalidar entries con tier obsoleto.
+    """
+    return _SCANNER_TIERS.get((language or "").lower())
+
+
 def reset_cache():
-    """Limpia el cache — usado principalmente por tests/smoke."""
+    """Limpia el cache — usado al inicio de cada analyze() y por tests."""
     _SCANNER_CACHE.clear()
     _FEEDBACK_NO_SCANNER.clear()
+    _SCANNER_TIERS.clear()
+    # D1 — re-evaluar disponibilidad del language-pack en el próximo build
+    # (relevante para tests que instalan/desinstalan el binding en proceso).
+    if _TS_AVAILABLE:
+        try:
+            from compass.scanners.treesitter import reset_pack_cache
+            reset_pack_cache()
+        except ImportError:
+            pass
 
 
 __all__ = [
@@ -186,6 +282,8 @@ __all__ = [
     "RegexFallbackScanner",
     "get_scanner",
     "languages_without_scanner",
+    "active_scanner_tiers",
+    "scanner_tier_for",
     "reset_cache",
     "_definition_applies_to_language",
 ]

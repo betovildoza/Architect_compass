@@ -1,11 +1,14 @@
-# mapper_config.json
-compass.bat
+#mapper_config.json
+#compass.bat
 .claude/
 README2.md
 .quarantine/
+.mcp.json
 
 *.pyc
-plan.md
-session_log.md
+.venv/
+__pycache__/
+#plan.md
+#session_log.md
 history/
 session_log copy.md

@@ -28,6 +28,26 @@ DEFAULT_PYTHON_LOADERS = {
 
 # Futuros: DEFAULT_PHP_LOADERS, DEFAULT_JS_LOADERS, etc.
 
+# TSD-045 (D2) — mapping universal lenguaje → grammar tree-sitter.
+# Política `feedback_universal_defaults_vs_optin`: los universales del
+# lenguaje viven en código (defaults.py), no en mapper_config.json. El
+# config queda para OVERRIDES opt-in por proyecto:
+#   - valor string  → nombre de módulo de grammar individual (loader 2º).
+#   - "@pack"        → usar exclusivamente tree-sitter-language-pack.
+#   - "regex" | null → opt-out: desactivar tree-sitter para ese lenguaje.
+#
+# El dispatcher hace merge `defaults <- config.language_grammars` (config
+# gana). Toda entrada acá intenta primero el language-pack y luego el módulo
+# individual nombrado (ver `compass/scanners/__init__.py::_build_scanner`).
+DEFAULT_LANGUAGE_GRAMMARS = {
+    "php": "tree_sitter_php",
+    "javascript": "tree_sitter_javascript",
+    "typescript": "tree_sitter_typescript",
+    "tsx": "tree_sitter_typescript",  # R4 — grammar tsx vía pack get_parser("tsx")
+    "html": "@pack",   # TSD-046 — solo vía language-pack
+    "css": "@pack",    # TSD-046
+}
+
 # ORP-1 — Patrones universales para clasificar archivos como orphans.
 # Estos son archivos que son inherentemente descartables (backups, temporales, etc.)
 # sin ambigüedad, según convenciones universales en prácticamente todos los lenguajes.

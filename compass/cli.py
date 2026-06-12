@@ -49,6 +49,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from compass import __version__
 from compass.cli_ui import (
     count_scannable_files,
     make_console,
@@ -199,6 +200,24 @@ def cmd_symbols(args: argparse.Namespace) -> int:
         return _fatal(console, "Error en build_symbols", e, args.verbose)
     elapsed = time.time() - t0
     result["elapsed_seconds"] = round(elapsed, 3)
+
+    # TSD-047 (D8) — indicar el tier de símbolos para js/ts/php (enriquecido
+    # vía tree-sitter, o regex). Python siempre usa ast.
+    try:
+        from compass.symbols_treesitter import available_for as _sym_ts_available
+        ts_langs = [
+            lang for lang in ("javascript", "typescript", "php")
+            if _sym_ts_available(lang)
+        ]
+    except ImportError:
+        ts_langs = []
+    symbols_tier = "tree-sitter (enriquecido)" if ts_langs else "regex"
+    result["symbols_tier"] = symbols_tier
+    if not args.quiet and not args.stdout:
+        console.print(
+            f"[dim]símbolos js/ts/php: tier [bold]{symbols_tier}[/bold] "
+            f"· python: ast[/dim]"
+        )
 
     if args.stdout:
         json.dump(result, sys.stdout, ensure_ascii=False, indent=2)
@@ -468,6 +487,10 @@ def _make_parser() -> argparse.ArgumentParser:
         ),
         epilog="Ejemplo: `compass scan ./mi-proyecto --full --no-history`",
     )
+    parser.add_argument(
+        "--version", action="version", version=f"compass {__version__}",
+        help="Muestra la versión y sale.",
+    )
     sub = parser.add_subparsers(
         dest="command", metavar="COMMAND", parser_class=_HelpfulParser,
     )
@@ -570,7 +593,9 @@ def _normalize_default_argv(argv: List[str]) -> List[str]:
     valid_commands = {"scan", "symbols", "init", "graph"}
     for token in argv:
         if token.startswith("-"):
-            if token in ("-h", "--help"):
+            # Flags que el parser principal maneja por sí mismo (no llevan
+            # subcomando): dejarlos pasar tal cual a argparse.
+            if token in ("-h", "--help", "--version"):
                 return argv
             continue
         if token in valid_commands:

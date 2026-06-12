@@ -11,12 +11,14 @@
       "vendor",
       "dist",
       ".serena",
-      "brandbook-legacy"
+      "brandbook-legacy",
+      "tests"
     ],
     "ignore_files": [
       "scripts/Search-Replace-DB/index.php",
       "docs/third-party/legacy-admin.php",
-      "assets/sede-fake.jpg"
+      "assets/sede-fake.jpg",
+      ".mcp.json"
     ],
     "ignore_patterns": [
       "*.min.js",

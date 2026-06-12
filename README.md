@@ -94,7 +94,7 @@ Al ejecutar `compass scan` en la raíz de tu proyecto, se crea la carpeta `.map/
 
 **`graph.html`** — Visualización interactiva (vis-network): zoom, pan, drag nativos. Compatible con todos los navegadores.
 
-**`symbols.json`** — Funciones, clases, firmas y constantes por archivo (output del subcomando `compass symbols`). Contexto para análisis LLM.
+**`symbols.json`** — Funciones, clases, firmas y constantes por archivo (output del subcomando `compass symbols`). Contexto para análisis LLM. Schema **v1.1**: incluye los campos opcionales `kind`, `range` y `signature` por símbolo (poblados cuando el binding tree-sitter está instalado).
 
 **`feedback.log`** — Historial de ejecuciones con score y estadísticas por fecha.
 
@@ -207,6 +207,37 @@ El archivo `mapper_config.json` basal incluye definiciones listas para usar para
 
 **Dependencias**
 - Librería estándar únicamente (`os`, `json`, `re`, `pathlib`, `datetime`)
+
+### Modo enriquecido (tree-sitter — default cuando hay binding)
+
+El análisis de conectividad y símbolos para **PHP / JavaScript / TypeScript /
+HTML** usa un parser AST real (tree-sitter) como **tier por defecto: es el
+primer tier intentado** cuando el binding está instalado, no una opción
+secundaria. Si el binding **no** está instalado, Compass cae automáticamente al
+scanner regex (Tier 3) sin cambios de comportamiento. La promesa zero-install
+se mantiene intacta: **sin instalar nada, Compass funciona exactamente igual que
+siempre** (mismo resultado byte a byte vía regex).
+
+Para activarlo:
+
+```bash
+pip install "tree-sitter>=0.25.2,<0.26" "tree-sitter-language-pack>=1.4,<2.0"
+```
+
+- **Requiere Python ≥ 3.10** (impuesto por `tree-sitter` 0.25.x). El core de
+  Compass sigue corriendo en Python 3.8+; en 3.8/3.9 el binding no instala y
+  Compass usa el camino regex sin cambios.
+- El pin `<2.0` en `tree-sitter-language-pack` evita el rewrite políglota en
+  curso (org kreuzberg-dev) que cambia la API. Si una 2.x rompe la interfaz,
+  Compass degrada a regex en vez de fallar.
+- Ganancia: imports multilínea, `export … from`, `import()` dinámico, `require()`
+  y bloques malformados que el regex pierde; símbolos con `kind`/`range`/`signature`.
+- Qué tier corrió queda registrado en `atlas.json` → `audit.scanner_tiers`.
+
+Los grammars por defecto viven en código (`compass/defaults.py::DEFAULT_LANGUAGE_GRAMMARS`).
+Para desactivar tree-sitter en un lenguaje puntual de un proyecto, poné
+`"language_grammars": {"php": "regex"}` en `compass.local.json` (valor `"regex"`
+o `null` = opt-out).
 
 **Outputs**
 - JSON (atlas)

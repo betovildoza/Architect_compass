@@ -16,7 +16,10 @@ import re
 from pathlib import Path
 
 from compass.scanners import (
+    get_scanner,
     languages_without_scanner,
+    active_scanner_tiers,
+    scanner_tier_for,
     reset_cache as reset_scanner_cache,
 )
 from compass.stack_detector import resolve_file_stack
@@ -286,11 +289,21 @@ class AnalyzePipelineMixin:
                 # INC-008: fingerprint + cache lookup
                 fingerprint = self._file_fingerprint(file_path)
                 cached = self.previous_cache.get(rel_path)
+                # TSD-045 (D6): resolver el tier activo del lenguaje ANTES de
+                # decidir el replay. get_scanner() es idempotente y cacheado
+                # por (language, id(config)) — la primera llamada del run por
+                # lenguaje registra el tier; las siguientes son no-op baratas.
+                # Si instalar/desinstalar tree-sitter cambió el tier sin
+                # tocar el archivo, el fingerprint coincide pero el tier no →
+                # forzamos re-scan en vez de servir resultados del tier viejo.
+                get_scanner(language, self.config)
+                active_tier = scanner_tier_for(language)
                 use_cached = (
                     not self.force_full
                     and fingerprint is not None
                     and isinstance(cached, dict)
                     and cached.get("fingerprint") == fingerprint
+                    and cached.get("scanner_tier") == active_tier
                 )
 
                 try:
@@ -336,6 +349,10 @@ class AnalyzePipelineMixin:
                             # metadata + filter counts consistentes entre runs.
                             self.current_cache[rel_path] = {
                                 "fingerprint": fingerprint,
+                                # TSD-045 (D6): tier que produjo este resultado.
+                                # El próximo run incremental compara contra el
+                                # tier activo; mismatch → re-scan.
+                                "scanner_tier": active_tier,
                                 "outbound_targets": file_outbound,
                                 "inbound_patterns": file_inbound,
                                 "tech_scores": file_tech_delta,
@@ -378,6 +395,13 @@ class AnalyzePipelineMixin:
             self.atlas["audit"]["warnings"].append(
                 "Sin scanner disponible: " + ", ".join(sorted(missing))
             )
+
+        # TSD-045 (D5) — registro positivo del tier que corrió por lenguaje.
+        # Imprescindible para TSD-048 (saber qué tier produjo el atlas) y para
+        # que el usuario entienda por qué dos máquinas dan atlas distintos.
+        tiers = active_scanner_tiers()
+        if tiers:
+            self.atlas["audit"]["scanner_tiers"] = dict(sorted(tiers.items()))
 
         # Identidades regex-based (scanner Tier 3) + stack detection (STK-001).
         # Se listan ambas fuentes: tech_scores vienen de patterns matcheados,

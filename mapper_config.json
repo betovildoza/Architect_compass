@@ -18,7 +18,8 @@
       "gen",
       "bin",
       "obj",
-      "vendor"
+      "vendor",
+      "tests"
     ],
     "text_extensions": [
       ".py",
@@ -111,13 +112,6 @@
     "Web-Static": {
       "extensions": [".html", ".htm", ".css"]
     }
-  },
-  "language_grammars": {
-    "php": "tree_sitter_php",
-    "javascript": "tree_sitter_javascript",
-    "typescript": "tree_sitter_typescript",
-    "python": "stdlib_ast",
-    "html": "regex_only"
   },
   "scoring": {
     "network_triggers": [
