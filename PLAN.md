@@ -1605,6 +1605,40 @@ Material del research que NO se convierte en ticket pero queda anotado para deci
 - **Exports GraphML / Neo4j / Mermaid — DESCARTADOS:** GraphML (visores Gephi/yEd) sería barato pero feature muerta si no se usan esos programas; ya hay `.dot` + `graph.html`. Neo4j (base de datos de grafos) es overkill brutal para un atlas que cabe en JSON. Mermaid es ilegible para grafos densos de dependencias (espagueti) — el `graph.html` interactivo es superior. No construir salvo demanda real.
 - **Multimodal / Pass-3 LLM / community detection / Obsidian export / token compression:** fuera de scope deliberado de Compass (territorio Graphify). El research concluye "híbrido con roles diferenciados", no "Compass copia a Graphify". No construir.
 
+## JSON-058 — Edges de data/config referenciada por path literal 🔲pendiente 🔴 ALTA
+
+- **Origen:** cruce de "límites conocidos vs reportes reales" (2026-06-12). Surge de la memoria `feedback_scanner_limits_preexistentes` punto #1 — gap detectado en S9, nunca ticketizado, confirmado como dolor real al revisar qué afecta a Beto según evidencia (no teoría).
+- **Síntoma:** archivos de data/config cargados desde código por path literal quedan **sueltos** en el grafo. Testigo canónico: `mapper_config.json` aparece huérfano en el **self-scan del propio Compass**, aunque `core.py` lo lee con `open()`. También aplica a JSON de config/datos en cualquier proyecto.
+- **Patrones a detectar (path LITERAL, no construido en runtime):**
+  - Python: `open("x.json")`, `json.load(open("x.json"))`, `Path("x.json").read_text()`, `with open("config.json") as f`.
+  - JS/TS: `require('./config.json')`, `fs.readFile('x.json')`, `import data from './x.json'`.
+- **Enfoque:** extender `loader_calls` de SEM-020 (que ya resuelve `wp_enqueue_style`, `include ABSPATH.'x'`, etc.) para cubrir los loaders de filesystem genéricos con argumento string literal. Reusa la maquinaria semántica existente, no inventa scanner nuevo.
+- **Límite respetado:** solo path **literal**. Nombre construido en runtime (`open(f"data_{x}.json")`) sigue siendo el límite intrínseco documentado → `dynamic_deps`. Considerar constant folding de concatenaciones literales como extensión futura (achica el límite C).
+- **Prioridad ALTA:** junto con CSS-049/WEB-039, es uno de los dos gaps de cobertura que la evidencia (reportes + memorias) marca como lo que MÁS afecta a Beto — a diferencia de los 5 "límites conocidos" del README, que resultaron mayormente teóricos para su stack.
+- **Estimación:** ~40-80 líneas (patterns nuevos en loader_calls + resolución del literal). Validar contra el self-scan (mapper_config.json debe pasar a connected) + level2/ETCA.
+
+## IGN-059 — Ignorar config de tooling externo desde base ✅completada (S24)
+
+- **Origen:** inspección visual de Beto (2026-06-12) del graph.html de Agente_facundo — `.mcp.json` aparece como nodo del grafo. Beto: "un .mcp.json no debería ser parte del mapa, debería ignorarse desde base, no proyecto".
+- **Diagnóstico:** `.mcp.json` lo lee el **cliente MCP externo** (Claude Code), NO el código del proyecto ni el build. No hay edge que trazar. NO es el caso de JSON-058 (ese es para JSON leído POR el código, ej. `core.py` abre `mapper_config.json`).
+- **✅ Resuelto (S24, 2026-06-12):** agregado `.mcp.json` a `mapper_config.json::basal_rules.ignore_patterns`, **no a defaults.py**. Razón: la categoría "config de tooling externo" YA vivía ahí (`.gitignore`, `.gitattributes`, `.editorconfig`, `.prettierrc`, `.eslintrc`); meter solo `.mcp.json` en defaults.py habría partido la categoría en dos lugares. `mapper_config.json` es la base del repo (vs `compass.local.json` por-proyecto), así que cumple "desde base". El merge local-extiende-basal hizo que aplicara a Agente_facundo sin tocar su config. Verificado: `.mcp.json` pasó a `delta.removed` (ya no es nodo).
+- **Criterio para futuros (documentado):** ignorar solo config leída por **tooling externo** que nunca es parte del grafo. NO ignorar los que el build/código SÍ usa (`tsconfig.json`, `package.json`).
+
+## AUDIT-060 — Modo auditoría: cola de candidatos en texto 🔲pendiente
+
+- **Origen:** auditoría visual de Beto (2026-06-12) sobre los graph.html de level2 y Agente_facundo. Detectó a ojo varios nodos sueltos (`log_proyecto.py` deuda real, `split_dashboard.py`/`gestor.py` scripts one-off legítimos, `.mcp.json` tooling, `mcp_servers_default.json` candidato JSON-058). El proceso reveló dos límites de la auditoría visual.
+- **Los dos límites que resuelve:**
+  1. **No escala:** en un repo de 300+ archivos, el ojo no puede contabilizar ni clasificar los huérfanos visualmente.
+  2. **Paths no copiables:** el `graph.html` no permite seleccionar/copiar el texto del path de un nodo (Beto tuvo que transcribir `mcp_servers_default` a mano y lo escribió mal como `mcp_server_default`).
+- **Filosofía (de Beto):** el valor de detectar un huérfano NO es limpiarlo/borrarlo — es **ponerlo en foco de auditoría** para que no quede colgado e invisible solo porque ningún reporte lo menciona. Un huérfano detectado es una **pregunta pendiente** (¿deuda? ¿gap? ¿legítimo?), no basura.
+- **Tarea:** subcomando/reporte (ej. `compass audit`) que liste los nodos no-conectados (ambiguous + orphans) como **cola accionable en texto**, una fila por nodo con:
+  - path (copiable), tier (ambiguous/orphan), inbound count, outbound count.
+  - clasificación heurística: `script-standalone` (solo stdlib, 0 inbound, docstring "run manually") / `config-externa` / `posible-deuda` (logger/util sin uso) / `gap-conocido` (cae en patrón de CSS-049/INIT-054/JSON-058).
+  - sugerencia de acción (revisar / archivar / candidato a ticket de cobertura).
+- **Salida:** consola rich (humano) + `.md`/`.json` (el JSON es consumible por agentes — converge con QRY-055 y el caso agente-facing). NO borra nada; solo lista y clasifica.
+- **Distinción crítica a codificar:** separar huérfano REAL (deuda del proyecto) de huérfano APARENTE (gap de cobertura de Compass). No marcar para "limpiar" lo que es un falso positivo (ej. `index.html` vivo que Compass no conecta por CSS-049). Cuanto más se cierren los gaps de cobertura (Fase B), más confiable es la cola de auditoría.
+- **Estimación:** ~100-150 líneas (recolección desde el atlas existente + heurísticas de clasificación + 2 formatters). Reusa orphans/ambiguous ya computados.
+
 ## Actualizaciones a tickets preexistentes (2026-06-12)
 
 - **WEB-039:** segundo testigo detectado — level2agent-engine carga `<link href="/static/css/dashboard.css">` servido por el framework; la resolución del prefix `/static/` → filesystem es exactamente este ticket (evidencia en `feedback_css_dependency_tracking.txt`). Se suma a Agente_facundo (dashboard JS).

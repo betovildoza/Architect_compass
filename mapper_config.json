@@ -49,7 +49,8 @@
       ".prettierrc",
       ".prettierrc.*",
       ".eslintrc",
-      ".eslintrc.*"
+      ".eslintrc.*",
+      ".mcp.json"
     ],
     "asset_extensions": [
       ".jpg", ".jpeg", ".png", ".webp", ".svg", ".ico", ".gif", ".bmp",
