@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-14 17:47:47",
+  "generated_at": "2026-06-15 06:31:04",
   "config_fingerprint": "4d37025e95648e9a7adf9c51dc7f172b607d648dbfd4cecf612bafe62786b9da",
   "files": {
     "architect_compass.py": {
@@ -65,7 +65,7 @@
     },
     "cli_roadmap.html": {
       "fingerprint": "3abdcb393ef52294985ea1a46df98ff71a15da7361b664e443a6ab474a855a98",
-      "scanner_tier": "tree-sitter-pack",
+      "scanner_tier": "html-regex",
       "outbound_targets": [],
       "inbound_patterns": [],
       "tech_scores": {},
@@ -191,6 +191,19 @@
       "metadata_assets": [],
       "metadata_filtered_refs": []
     },
+    "compass/comment_filter.py": {
+      "fingerprint": "452a9822021770e3d75ad925be10c5128e1f96896b16f4f868158d125a5a3908",
+      "scanner_tier": "ast",
+      "outbound_targets": [],
+      "inbound_patterns": [],
+      "tech_scores": {},
+      "is_relevant": false,
+      "stack": "AI-Agent-Framework",
+      "metadata_calls": [],
+      "edge_types": {},
+      "metadata_assets": [],
+      "metadata_filtered_refs": []
+    },
     "compass/config_loader.py": {
       "fingerprint": "0b094eb84286110b0ae527ba0226897a1312a7c87017e2873631f689df70f162",
       "scanner_tier": "ast",
@@ -297,7 +310,7 @@
       "metadata_filtered_refs": []
     },
     "compass/defaults.py": {
-      "fingerprint": "42d1a74b8bd1cd0b154a967489848e67045e6301cce8756de95229a6c14dab76",
+      "fingerprint": "47060dfcd15a3809370b84dbdd943d4c06f18afc021068ece3d414268affcabe",
       "scanner_tier": "ast",
       "outbound_targets": [],
       "inbound_patterns": [],
@@ -453,7 +466,7 @@
       "metadata_filtered_refs": []
     },
     "compass/outbound_resolver.py": {
-      "fingerprint": "28d2f3ee7dc1afa222eb7560b9280414bf66b5b20cbb2c0b979791a8611a9169",
+      "fingerprint": "5684ee6773ff8e1aebafd71a7e2e1f3886874825b0f7ad2d4d39ce95fbb743e1",
       "scanner_tier": "ast",
       "outbound_targets": [
         "compass/stdlib_filter.py"
@@ -535,22 +548,27 @@
       "metadata_filtered_refs": []
     },
     "compass/scan_worker.py": {
-      "fingerprint": "2892a82534a8847a50e032557c335db931775d4961a05fdce34746147b6d6791",
+      "fingerprint": "5aed6093a830d8dc6d8a776b57cf35aa655f8d739e340bd0925b71c11c50a2cb",
       "scanner_tier": "ast",
       "outbound_targets": [
         "compass/scanners/__init__.py",
         "compass/scanners/__init__.py",
+        "compass/scanners/__init__.py",
         "compass/scanners/base.py",
+        "compass/defaults.py",
         "compass/pipeline.py"
       ],
       "inbound_patterns": [],
       "tech_scores": {},
       "is_relevant": true,
       "stack": "AI-Agent-Framework",
-      "metadata_calls": [],
+      "metadata_calls": [
+        "os"
+      ],
       "edge_types": {
         "compass/scanners/__init__.py": "import",
         "compass/scanners/base.py": "import",
+        "compass/defaults.py": "import",
         "compass/pipeline.py": "import"
       },
       "metadata_assets": [],
@@ -703,10 +721,11 @@
       "metadata_filtered_refs": []
     },
     "compass/scanners/css.py": {
-      "fingerprint": "b81dcb20fac128c27dcc89cb1d309d9a8a739b61496eae7b87d31daf912d13e6",
+      "fingerprint": "0c705d671e835e3460ad9b2791577c10f379ce0a57eeba3d1fb41f1eea395491",
       "scanner_tier": "ast",
       "outbound_targets": [
         "compass/scanners/base.py",
+        "compass/comment_filter.py",
         "compass/scanners/treesitter.py"
       ],
       "inbound_patterns": [],
@@ -718,17 +737,19 @@
       ],
       "edge_types": {
         "compass/scanners/base.py": "import",
+        "compass/comment_filter.py": "import",
         "compass/scanners/treesitter.py": "import"
       },
       "metadata_assets": [],
       "metadata_filtered_refs": []
     },
     "compass/scanners/html.py": {
-      "fingerprint": "aa429567fd32b8c0a24030a3a2a6d9badef52b1d29645342a9718aadc8c16c9f",
+      "fingerprint": "72575b76d88c6754e90d9531bb8e35e158000f085e06bc255e58b707ffa7d1da",
       "scanner_tier": "ast",
       "outbound_targets": [
         "compass/scanners/base.py",
-        "compass/scanners/base.py"
+        "compass/scanners/base.py",
+        "compass/comment_filter.py"
       ],
       "inbound_patterns": [],
       "tech_scores": {},
@@ -738,17 +759,19 @@
         "re"
       ],
       "edge_types": {
-        "compass/scanners/base.py": "import"
+        "compass/scanners/base.py": "import",
+        "compass/comment_filter.py": "import"
       },
       "metadata_assets": [],
       "metadata_filtered_refs": []
     },
     "compass/scanners/html_treesitter.py": {
-      "fingerprint": "0412cdf0292fdd723ab2cd163d1cb0eb8951faa3667652bedeeeea8969936a80",
+      "fingerprint": "1af74f983db9f9d635b3fdd00348d7e1a6aeac711b49e7849f04d3ca9ba6e3da",
       "scanner_tier": "ast",
       "outbound_targets": [
         "compass/scanners/base.py",
         "compass/scanners/base.py",
+        "compass/comment_filter.py",
         "compass/scanners/treesitter.py"
       ],
       "inbound_patterns": [],
@@ -760,6 +783,7 @@
       ],
       "edge_types": {
         "compass/scanners/base.py": "import",
+        "compass/comment_filter.py": "import",
         "compass/scanners/treesitter.py": "import"
       },
       "metadata_assets": [],
@@ -789,12 +813,13 @@
       "metadata_filtered_refs": []
     },
     "compass/scanners/regex_fallback.py": {
-      "fingerprint": "1c21b96c4bbeca2d9b68cef5164d8e09785f04817b16c466f1c855ca5ceebfb5",
+      "fingerprint": "a3567e9f539e9df59094ca4f1c7078f972d9ccf3a5e1015249ffe3b8bf8ccc88",
       "scanner_tier": "ast",
       "outbound_targets": [
         "compass/scanners/base.py",
         "compass/scanners/base.py",
-        "compass/path_resolver.py"
+        "compass/path_resolver.py",
+        "compass/comment_filter.py"
       ],
       "inbound_patterns": [],
       "tech_scores": {},
@@ -806,13 +831,14 @@
       ],
       "edge_types": {
         "compass/scanners/base.py": "import",
-        "compass/path_resolver.py": "import"
+        "compass/path_resolver.py": "import",
+        "compass/comment_filter.py": "import"
       },
       "metadata_assets": [],
       "metadata_filtered_refs": []
     },
     "compass/scanners/treesitter.py": {
-      "fingerprint": "e2f4698ba4da75cb89f9f354eff838e4614eb75ae34d783503221caf9c41655c",
+      "fingerprint": "089df2a87b3d32bd08245eeb3bdaabf60d7cee514162ce33c3ab42d41ac9f407",
       "scanner_tier": "ast",
       "outbound_targets": [
         "compass/scanners/base.py",
@@ -821,7 +847,8 @@
         "compass/scanners/base.py",
         "compass/path_resolver.py",
         "compass/scanners/regex_fallback.py",
-        "compass/scanners/regex_fallback.py"
+        "compass/scanners/regex_fallback.py",
+        "compass/comment_filter.py"
       ],
       "inbound_patterns": [],
       "tech_scores": {},
@@ -834,13 +861,14 @@
       "edge_types": {
         "compass/scanners/base.py": "import",
         "compass/path_resolver.py": "import",
-        "compass/scanners/regex_fallback.py": "import"
+        "compass/scanners/regex_fallback.py": "import",
+        "compass/comment_filter.py": "import"
       },
       "metadata_assets": [],
       "metadata_filtered_refs": []
     },
     "compass/scanners/__init__.py": {
-      "fingerprint": "68dc710ac207d4932e1609e9521ea50bdfbaa3b9a971c56ed94d0cb1f94d0a86",
+      "fingerprint": "3d4706ad83f84d1f2bb43b3f667e7c3160d5938dddece5ef33b35be8449855a2",
       "scanner_tier": "ast",
       "outbound_targets": [
         "compass/scanners/base.py",
@@ -854,8 +882,8 @@
         "compass/defaults.py",
         "compass/scanners/treesitter.py",
         "compass/scanners/css.py",
-        "compass/scanners/treesitter.py",
-        "compass/scanners/html_treesitter.py"
+        "compass/scanners/html_treesitter.py",
+        "compass/scanners/treesitter.py"
       ],
       "inbound_patterns": [],
       "tech_scores": {},

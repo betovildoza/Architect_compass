@@ -35,7 +35,7 @@ A veces, lo más útil es también lo más invisible.
 | 📡 Mapa de Conectividad | Grafo `.dot` con flujos inbound/outbound entre componentes |
 | 📈 Score de Salud | Métrica de 0–100% basada en la limpieza estructural del proyecto |
 | 📓 Log Histórico | Registra la evolución del score en cada ejecución |
-| 🧩 Stack-Agnóstico | Motor basado en Regex — funciona con cualquier lenguaje o framework |
+| 🧩 Stack-Agnóstico | Motor con parser AST tree-sitter (default) + regex fallback — funciona con cualquier lenguaje o framework |
 | 🪟 Modo Invisible | No genera archivos en tu árbol de trabajo; todo va a `.map/` |
 
 ---
@@ -43,7 +43,7 @@ A veces, lo más útil es también lo más invisible.
 ## 🔬 Capacidades Core
 
 **🔍 Unificación por Identidad**  
-El motor indexa todos los archivos del proyecto antes de analizar imports. Si encuentra `from services.monitor import X`, sabe que se refiere al archivo físico `services/monitor.py` — y usa esa ruta como nodo en el grafo. Sin duplicados, sin nodos fantasma. Incluye resolución semántica: re-exports en `__init__.py`, interpolación PHP (`"$dir/file.css"`), WordPress hooks (`wp_enqueue_*`, `get_template_directory_uri()`) y loaders Python (`open()`, `json.load()`, `Path.read_text()`).
+El motor indexa todos los archivos del proyecto antes de analizar imports. Si encuentra `from services.monitor import X`, sabe que se refiere al archivo físico `services/monitor.py` — y usa esa ruta como nodo en el grafo. Sin duplicados, sin nodos fantasma. Incluye resolución semántica: re-exports en `__init__.py`, interpolación PHP (`"$dir/file.css"`), WordPress hooks (`wp_enqueue_*`, `get_template_directory_uri()`), loaders Python (`open()`, `json.load()`, `Path.read_text()`) y **markup embebido en templates server-side** — `<link>`/`<script>`/`<img>` dentro de archivos `.php` (MARKUP-061), con filtrado de comentarios (`<!-- -->`, `/* */`, `//`, `#`) para no generar edges desde código comentado.
 
 **🛡️ Clasificación Inteligente de Archivos**  
 Cada archivo se clasifica en uno de 4 tiers:
@@ -178,23 +178,23 @@ La potencia de la herramienta está en `mapper_config.json`. Tiene dos secciones
 - `network_triggers`: patrones que indican llamadas de red
 - `persistence_triggers`: patrones que indican acceso a datos persistentes
 
-**`definitions`** — Definiciones de stack por tecnología. Cada entrada permite que Compass identifique el tech y mapee su conectividad:
+**`definitions`** — Patterns de conectividad **por lenguaje** (DEF-025: language-based, no stack-based). Cada entrada declara su `language` y filtra patterns por el lenguaje del archivo, evitando falsos positivos cross-lenguaje. La detección del stack vive aparte en `stack_markers`:
 
 ```json
 {
-  "name": "Mi-Stack-Custom",
-  "priority": 10,
-  "indicators": {
-    "files": ["config.custom"],
-    "folders": ["src/logic"],
-    "patterns_in_files": ["mi_init_function\\("]
-  },
+  "name": "PHP-Patterns",
+  "language": "php",
+  "tier": "regex_fallback",
   "patterns": {
-    "inbound": ["on_request\\(", "register_handler\\("],
-    "outbound": ["call_external_api\\(", "write_to_db\\("]
+    "outbound": [
+      { "regex": "require(?:_once)?\\s+__DIR__\\s*\\.\\s*'([^']+)'", "edge_type": "require" },
+      { "regex": "wp_enqueue_script\\s*\\(\\s*['\"][^'\"]+['\"]\\s*,\\s*['\"]([^'\"]+)['\"]", "edge_type": "enqueue" }
+    ]
   }
 }
 ```
+
+> Las patterns `definitions` alimentan el **scanner regex (Tier 3, fallback)**. Cuando el binding tree-sitter está instalado, el análisis estructural lo hace el AST (Tier 2) y estas patterns solo aplican como respaldo.
 
 El archivo `mapper_config.json` basal incluye definiciones listas para usar para los stacks más comunes: **Python**, **JavaScript/TypeScript**, **PHP**, **HTML**, **WordPress-Development**, **Modern-Web-Stack**, **Tauri-Desktop-App** y **AI-Agent-Framework**. Para agregar patterns propios de tu proyecto sin tocar el basal, usá `.map/compass.local.json` (ver doc en `.map/compass.local.md`).
 
@@ -276,12 +276,16 @@ Por cada proyecto auditado, Compass genera en `<proyecto>/.map/`:
 |------|---------|
 | **Importes estáticos** — `from x import y`, `import x`, `require('x')`, `<script src>` | ✅ Completo AST/regex |
 | **Path resolution** — Rutas relativas, `__DIR__`, path templates | ✅ Semántico por lenguaje |
-| **WordPress** — `wp_enqueue_*`, `get_template_directory_uri()`, template hierarchy (parcial) | ✅ SEM-020 |
+| **WordPress** — `wp_enqueue_*`, `get_template_directory_uri()`, template hierarchy | ✅ SEM-020 + RES-003 |
+| **Markup en templates server-side** — `<link>`/`<script>`/`<img>` embebido en `.php` (y `.twig`/`.blade`/`.erb`/`.jsp` por clase) | ✅ MARKUP-061 (verificado en `.php`) |
 | **Python loaders** — `open()`, `json.load()`, `Path.read_text()` | ✅ LOAD-038 |
 | **Dashboards** — HTML + JS con fetch/websocket local | ✅ DASH-042 |
 | **Entry points** — `if __name__`, `package.json:main`, `.bat` en raíz | ✅ Heurística por lenguaje |
+| **Comentarios no generan edges** — `<!-- -->`, `/* */`, `//`, `#` filtrados en HTML/CSS/JS/TS/PHP | ✅ MARKUP-061 (filtrado transversal) |
 | **Framework static mounts** — Flask/FastAPI `/static` → filesystem | 🔲 Pendiente (WEB-039) |
 | **Dynamic registration** — `app.register_blueprint()`, Django `include()` | 🔲 Pendiente (REG-040) |
+| **Blast radius / impact** — `compass impact <archivo>` (dependientes transitivos) | 🔲 Pendiente (QRY-055) |
+| **Modo auditoría** — cola en texto de nodos no-conectados clasificados | 🔲 Pendiente (AUDIT-060) |
 
 ## ⚠️ Límites Conocidos
 
@@ -289,7 +293,7 @@ Por cada proyecto auditado, Compass genera en `<proyecto>/.map/`:
 |--------|--------|-----------|
 | **Imports construidos en runtime** | Requieren evaluación dinámica (ej: `__import__(variable)`) | Declarar en `dynamic_deps` |
 | **Reflection y metaprogramación** | Requieren ejecución para resolver (Django models, SQLAlchemy) | Idem `dynamic_deps` |
-| **Caracteres especiales en paths** | Regex limpiador elimina `@$~` silenciosamente | Evitar en nombres; charset permitido: `a-zA-Z0-9._/-` |
+| **Imports dinámicos / construidos en runtime** | El resolver no adivina: si no resuelve con certeza, retorna `None` (el archivo queda no-conectado, no como fantasma) | Declarar en `dynamic_deps` |
 | **URLs dinámicas en HTTP calls** | `fetch(baseURL + variable)` no se resuelve | NET-022 captura URLs literales |
 | **Importes con wildcard** | `import *` se canta pero edges son aproximadas | Scanner detecta; asumir conexión más laxa |
 
@@ -297,20 +301,19 @@ Por cada proyecto auditado, Compass genera en `<proyecto>/.map/`:
 
 ## ⚠️ Comportamientos a conocer
 
-### Caracteres especiales en nombres de archivo
+### Imports no resolubles aparecen como no-conectados (no como fantasmas)
 
-El motor de resolución de identidad limpia las rutas capturadas antes de buscarlas en el registro de archivos. El set de caracteres permitidos es: letras, números, `.  / _ -`.
+Cuando el `PathResolver` no puede resolver un import a un archivo real del proyecto con certeza (import externo, dinámico, o construido en runtime), retorna `None` y el caller trata el raw como nodo externo o no-conectado. **No inventa un nodo con el nombre limpiado.**
 
-Si el proyecto auditado tiene archivos con caracteres fuera de ese set (ej: `@`, `$`, `~`, espacios), esos caracteres se eliminan silenciosamente y el archivo puede no resolverse correctamente — apareciendo como un nodo sin conexión en el grafo.
+Esto es deliberado: el motor viejo (`_resolve_identity`, ya eliminado) limpiaba agresivamente los caracteres de la ruta capturada y a veces inventaba nombres que no correspondían a archivos reales — los "nodos fantasma". El resolver actual solo normaliza comillas y espacios de borde; si no resuelve con certeza, prefiere `None` antes que adivinar.
 
-**Síntoma:** flechas que apuntan a nombres que no coinciden con archivos reales ("nodos fantasma").  
-**Solución:** revisar el regex en `_resolve_identity` dentro de `architect_compass.py` y agregar el carácter necesario al set permitido.
+**Síntoma de un import que el motor no puede trazar:** el archivo destino aparece como ambiguous/no-conectado en el grafo, o el import figura como external con su label crudo — NO como una flecha a un nombre inexistente. Si un archivo que SÍ debería conectar aparece suelto, suele ser un import dinámico (declarar en `dynamic_deps`) o un gap de cobertura conocido, no una limpieza de caracteres.
 
 ---
 
-### Comportamiento del config local (`.map/mapper_config.json`)
+### Comportamiento del config (global + local por proyecto)
 
-El config local **no reemplaza** al global — los **extiende**:
+Compass usa dos niveles de config: el **global** `mapper_config.json` (en la carpeta de la herramienta, defaults universales del repo) y el **local por proyecto** `.map/compass.local.json` (overrides de ese proyecto). El local **no reemplaza** al global — lo **extiende**:
 
 - `basal_rules`: las claves del local sobreescriben las equivalentes del global.
 - `definitions`: si una definición local tiene el **mismo `name`** que una global, la reemplaza completamente. Si tiene un nombre nuevo, se agrega a la lista.

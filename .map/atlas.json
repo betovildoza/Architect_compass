@@ -1,11 +1,11 @@
 {
-    "generated_at": "2026-06-14 17:47:46",
+    "generated_at": "2026-06-15 06:30:59",
     "project_name": "Architect_compass",
     "identities": [
         {
             "tech": "AI-Agent-Framework",
-            "confidence": 37,
-            "files": 37,
+            "confidence": 38,
+            "files": 38,
             "source": "stack_markers"
         }
     ],
@@ -13,10 +13,10 @@
         "": "AI-Agent-Framework"
     },
     "summary": {
-        "total_files": 37,
+        "total_files": 38,
         "relevant_files": 24,
-        "scanned_files": 0,
-        "reused_from_cache": 37
+        "scanned_files": 38,
+        "reused_from_cache": 0
     },
     "connectivity": {
         "inbound": [],
@@ -105,7 +105,9 @@
             "compass/pipeline.py -> compass/orphan_classifier.py",
             "compass/scan_worker.py -> compass/scanners/__init__.py",
             "compass/scan_worker.py -> compass/scanners/__init__.py",
+            "compass/scan_worker.py -> compass/scanners/__init__.py",
             "compass/scan_worker.py -> compass/scanners/base.py",
+            "compass/scan_worker.py -> compass/defaults.py",
             "compass/scan_worker.py -> compass/pipeline.py",
             "compass/symbols_treesitter.py -> compass/scanners/treesitter.py",
             "compass/__init__.py -> compass/core.py",
@@ -114,11 +116,14 @@
             "compass/__init__.py -> compass/path_resolver.py",
             "compass/__init__.py -> compass/scanners/__init__.py",
             "compass/scanners/css.py -> compass/scanners/base.py",
+            "compass/scanners/css.py -> compass/comment_filter.py",
             "compass/scanners/css.py -> compass/scanners/treesitter.py",
             "compass/scanners/html.py -> compass/scanners/base.py",
             "compass/scanners/html.py -> compass/scanners/base.py",
+            "compass/scanners/html.py -> compass/comment_filter.py",
             "compass/scanners/html_treesitter.py -> compass/scanners/base.py",
             "compass/scanners/html_treesitter.py -> compass/scanners/base.py",
+            "compass/scanners/html_treesitter.py -> compass/comment_filter.py",
             "compass/scanners/html_treesitter.py -> compass/scanners/treesitter.py",
             "compass/scanners/python.py -> compass/scanners/base.py",
             "compass/scanners/python.py -> compass/path_resolver.py",
@@ -126,6 +131,7 @@
             "compass/scanners/regex_fallback.py -> compass/scanners/base.py",
             "compass/scanners/regex_fallback.py -> compass/scanners/base.py",
             "compass/scanners/regex_fallback.py -> compass/path_resolver.py",
+            "compass/scanners/regex_fallback.py -> compass/comment_filter.py",
             "compass/scanners/treesitter.py -> compass/scanners/base.py",
             "compass/scanners/treesitter.py -> compass/scanners/base.py",
             "compass/scanners/treesitter.py -> compass/scanners/base.py",
@@ -133,6 +139,7 @@
             "compass/scanners/treesitter.py -> compass/path_resolver.py",
             "compass/scanners/treesitter.py -> compass/scanners/regex_fallback.py",
             "compass/scanners/treesitter.py -> compass/scanners/regex_fallback.py",
+            "compass/scanners/treesitter.py -> compass/comment_filter.py",
             "compass/scanners/__init__.py -> compass/scanners/base.py",
             "compass/scanners/__init__.py -> compass/scanners/base.py",
             "compass/scanners/__init__.py -> compass/scanners/base.py",
@@ -144,15 +151,15 @@
             "compass/scanners/__init__.py -> compass/defaults.py",
             "compass/scanners/__init__.py -> compass/scanners/treesitter.py",
             "compass/scanners/__init__.py -> compass/scanners/css.py",
-            "compass/scanners/__init__.py -> compass/scanners/treesitter.py",
-            "compass/scanners/__init__.py -> compass/scanners/html_treesitter.py"
+            "compass/scanners/__init__.py -> compass/scanners/html_treesitter.py",
+            "compass/scanners/__init__.py -> compass/scanners/treesitter.py"
         ]
     },
     "audit": {
-        "structural_health": 64.86,
+        "structural_health": 63.16,
         "warnings": [],
         "scanner_tiers": {
-            "html": "tree-sitter-pack",
+            "html": "html-regex",
             "python": "ast"
         }
     },
@@ -250,6 +257,10 @@
                     "typing:Optional"
                 ]
             }
+        },
+        "compass/comment_filter.py": {
+            "stack": "AI-Agent-Framework",
+            "tier": "connected"
         },
         "compass/config_loader.py": {
             "stack": "AI-Agent-Framework",
@@ -405,7 +416,12 @@
         },
         "compass/scan_worker.py": {
             "stack": "AI-Agent-Framework",
-            "tier": "connected"
+            "tier": "connected",
+            "metadata": {
+                "calls": [
+                    "os"
+                ]
+            }
         },
         "compass/stack_detector.py": {
             "stack": "AI-Agent-Framework",
@@ -655,6 +671,7 @@
                 "compass/outbound_resolver.py",
                 "compass/path_resolver.py",
                 "compass/pipeline.py",
+                "compass/scan_worker.py",
                 "compass/stack_detector.py"
             ],
             "pathlib:Path": [
@@ -753,7 +770,7 @@
     },
     "cycles": [],
     "health": {
-        "total": 98.23,
+        "total": 98.3,
         "weights": {
             "orphans": 0.4,
             "connectivity": 0.3,
@@ -767,11 +784,11 @@
         },
         "connectivity": {
             "score": 100.0,
-            "avg_inbound": 3.11,
-            "total_inbound_edges": 115
+            "avg_inbound": 3.21,
+            "total_inbound_edges": 122
         },
         "dead_exports": {
-            "score": 94.59,
+            "score": 94.74,
             "count": 2,
             "files": [
                 "architect_compass.py",
@@ -779,25 +796,30 @@
             ]
         },
         "external_deps": {
-            "score": 93.6,
+            "score": 93.94,
             "external_targets": 8,
-            "total_targets": 125
+            "total_targets": 132
         }
     },
     "delta": {
-        "previous_generated_at": "2026-06-12 04:31:52",
+        "previous_generated_at": "2026-06-14 17:47:46",
         "files": {
-            "added": [],
-            "removed": [
-                ".mcp.json"
-            ]
+            "added": [
+                "compass/comment_filter.py"
+            ],
+            "removed": []
         },
         "edges": {
             "added": [
-                "compass/cli.py -> compass/__init__.py"
+                "compass/scan_worker.py -> compass/defaults.py",
+                "compass/scanners/css.py -> compass/comment_filter.py",
+                "compass/scanners/html.py -> compass/comment_filter.py",
+                "compass/scanners/html_treesitter.py -> compass/comment_filter.py",
+                "compass/scanners/regex_fallback.py -> compass/comment_filter.py",
+                "compass/scanners/treesitter.py -> compass/comment_filter.py"
             ],
             "removed": [],
-            "added_count": 1,
+            "added_count": 6,
             "removed_count": 0
         },
         "orphans": {
@@ -809,11 +831,11 @@
             "removed": []
         },
         "health_delta": {
-            "total": 0.38,
+            "total": 0.07,
             "orphans": 0.0,
             "connectivity": 0.0,
-            "dead_exports": 2.48,
-            "external_deps": 0.05
+            "dead_exports": 0.15,
+            "external_deps": 0.34
         }
     },
     "graph_filters": {
@@ -821,8 +843,8 @@
         "ignored": 0,
         "self_edge": 0,
         "ignore_outbound": 0,
-        "rendered_edges": 71,
-        "raw_edges": 125
+        "rendered_edges": 77,
+        "raw_edges": 132
     },
     "external_tiers": {
         "[EXTERNAL:rich]": "package",
