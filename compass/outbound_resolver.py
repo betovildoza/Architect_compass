@@ -209,7 +209,8 @@ class OutboundResolverMixin:
                 return label
         return None
 
-    def _classify_outbound(self, raw, language, source_abs, unify_lower):
+    def _classify_outbound(self, raw, language, source_abs, unify_lower,
+                           resolve_language=None):
         """GRF-021 — clasifica un raw outbound en una de 3 categorías:
 
             kind="file"     → resuelve a un archivo del repo.
@@ -222,6 +223,12 @@ class OutboundResolverMixin:
 
         Precedencia: archivo del repo > external_service > unify_external_nodes
         (legacy) > discard.
+
+        MARKUP-061 — `resolve_language` (opcional) fuerza el resolver de path a
+        usar ese lenguaje en vez del `language` del archivo. El markup-pass lo
+        usa con `"html"` para que un `<link href="/css/x.css">` embebido en un
+        `.php` se resuelva vía `_resolve_html` (root-relative) y no `_resolve_php`.
+        Default None → usa `language` (backward-compat para todos los callers).
         """
         if raw is None:
             return {"kind": "discard", "label": None}
@@ -250,7 +257,10 @@ class OutboundResolverMixin:
             }
 
         # 1. Archivo del repo (precedencia máxima).
-        resolved_abs = self.path_resolver.resolve(raw, language, source_abs)
+        # MARKUP-061 — el markup-pass fuerza `resolve_language="html"` para que
+        # los hrefs/src embebidos en templates server-side resuelvan vía HTML.
+        resolve_lang = resolve_language or language
+        resolved_abs = self.path_resolver.resolve(raw, resolve_lang, source_abs)
         if resolved_abs:
             try:
                 posix = Path(resolved_abs).resolve().relative_to(

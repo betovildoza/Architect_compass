@@ -27,6 +27,7 @@ emiten como raw — el resolver devuelve None y GRF-021 las clasifica.
 import re
 
 from compass.scanners.base import Scanner as _BaseScanner
+from compass.comment_filter import strip_comments
 
 _CSS_EDGE = "imports"
 
@@ -80,7 +81,9 @@ class CssScanner(_BaseScanner):
                 # Cualquier fallo del AST → caer a regex sobre el mismo texto.
                 pass
 
-        content = data.decode("utf-8", errors="ignore")
+        # MARKUP-061 II — filtrar comentarios antes del regex `@import`
+        # (`/* @import "x.css"; */` no debe conectar).
+        content = strip_comments(data.decode("utf-8", errors="ignore"), "css")
         return _regex_imports(content)
 
     def _ts_imports(self, data):
@@ -88,8 +91,13 @@ class CssScanner(_BaseScanner):
         out = []
         self._walk(tree.root_node, data, out)
         # Si el AST no encontró nada (grammar dispar), fallback regex.
+        # MARKUP-061 II — el _walk AST es inmune (@import comentado es nodo
+        # `comment`, no `import_statement`/`at_rule`); pero este fallback corre
+        # sobre texto crudo → filtrar comentarios para paridad con Tier 3.
         if not out:
-            return _regex_imports(data.decode("utf-8", errors="ignore"))
+            return _regex_imports(
+                strip_comments(data.decode("utf-8", errors="ignore"), "css")
+            )
         return out
 
     def _walk(self, node, src, out):

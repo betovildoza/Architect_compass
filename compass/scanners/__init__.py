@@ -104,20 +104,11 @@ def _build_scanner(language, config):
         # primero; si no está disponible, fallback al HtmlScanner probado
         # (no-regresión). El default HTML pasa a tree-sitter solo cuando el
         # binding está instalado; el gate de paridad es TSD-048.
-        if _TS_AVAILABLE and _resolve_grammar("html", config):
-            try:
-                from compass.scanners.html_treesitter import (
-                    TreeSitterHtmlScanner,
-                )
-                scanner = TreeSitterHtmlScanner(config=config)
-                _record_tier(
-                    language, getattr(scanner, "tier_name", "tree-sitter-pack"),
-                )
-                return scanner
-            except Exception:
-                pass  # grammar html no disponible → HtmlScanner.
-        _record_tier(language, "html-regex")
-        return HtmlScanner(config=config)
+        # MARKUP-061 — la selección de tier HTML se factoriza en `_html_scanner`
+        # (reusada por `get_markup_scanner` sin duplicar la decisión).
+        scanner = _html_scanner(config)
+        _record_tier(language, getattr(scanner, "tier_name", "html-regex"))
+        return scanner
 
     if language == "css":
         # TSD-046 (D7) — CssScanner dual-tier. Reemplaza el NullScanner que
@@ -170,6 +161,7 @@ def _build_scanner(language, config):
             loader_regex=loader_regex,
             loader_edge_map=loader_edge_map,
             loader_specs=lang_loaders if loader_regex else None,
+            language=language,  # MARKUP-061 II — filtrado de comentarios.
         )
 
     # Nada aplicable.
@@ -177,6 +169,43 @@ def _build_scanner(language, config):
     if language not in _FEEDBACK_NO_SCANNER:
         _FEEDBACK_NO_SCANNER.add(language)
     return NullScanner()
+
+
+def _html_scanner(config):
+    """MARKUP-061 — selección de scanner HTML por tier (factorizado del
+    branch html/htm de `_build_scanner`). Intenta Tier 2 tree-sitter vía
+    language-pack; si no está disponible, cae al `HtmlScanner` regex probado.
+    NO registra tier (lo hace el caller que conoce el `language`)."""
+    if _TS_AVAILABLE and _resolve_grammar("html", config):
+        try:
+            from compass.scanners.html_treesitter import TreeSitterHtmlScanner
+            return TreeSitterHtmlScanner(config=config)
+        except Exception:
+            pass  # grammar html no disponible → HtmlScanner.
+    return HtmlScanner(config=config)
+
+
+def get_markup_scanner(config):
+    """MARKUP-061 — scanner HTML para el markup-pass sobre templates
+    server-side (.php/.twig/...). Cacheado aparte del dispatch por language
+    (NO ensucia `_SCANNER_TIERS` del lenguaje del template).
+
+    Usa SIEMPRE el `HtmlScanner` regex, NO el tier tree-sitter. Razón
+    (verificada en ETCA): un template server-side NO es HTML AST-parseable —
+    el PHP embebido (`<?php ?>`, `<?= ?>`) rompe la grammar HTML tree-sitter
+    (sobre `tienda.php`: 1639 nodos ERROR, 0 `element` → 0 edges). El regex
+    `HtmlScanner` es robusto a HTML+PHP mixto y extrae los `<link>/<script>`
+    igual. El filtrado de comentarios (MARKUP-061 II) ya está en HtmlScanner
+    regex (C4.3), así que el markup-pass lo hereda. La paridad de tier del
+    ticket se refiere al scanner del TEMPLATE (php tree-sitter ↔ php regex),
+    no al markup-scanner: ambos tiers de template usan este mismo markup-pass.
+    """
+    cache_key = ("__markup__", id(config))
+    if cache_key in _SCANNER_CACHE:
+        return _SCANNER_CACHE[cache_key]
+    scanner = HtmlScanner(config=config)
+    _SCANNER_CACHE[cache_key] = scanner
+    return scanner
 
 
 def _collect_regex_patterns(language, config):
@@ -281,6 +310,7 @@ __all__ = [
     "PythonScanner",
     "RegexFallbackScanner",
     "get_scanner",
+    "get_markup_scanner",
     "languages_without_scanner",
     "active_scanner_tiers",
     "scanner_tier_for",

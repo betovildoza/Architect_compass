@@ -24,9 +24,12 @@ Dolor #1 medido (no teórico): el frontend desconectado aparece en level2/ETCA/A
 
 | Código | Estado | Descripción |
 |--------|:------:|-------------|
-| CSS-049 | ⬜ | Edges de dependencia CSS: `@import` CSS→CSS + `<link>` HTML→CSS, warning para CSS/JS no alcanzado. |
-| WEB-039 | ⬜ | Framework static path resolution: prefix URL (`/static/`) → filesystem (Flask/FastAPI/Express). |
-| JSON-058 | ⬜ | Edges de data/config por path literal (`open`/`json.load`/`require`); testigo: `mapper_config.json` suelto en el self-scan. |
+| MARKUP-061 | ✅ | Extraer markup (`<link>`/`<script>`/`<img>`) embebido en templates server-side; **verificado en `.php`** (ETCA: 6 nodos conectan en grafo real) + filtrado transversal de comentarios en HTML/CSS/JS/TS/PHP. `.twig`/`.blade`/`.erb`/`.jsp`/`.ejs` cubiertos por clase, **sin testigo** (no afirmados). |
+| WEB-039 | ⬜ | Framework static path resolution: prefix URL (`/static/`) → filesystem (Flask/FastAPI/Express). **Ampliado:** colisión multi-app (no last-writer-wins → conservar candidatos + desambiguar por existencia/proximidad); testigo l2ae. |
+| JSON-058 | ⬜ | Edges de data/config por path literal (`open`/`json.load`/`require`); testigos: `mapper_config.json` suelto en el self-scan + `public/manifest.json` en clases.etca. |
+| TIER-062 | ⬜ | `tier=connected` con inbound=0 ∧ ¬entry_point no debe ser "connected" (el tier mide solo outbound y enmascara huérfanos); páginas/endpoints top-level → entry_point. Incluye decisión-abierta: tratamiento de `*.config.js/ts` (framework_markers leídos por build, no por código). Testigos: ETCA (~22 falsos-connected) + clases.etca (configs Next). |
+| GHOST-063 | ⬜ | El resolver de edge-targets debe filtrar destinos que caen en `ignore_folders`/build-dirs (no solo dotfiles, como FIX-030); hoy un `import "./.next/..."` dibuja un nodo-fantasma de carpeta excluida. Testigo: clases.etca (`.next/dev/types/routes.d.ts`). |
+| CSS-049 | ⬜ | Edges CSS para archivos `.html`: `@import` CSS→CSS (4 variantes) + `<link>`/`<script>` HTML→recurso. **Presunto-implementado vía TSD-046/HTML-019 pero NO comprobado en grafo real** (solo scanner aislado + casos `.html` relativos/root-relativos en CIF/ETCA). Requiere test de no-regresión end-to-end (cascada `@import` de l2ae) antes de cerrar. |
 
 ## Fase C — Quick wins
 
@@ -58,6 +61,8 @@ Dolor #1 medido (no teórico): el frontend desconectado aparece en level2/ETCA/A
 
 | Código | Estado | Descripción |
 |--------|:------:|-------------|
+| CSSFB-001 | ⬜ | **BUG:** el fallback regex de CSS está roto — opt-out `language_grammars: {"css":"regex"}` cae a tier "none" (no construye `CssScanner`). Una red de seguridad que no funciona. Arreglar o documentar como límite con reemplazo. Detectado en review de MARKUP-061 (S25). |
+| DEAD-001 | ⬜ | Verificar empíricamente que `_NODE_TYPES_BY_LANGUAGE` (`treesitter.py:83`) es código muerto (¿nadie lo consume en runtime?) y, confirmado, eliminarlo. NO borrar por reporte — comprobar primero. Detectado en review de MARKUP-061 (S25). |
 | CLI-015b | ⬜ | Kwargs del constructor (`emit_graph`/`rotate_history`/`compute_diff`) en vez del monkeypatch `_apply_finalize_skips`. |
 | REF-034 | ⬜ | Factorización post-CLI: `path_resolver.py`, `architect_symbols.py`→`compass/symbols.py`, split de `cli.py` (<600 líneas c/u). |
 | FILTER-037 | ⬜ | Revisar política `<a href>` en HTML (¿links internos ameritan edge?). |

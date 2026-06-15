@@ -29,6 +29,7 @@ from pathlib import Path
 
 from compass.scanners.base import Scanner as _BaseScanner, DEFAULT_EDGE_TYPE
 from compass.path_resolver import encode_loader_raw
+from compass.comment_filter import strip_comments
 
 # URL-SCAN — regex para capturar URL literals en source text.
 _URL_LITERAL_RE = re.compile(r'''["'](https?://[^"'\s)]+)["']''')
@@ -194,7 +195,11 @@ class RegexFallbackScanner(_BaseScanner):
     """
 
     def __init__(self, patterns, http_regex=None, loader_regex=None,
-                 loader_edge_map=None, loader_specs=None):
+                 loader_edge_map=None, loader_specs=None, language=None):
+        # MARKUP-061 II — `language` permite filtrar comentarios por clase
+        # antes de los passes regex. None → no-op seguro (strip_comments lo
+        # maneja). El dispatcher se lo pasa (ya conoce el language).
+        self._language = (language or "").lower()
         self._http_regex = http_regex
         # SEM-020 — regex de loader_calls + dict fn_name → edge_type.
         self._loader_regex = loader_regex
@@ -250,6 +255,12 @@ class RegexFallbackScanner(_BaseScanner):
                 content = f.read()
         except OSError:
             return []
+
+        # MARKUP-061 II — neutralizar comentarios ANTES de TODOS los passes
+        # regex (compiled patterns, SEM-020, NET-022, URL-SCAN, PHP-018b). Un
+        # `require $var` comentado no debe emitir, ni su `$var = ...` comentado
+        # alimentar el candidato. None/unknown → no-op. Paridad con Tier 2.
+        content = strip_comments(content, self._language)
 
         out = []
         for regex, edge_type in self._compiled:

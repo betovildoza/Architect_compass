@@ -15,6 +15,51 @@ El orquestador no aplica fixes automáticamente: presenta la evaluación, el usu
 
 ---
 
+## NIVEL 25 · Sesión 25 · Fase B grafo frontend — MARKUP-061 + canonización de backlog
+
+**Fecha:** 2026-06-14/15
+**Subagentes:** `architect_system_design` (diagnóstico clase WEB-039 + diseño cerrado MARKUP-061 v1/v2), `debug_review_code` (3 verificaciones de campo en grafo real + review independiente final), `python_implementer` (implementación con dogfooding), `Explore` (inventario de portfolio). Patrón 3-fases con checkpoint humano de Beto en CADA transición (architect→[Beto]→implementer→[Beto]→reviewer→[Beto]).
+**IDs:** MARKUP-061 ✅ (nuevo, implementado). Canonizados sin implementar: WEB-039 (ampliado), TIER-062 (nuevo), GHOST-063 (nuevo), CSSFB-001 (nuevo, bug), DEAD-001 (nuevo). CSS-049 reabierto. JSON-058 +testigo.
+**Resultado:** OK. MARKUP-061 cerrado con verificación en grafo real. Backlog de Fase B completo y honesto (toda la deuda hallada registrada, sin duplicar, con criterios de Beto incorporados).
+
+### Decisiones canónicas de Beto (S25) — valen más allá de esta sesión
+
+- **Cierre solo con verificación en grafo real** (no scanner aislado, no fixture, no "el código existe"). Aplicado: CSS-049 reabierto por haberse declarado funcional sin comprobar; MARKUP-061 cerrado solo para `.php` (verificado), `.twig/.erb/.jsp/.ejs` NO afirmados.
+- **Marker ≠ nodo del grafo:** un archivo usado para detectar el stack (`*.config.js/ts`, framework_markers) NO debe ser nodo de conexiones — las conexiones son para entender el repo. Aplica a TODO stack + self-scan. Canonizado en TIER-062 + nota cross-proyecto.
+- **No se "aprueban desvíos":** un desvío de diseño se DERIVA a tarea con su evidencia disparadora, o se ADJUNTA como nota a la tarea relativa. Así el cierre avanza sin perder información. Aplicado al desvío de MARKUP-061 (regex vs tree-sitter) → nota técnica adjunta en PLAN.
+- **Fallback roto = bug:** una red de seguridad que no funciona es bug, no deuda menor (CSSFB-001).
+- **No borrar código muerto por reporte:** verificar empíricamente primero (DEAD-001).
+- **Numeración correlativa POR PREFIJO, no global:** prefijo nuevo arranca en 001 (DEAD-001, CSSFB-001), no continúa la serie global.
+- **Al frenar en una pregunta, NO continuar con otras cosas** hasta respuesta (evita ensuciar contexto).
+- **Orquestación:** subagente con output persistido = agente con capacidad de escritura + directiva de handoff explícita; NUNCA Explore (devuelve inline, carga contexto — ver memoria `feedback_explore_agent_inline`).
+
+### Hallazgos
+
+#### 1. La verdad está en el grafo, no en el scanner aislado (lección metodológica)
+
+- El primer diagnóstico de Fase B declaró CSS-049/MARKUP "ya implementado" probando el scanner AISLADO. La observación de Beto sobre ETCA (`.php` con CSS/JS sueltos) lo REFUTÓ. Regla canónica: toda afirmación de "conecta" se verifica en `connectivity.outbound` del atlas tras resolución. Disparó 3 verificaciones de campo (ETCA css, ETCA js/php+cruce, clases.etca Next).
+- **Scope:** `[PROJECT]` (regla metodológica del proyecto).
+
+#### 2. MARKUP-061 — bug de clase: ceguera a markup en templates server-side
+
+- **Causa raíz:** el extractor de markup estaba atado a `language ∈ {html,htm}` (`scanners/__init__.py:102`); un `.php` iba al scanner PHP que no parsea `<link>/<script>` inline. Afecta `.php/.twig/.blade/.erb/.jsp/.ejs`. Dimensión faltante en el análisis de dialectos: el TIPO DE ARCHIVO CONTENEDOR.
+- **Fix:** markup-pass aditivo (`HTML_BEARING_EXTENSIONS` en defaults.py) reusando HtmlScanner, routing forzado a `_resolve_html` (el resolver despacha por language, no por edge_type — había que forzar `language="html"` para esos edges). + filtrado transversal de comentarios (helper `comment_filter.py`, 5 lenguajes, ambos tiers, string-aware).
+- **Desvío registrado (no aprobado):** markup-pass usa HtmlScanner regex, no tree-sitter — el AST HTML colapsa sobre `.php` (1639 ERROR / 0 element / 0 items vs 21 regex). Nota adjunta a MARKUP-061 en PLAN con su evidencia.
+- **Validación reviewer independiente:** 6 nodos conectan, `_shared.css` comentado sigue huérfano, 0 edges removidos, SEM-020 intacto. Errores Pyright (`css.py:90`, `regex_fallback.py:32`, mixins) = falsos positivos verificados.
+- **Scope:** `[PROJECT]`. ✅ Cerrado (solo `.php`).
+
+#### 3. Inventario de portfolio — Express/FastAPI NO existen; el framework real es Flask
+
+- Barrido de `IA_Workspace/` + `IA_Workspace_priv/`: 0 proyectos Express, 0 FastAPI (el "server.js" de ETCA es Node `http` puro; los 2 servers Python son Flask). 3 dashboards (l2ae roto, Facundo parcial, ETCA admin). 6 dialectos de servido de estáticos. Guardado en `INVENTARIO_PORTFOLIO.md` (root). → WEB-039 no implementa Express/FastAPI a ciegas (sin testigo).
+- **Scope:** `[PROJECT]`. Base real para diseñar WEB-039.
+
+#### 4. Evidencia de campo derivada a tickets (imagen graph.html de ETCA + WP-plugin) — ver detalle en PLAN
+
+- Beto observó en el grafo de etca.com.ar: `functions.php` (tema WP) ambiguous y aislado del cluster principal; `.vscode/settings.json` como nodo; sueltos `sidebar.php`, `scripts/gen-hash.php`, `themes/etca-aula/style.css`, `server.js`. Y en el WP-plugin: CSS/JS de `assets/` sin conectar salvo `tutor-form.js` (dudoso). Toda esta evidencia se DERIVA a sus tickets (TIER-062, IGN/nuevo, AUDIT-060, MARKUP-061 testigo WP) — registrada en PLAN, no diagnosticada aún. El diagnóstico (prioridad #3) trabajará sobre esta evidencia ya registrada.
+- **Scope:** `[PROJECT]`.
+
+---
+
 ## NIVEL 24 · Sesión 24 · Sprint 0.b — tree-sitter como tier default (TSD-045/046/047/048)
 
 **Fecha:** 2026-06-12

@@ -38,6 +38,7 @@ FIX-027 — Inline JS fetch scan:
 import re
 
 from compass.scanners.base import Scanner as _BaseScanner, build_http_loader_regex
+from compass.comment_filter import strip_comments
 
 
 # Atributos que contienen referencias a otros recursos + edge_type (EDG-023).
@@ -112,6 +113,11 @@ class HtmlScanner(_BaseScanner):
                 content = f.read()
         except OSError:
             return []
+
+        # MARKUP-061 II — neutralizar comentarios HTML (`<!-- <link ...> -->`)
+        # antes de los patterns de atributos y el scan de <script> inline. El
+        # markup-pass (reusa este scanner) hereda el filtro gratis.
+        content = strip_comments(content, "html")
 
         out = []
         for regex, edge_type in self._compiled:

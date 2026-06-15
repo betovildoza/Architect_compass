@@ -1,11 +1,11 @@
 {
-    "generated_at": "2026-06-12 07:35:15",
+    "generated_at": "2026-06-14 17:47:46",
     "project_name": "Architect_compass",
     "identities": [
         {
             "tech": "AI-Agent-Framework",
-            "confidence": 38,
-            "files": 38,
+            "confidence": 37,
+            "files": 37,
             "source": "stack_markers"
         }
     ],
@@ -13,10 +13,10 @@
         "": "AI-Agent-Framework"
     },
     "summary": {
-        "total_files": 38,
+        "total_files": 37,
         "relevant_files": 24,
-        "scanned_files": 38,
-        "reused_from_cache": 0
+        "scanned_files": 0,
+        "reused_from_cache": 37
     },
     "connectivity": {
         "inbound": [],
@@ -149,7 +149,7 @@
         ]
     },
     "audit": {
-        "structural_health": 63.16,
+        "structural_health": 64.86,
         "warnings": [],
         "scanner_tiers": {
             "html": "tree-sitter-pack",
@@ -158,11 +158,6 @@
     },
     "anomalies": [],
     "files": {
-        ".mcp.json": {
-            "stack": "AI-Agent-Framework",
-            "tier": "ambiguous",
-            "reason": "no_inbound_no_entry_point"
-        },
         "architect_compass.py": {
             "stack": "AI-Agent-Framework",
             "tier": "connected",
@@ -555,7 +550,6 @@
     },
     "orphans": [],
     "ambiguous": [
-        ".mcp.json",
         "cli_roadmap.html"
     ],
     "entry_points": [
@@ -759,7 +753,7 @@
     },
     "cycles": [],
     "health": {
-        "total": 98.25,
+        "total": 98.23,
         "weights": {
             "orphans": 0.4,
             "connectivity": 0.3,
@@ -773,11 +767,11 @@
         },
         "connectivity": {
             "score": 100.0,
-            "avg_inbound": 3.03,
+            "avg_inbound": 3.11,
             "total_inbound_edges": 115
         },
         "dead_exports": {
-            "score": 94.74,
+            "score": 94.59,
             "count": 2,
             "files": [
                 "architect_compass.py",
@@ -794,7 +788,9 @@
         "previous_generated_at": "2026-06-12 04:31:52",
         "files": {
             "added": [],
-            "removed": []
+            "removed": [
+                ".mcp.json"
+            ]
         },
         "edges": {
             "added": [
@@ -813,10 +809,10 @@
             "removed": []
         },
         "health_delta": {
-            "total": 0.4,
+            "total": 0.38,
             "orphans": 0.0,
             "connectivity": 0.0,
-            "dead_exports": 2.63,
+            "dead_exports": 2.48,
             "external_deps": 0.05
         }
     },

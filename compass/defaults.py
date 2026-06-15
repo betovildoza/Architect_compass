@@ -48,6 +48,19 @@ DEFAULT_LANGUAGE_GRAMMARS = {
     "css": "@pack",    # TSD-046
 }
 
+# MARKUP-061 — extensiones de archivos que pueden EMITIR markup HTML inline
+# (templates server-side) además de su propio lenguaje. Sobre estos archivos
+# corre un markup-pass aditivo (reusa HtmlScanner) que extrae
+# <link>/<script>/<img>/... sin reemplazar al scanner del template.
+# `.html`/`.htm` NO van aquí: ya los cubre el dispatch por language. Esta lista
+# es la CLASE "server-side template que emite HTML". Extensible por config
+# (clave `html_bearing_extensions`, extend no replace — ver merge en worker).
+HTML_BEARING_EXTENSIONS = {
+    ".php",
+    # Clase genérica (misma solución, validada con testigo solo en .php):
+    ".twig", ".blade.php", ".erb", ".jsp", ".ejs",
+}
+
 # ORP-1 — Patrones universales para clasificar archivos como orphans.
 # Estos son archivos que son inherentemente descartables (backups, temporales, etc.)
 # sin ambigüedad, según convenciones universales en prácticamente todos los lenguajes.

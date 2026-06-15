@@ -1,21 +1,8 @@
 {
   "version": 1,
-  "generated_at": "2026-06-12 07:35:21",
-  "config_fingerprint": "51d16502630e1733a48246adb8e36dc93d0add091f8d5543265f1eac6fef65fe",
+  "generated_at": "2026-06-14 17:47:47",
+  "config_fingerprint": "4d37025e95648e9a7adf9c51dc7f172b607d648dbfd4cecf612bafe62786b9da",
   "files": {
-    ".mcp.json": {
-      "fingerprint": "ddd0898fe6a004c5a42cfc3024a1ae5cc5612c246bbacf49a8f110b34ec37937",
-      "scanner_tier": null,
-      "outbound_targets": [],
-      "inbound_patterns": [],
-      "tech_scores": {},
-      "is_relevant": false,
-      "stack": "AI-Agent-Framework",
-      "metadata_calls": [],
-      "edge_types": {},
-      "metadata_assets": [],
-      "metadata_filtered_refs": []
-    },
     "architect_compass.py": {
       "fingerprint": "ea633eceb01e0eb48d45c9294b156191e109781dff2f19ca7d98cb7138542971",
       "scanner_tier": "ast",
@@ -109,7 +96,7 @@
       "metadata_filtered_refs": []
     },
     "mapper_config.json": {
-      "fingerprint": "28e1aed41df078db953c1c070b6b8a32f17b75d802467a6c35b4ee3e5b3d5869",
+      "fingerprint": "508efaab0a6cb3d9e9c90e0d36d9a901819a532b9ad634c09a45b8427fb93bbd",
       "scanner_tier": null,
       "outbound_targets": [],
       "inbound_patterns": [],

@@ -59,6 +59,7 @@ from compass.scanners.regex_fallback import (
     _expand_loader_body,
     php_require_var_sentinels,
 )
+from compass.comment_filter import strip_comments
 
 # URL-SCAN — regex para capturar URL literals en source text.
 # Captura strings entre comillas simples o dobles que empiezan con http(s)://.
@@ -292,6 +293,11 @@ class TreeSitterScanner(_BaseScanner):
             self._walk(tree.root_node, data, out)
 
         source_text = data.decode("utf-8", errors="ignore")
+        # MARKUP-061 II — filtrar comentarios ANTES de los passes regex
+        # post-AST (PHP-018b/SEM-020/NET-022/URL-SCAN). El AST (_walk/_walk_js)
+        # ya es inmune por construcción y usa `data`/`tree` originales (no se
+        # toca, filtrar bytes del árbol rompería offsets). Paridad con Tier 3.
+        source_text = strip_comments(source_text, self._language)
 
         # PHP-018b (D4) — `require|include $var` con asignación previa.
         # Misma implementación que Tier 3, vía helper compartido.

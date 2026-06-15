@@ -21,6 +21,7 @@ dispatcher cae a `HtmlScanner` (el fallback probado) — zero-install intacto.
 import re
 
 from compass.scanners.base import Scanner as _BaseScanner, build_http_loader_regex
+from compass.comment_filter import strip_comments
 
 # tag → (atributo que enlaza recurso, edge_type). `<a>` AUSENTE a propósito.
 _TAG_ATTR_EDGE = {
@@ -82,6 +83,12 @@ class TreeSitterHtmlScanner(_BaseScanner):
         return src[node.start_byte:node.end_byte].decode("utf-8", errors="ignore")
 
     def _walk(self, node, src, out):
+        # MARKUP-061 II — saltear nodos `comment`: si la grammar instancia un
+        # `element` dentro de `<!-- ... -->`, no debe emitir edge. Defensivo:
+        # si la grammar ya nodea todo el comentario como un único `comment`
+        # (sin `element` interno), este return es no-op idempotente.
+        if node.type == "comment":
+            return
         if node.type in ("element", "script_element", "style_element"):
             self._handle_element(node, src, out)
         for child in node.children:
@@ -151,6 +158,10 @@ class TreeSitterHtmlScanner(_BaseScanner):
         return ""
 
     def _scan_inline_script(self, block, out):
+        # MARKUP-061 II — el contenido de <script> es JS: neutralizar
+        # comentarios JS (`// fetch('/x')`, `/* fetch('/x') */`) antes del
+        # regex de loaders. Paridad con html.py (que filtra el HTML completo).
+        block = strip_comments(block, "js")
         if self._script_loader_regex:
             for m in self._script_loader_regex.finditer(block):
                 url = m.group(1)

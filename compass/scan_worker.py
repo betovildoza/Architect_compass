@@ -14,17 +14,55 @@ del pipeline. Depende de `OutboundResolverMixin` (por `_classify_outbound`,
 `_register_external_node`, `_reclassify_cached_target`, `_tier_from_display`).
 """
 
+import os
+
 from compass.scanners import (
     get_scanner,
+    get_markup_scanner,
     _definition_applies_to_language,
 )
 from compass.scanners.base import normalize_edge_item
+from compass.defaults import HTML_BEARING_EXTENSIONS
 
 from compass.pipeline import _definition_applies_to_stack
 
 
+# MARKUP-061 — prefijo sentinel para forzar resolución HTML de un edge markup
+# embebido en un template server-side. Se limpia antes de persistir el
+# edge_type (EDG-023 intacto).
+_MARKUP_PREFIX = "markup:"
+
+
+def _as_markup_item(item):
+    """MARKUP-061 — envuelve el `edge_type` de un item del markup-pass con el
+    prefijo `markup:` para forzar resolución HTML en el worker. Acepta tupla
+    `(value, edge_type)` o str (legacy). No cambia la aridad de la tupla que
+    `normalize_edge_item` ya maneja."""
+    if isinstance(item, tuple) and len(item) == 2:
+        value, edge_type = item
+        return (value, _MARKUP_PREFIX + str(edge_type))
+    # Legacy str → marcar con edge_type sentinel sobre default.
+    return (item, _MARKUP_PREFIX)
+
+
 class ScanWorkerMixin:
     """Mixin con las rutinas per-file del loop de `analyze()`."""
+
+    def _html_bearing_exts(self):
+        """MARKUP-061 — set de extensiones html-bearing (defaults + config,
+        extend no replace). Cacheado lazy en el primer acceso (no por archivo).
+        Config: clave `html_bearing_extensions` (lista de extensiones)."""
+        cached = getattr(self, "_html_bearing_exts_cache", None)
+        if cached is not None:
+            return cached
+        exts = set(HTML_BEARING_EXTENSIONS)
+        cfg = getattr(self, "config", None) or {}
+        for e in (cfg.get("html_bearing_extensions") or []):
+            if e:
+                e = str(e).lower()
+                exts.add(e if e.startswith(".") else "." + e)
+        self._html_bearing_exts_cache = exts
+        return exts
 
     def _scan_file(self, *, file_path, rel_path, filename, language,
                    file_stack, inbound_index, tech_scores, unify_lower,
@@ -82,6 +120,20 @@ class ScanWorkerMixin:
         # Outbound: delegado al scanner dispatcher.
         scanner = get_scanner(language, self.config)
         raw_imports = scanner.extract_imports(str(file_path))
+
+        # MARKUP-061 — markup-pass aditivo sobre templates server-side
+        # (.php/.twig/...). Corre EN PARALELO al scanner del template, reusa
+        # HtmlScanner (saneado de comentarios, MARKUP-061 II) y fuerza
+        # resolución HTML de cada edge. `.blade.php` termina en `.php`: el
+        # match por `endswith` sobre la clase lo cubre.
+        if any(filename.lower().endswith(e) for e in self._html_bearing_exts()):
+            markup_scanner = get_markup_scanner(self.config)
+            markup_raw = markup_scanner.extract_imports(str(file_path))
+            for item in markup_raw:
+                raw_imports.append(_as_markup_item(item))
+
+        # Early-return DESPUÉS del markup-pass (MARKUP-061): un template que
+        # solo emite markup y nada más (sin require) no debe cortarse antes.
         if not raw_imports:
             return (
                 is_relevant, outbound_targets, inbound_patterns,
@@ -102,8 +154,17 @@ class ScanWorkerMixin:
             )
             if raw is None:
                 continue
+            # MARKUP-061 — detectar el sentinel `markup:`: forzar resolución
+            # HTML y limpiar el edge_type a su valor real (href/src) ANTES de
+            # persistir (EDG-023 intacto). Edges no-markup pasan sin cambio.
+            resolve_lang = None
+            if edge_type and edge_type.startswith(_MARKUP_PREFIX):
+                resolve_lang = "html"
+                cleaned_et = edge_type[len(_MARKUP_PREFIX):]
+                edge_type = cleaned_et or self.default_edge_type
             classification = self._classify_outbound(
                 raw, language, src_abs, unify_lower,
+                resolve_language=resolve_lang,
             )
             kind = classification["kind"]
 
