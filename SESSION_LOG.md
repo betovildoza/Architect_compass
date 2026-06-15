@@ -1,4 +1,4 @@
-# SESSION_LOG — Architect's Compass v2
+# SESSION_LOG — Architect's Compass
 
 Registro de bugs, desvíos y decisiones tomadas durante la implementación del PLAN.md.
 
@@ -15,7 +15,41 @@ El orquestador no aplica fixes automáticamente: presenta la evaluación, el usu
 
 ---
 
-## NIVEL 25 · Sesión 25 · Fase B grafo frontend — MARKUP-061 + canonización de backlog
+## Sesión 26 · Higiene de docs canónicos — limpieza de PLAN.md + reubicación a roadmap.md
+
+**Fecha:** 2026-06-15
+**Ejecutor:** orquestador directo (NO delegable: requiere juicio caso-por-caso cruzando PLAN ↔ SESSION_LOG, con checkpoint humano de Beto en cada decisión). Checkpoint de commit previo a la limpieza destructiva.
+**Resultado:** OK. PLAN.md reducido de ~1750 a ~380 líneas (solo descripción detallada de tareas). Bloques de texto suelto reubicados a roadmap.md. Criterios de higiene fijados como canónicos.
+
+### Criterio canónico fijado por Beto (vale para futuras limpiezas)
+
+- **PLAN.md = solo descripción detallada de tareas.** Ningún bloque de texto suelto (notas, reglas, evidencia, snapshots, encabezados divisorios) vive en PLAN — se mueve a la parte inferior de roadmap.md ("# Para analizar") para evaluar luego.
+- **Borrar de PLAN una tarea completada SOLO si:** (1) corroborada en SESSION_LOG con **cierre regular comprobable** (un NIVEL que la registre como completada/validada, no solo "mencionada"), Y (2) no deja pendientes/límites/notas vivas sin ticketizar. **Verificar en el log, NO inferir.**
+- **Toda nota viva** (límite documentado, trade-off no resuelto, decisión abierta, pendiente enterrado) **se rescata** como tarea nueva o anexo a tarea relacionada ANTES de borrar su sección. Si un límite ya fue resuelto por una tarea posterior, cuenta como hecho (no requiere tarea nueva).
+- **Borrado de abajo hacia arriba**, por bloques acotados, **SIN regex global** (un regex global se comió un header — corregido; lección: no usar reemplazos globales sobre el archivo). Inserciones de contenido nuevo al final (no en el medio) para no correr referencias de línea.
+- **Em-dash (—) prohibido** en títulos. Formato: `## CÓDIGO - <título> - 🔲pendiente` (guion corto; marcas extras `🔴 ALTA`/`(BUG)` toleradas). Separador `---` entre cada tarea.
+
+### Acciones ejecutadas
+
+- Removidas de PLAN ~35 secciones de tareas completadas (S1-S24) corroboradas en SESSION_LOG con cierre regular (MOD-000…DIF-010, HTML-019…GRAPH-036, REF-033, TSD-045/046/047/048, MARKUP-061, IGN-059, EDG-023, FIX-026, etc.) + bloques históricos de sesión (Sesión 9 cierre, Mini-10.5, Gaps post-S10.5, Sesión 19, Secuenciación, Listos para Producción v1.0).
+- **IGN-059** no estaba registrada en el log (omisión de S24) → migrada retroactivamente al NIVEL 24 (hallazgo #6) ANTES de borrarla de PLAN.
+- Bloques de texto suelto movidos de PLAN → roadmap.md "# Para analizar": Nota reconsideraciones del research, Regla canónica S25, Lección metodológica S25, Evidencia de campo S25 (graph.html ETCA — corregido: NO se había derivado a tickets pese al título), Irregulares rescatados (GRF-013 límite offline), Actualizaciones a tickets preexistentes.
+- **Rescatados como tarea/anexo:** micro-gap orphan separador `-`/`_` → anexado a AUDIT-060; testigos `/static/` → WEB-039; testigo `public/manifest.json` → JSON-058; contradicción `_NODE_TYPES_BY_LANGUAGE` (log NIVEL 4 dice "se usa" vs reviewer S25 "código muerto") → anotada en DEAD-001; pendiente PyPI de CLI-015 → vinculado a PKG-053(c).
+- **Irregulares conservadas en PLAN** (marcadas para 2da vuelta): CYC-011 (límite DFS recursivo), EVL-001 (diferido), FILTER-037 (pendiente). GRF-013 (límite offline) movida a roadmap.
+- **5 pendientes sin sección detallada propia** (ENDP-044, REG-040, CLI-015b, REF-034, WEB-039) — su detalle solo vivía en la fila de la tabla maestra → replicado a su sección detallada de PLAN.
+- **Verificación tabla maestra:** ninguna fila completada deja un pendiente vivo sin ticket (PHP-018b ✅, ORP-1 resolvió criterio orphan, PyPI cubierto por PKG-053). Tabla confirmada redundante con log (completadas) + roadmap (pendientes). NO removida en esta sesión (Beto la editó directamente).
+- **Memoria `project_roadmap_cli` eliminada** (archivo + línea de MEMORY.md): redundante con `cli_roadmap.html` + PKG-053; pasos mayormente ya hechos en CLI-015.
+- Títulos normalizados (em-dash→guion, `🔲pendiente` agregado donde faltaba), separadores `---` agregados entre tareas.
+
+### Inconsistencias de estado detectadas — para resolver FUERA de esta limpieza
+
+- **REG-040:** tabla maestra `🔲pendiente` vs roadmap "Archivados / no construir".
+- **EVL-001:** tabla `🔲diferido` vs sección detallada `🔲pendiente`.
+- **CSS-049:** sección duplicada (original "Edges de dependencia CSS" + "REABIERTO: no confirmado funcional").
+
+---
+
+## Sesión 25 · Fase B grafo frontend — MARKUP-061 + canonización de backlog
 
 **Fecha:** 2026-06-14/15
 **Subagentes:** `architect_system_design` (diagnóstico clase WEB-039 + diseño cerrado MARKUP-061 v1/v2), `debug_review_code` (3 verificaciones de campo en grafo real + review independiente final), `python_implementer` (implementación con dogfooding), `Explore` (inventario de portfolio). Patrón 3-fases con checkpoint humano de Beto en CADA transición (architect→[Beto]→implementer→[Beto]→reviewer→[Beto]).
@@ -60,7 +94,7 @@ El orquestador no aplica fixes automáticamente: presenta la evaluación, el usu
 
 ---
 
-## NIVEL 24 · Sesión 24 · Sprint 0.b — tree-sitter como tier default (TSD-045/046/047/048)
+## Sesión 24 · Sprint 0.b — tree-sitter como tier default (TSD-045/046/047/048)
 
 **Fecha:** 2026-06-12
 **Subagentes:** `architect_system_design` (diseño), `general-purpose` (implementer + fix loader), `debug_review_code` (review + validación + re-validación). Patrón 3-fases con checkpoint humano de Beto en las decisiones de diseño (D1-D5).
@@ -109,9 +143,18 @@ El orquestador no aplica fixes automáticamente: presenta la evaluación, el usu
 - **DOC-057:** README sincronizado (--version ahora real; jerarquía tree-sitter aclarada como default+fallback; symbols.json v1.1 documentado); docstrings de `treesitter.py` y `architect_symbols.py` actualizados (tree-sitter default, no "opcional"). Auditoría previa que lo detectó: `reviewer-compass-doc-sync-audit-20260612-0935.md`.
 - **Scope:** `[PROJECT]`. ✓ Ambos cerrados. No queda string de versión del producto inconsistente en la superficie (README/código/docstrings); las menciones a "v1.0-candidate" solo persisten como contexto histórico en PLAN/roadmap/SESSION_LOG.
 
+#### 6. IGN-059 — Ignorar config de tooling externo desde base (registrado retroactivamente en S25)
+
+- **Tipo:** Cierre de ticket de Fase C que se canonizó en PLAN/roadmap en S24 pero NO quedó registrado en este NIVEL 24 (omisión detectada durante la limpieza de PLAN.md en S25). Migrado acá para preservar el registro antes de borrar la sección de PLAN.
+- **Origen:** inspección visual de Beto del graph.html de Agente_facundo — `.mcp.json` aparecía como nodo del grafo. "Un `.mcp.json` no debería ser parte del mapa, debería ignorarse desde base, no proyecto."
+- **Diagnóstico:** `.mcp.json` lo lee el cliente MCP externo (Claude Code), NO el código del proyecto ni el build. No hay edge que trazar. NO es el caso de JSON-058 (ese es para JSON leído POR el código).
+- **Fix:** agregado `.mcp.json` a `mapper_config.json::basal_rules.ignore_patterns` (NO a `defaults.py`). Razón: la categoría "config de tooling externo" ya vivía ahí (`.gitignore`, `.gitattributes`, `.editorconfig`, `.prettierrc`, `.eslintrc`); meterlo en `defaults.py` habría partido la categoría en dos lugares. `mapper_config.json` es la base del repo → cumple "desde base". El merge local-extiende-basal lo aplicó a Agente_facundo sin tocar su config. Verificado: `.mcp.json` pasó a `delta.removed` (ya no es nodo).
+- **Criterio para futuros (documentado):** ignorar solo config leída por **tooling externo** que nunca es parte del grafo. NO ignorar los que el build/código SÍ usa (`tsconfig.json`, `package.json`). Reconfirmado por Beto en S25.
+- **Scope:** `[PROJECT]`. ✓ Cerrado (S24).
+
 ---
 
-## NIVEL 23 · Sesión 23 · RES-003 rewrite + theme-implicit extension + NET-022/022b validación
+## Sesión 23 · RES-003 rewrite + theme-implicit extension + NET-022/022b validación
 
 **Fecha:** 2026-04-19
 **Subagente:** `debug_review_code` (validación funcional inicial + re-validación post-fix en 4 projects); orquestador directo (assessment de código, diseño del fix, implementación de `find_wp_theme_roots` + theme-implicit, scans de verificación final).
@@ -240,7 +283,7 @@ Al buscar testigo para REG-040 en el portfolio, se validó que FastMCP (mcp-writ
 
 ---
 
-## NIVEL 22 · Sesión 22 · Reconstrucción SESSION_LOG + auditoría estados PLAN + cierre
+## Sesión 22 · Reconstrucción SESSION_LOG + auditoría estados PLAN + cierre
 
 **Fecha:** 2026-04-19
 **Subagente:** otra sesión Claude (reconstrucción SESSION_LOG cruzando JSONL + rescate + PLAN); orquestador directo (auditoría de estados PLAN, verificación REG-040 en wild, correcciones de tabla)
@@ -308,7 +351,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 21 · Sesión 21 · Integración PENDIENTES→PLAN + REG-040 investigación + RES-003 (código) + ORP-1
+## Sesión 21 · Integración PENDIENTES→PLAN + REG-040 investigación + RES-003 (código) + ORP-1
 
 **Fecha:** 2026-04-19
 **Subagente:** `debug_review_code` (integración docs + RES-003 + ORP-1), orquestador directo (investigación REG-040 + corrección de scope), agente paralelo (WP detector + orphan classifier)
@@ -363,7 +406,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 20 · Sesión 20 (A/B/C) · TIER-041 + DASH-042 + CMPCT-043 — Tier ambiguous + detector de dashboards stack-agnóstico + compact v2
+## Sesión 20 (A/B/C) · TIER-041 + DASH-042 + CMPCT-043 — Tier ambiguous + detector de dashboards stack-agnóstico + compact v2
 
 **Fecha:** 2026-04-19
 **Subagente:** `architect_system_design` (diseño tier + compact v2), `debug_review_code` (dashboard detector), orquestador (wiring final)
@@ -403,7 +446,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 19 · Sesión 19 · BUG-3 + investigación Agente_facundo + diseño 18B/18C
+## Sesión 19 · BUG-3 + investigación Agente_facundo + diseño 18B/18C
 
 **Fecha:** 2026-04-18
 **Subagente:** `debug_review_code` (root cause BUG-3 + fix), orquestador directo (investigación Agente_facundo + diseño 18B/18C)
@@ -443,7 +486,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 18 · Sesión 18 · 18A — Data flow `with open()` + WSGI/ASGI detection + sys.path fallback
+## Sesión 18 · 18A — Data flow `with open()` + WSGI/ASGI detection + sys.path fallback
 
 **Fecha:** 2026-04-19
 **Subagente:** `debug_review_code` (feature implementation)
@@ -476,7 +519,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 17 · Sesión 17 · SEM-020 extendido (Flask/FastAPI static mounts) + Path division loader
+## Sesión 17 · SEM-020 extendido (Flask/FastAPI static mounts) + Path division loader
 
 **Fecha:** 2026-04-18
 **Subagente:** `debug_review_code` (implementación de extensiones SEM-020 + path division)
@@ -509,7 +552,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 16 · Sesión 16 · BUG-2 — `__init__.py` fuera de `ignore_patterns`
+## Sesión 16 · BUG-2 — `__init__.py` fuera de `ignore_patterns`
 
 **Fecha:** 2026-04-18
 **Subagente:** `debug_review_code` (análisis de causa raíz + fix)
@@ -536,7 +579,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 15 · Sesión 15 · BUG-1 + LOAD-038 (refactor a defaults) — Entry points dejan de ser orphans + loaders universales en código
+## Sesión 15 · BUG-1 + LOAD-038 (refactor a defaults) — Entry points dejan de ser orphans + loaders universales en código
 
 **Fecha:** 2026-04-18
 **Subagente:** Orquestador directo (debug_review_code task ejecutada inline por scope acotado)
@@ -570,7 +613,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 14 · Sesión 14 · LOAD-038 — Python Filesystem Loaders (implementación inicial)
+## Sesión 14 · LOAD-038 — Python Filesystem Loaders (implementación inicial)
 
 **Fecha:** 2026-04-18
 **Subagente:** `debug_review_code` (feature implementation)
@@ -617,7 +660,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 13 · Sesión 13 · NET-023 — Documentation Sync / confirmación de implementación completa
+## Sesión 13 · NET-023 — Documentation Sync / confirmación de implementación completa
 
 **Fecha:** 2026-04-18
 **Subagente:** orquestador directo (audit / documentation update)
@@ -659,7 +702,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 ---
 
 
-## NIVEL 12 · Sesión 12 · CLI-015 — CLI Flags & Subcommands (argparse + rich)
+## Sesión 12 · CLI-015 — CLI Flags & Subcommands (argparse + rich)
 
 **Fecha:** 2026-04-18
 **Subagente:** `architect_system_design` (implementación), orquestador directo (patch `_HelpfulParser` post-entrega)
@@ -727,7 +770,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 11.5 · Sesión 11.5 · REF-033 — Factorización de `compass/core.py` (2483 → 239 líneas)
+## Sesión 11.5 · REF-033 — Factorización de `compass/core.py` (2483 → 239 líneas)
 
 **Fecha:** 2026-04-17
 **Subagente:** `architect_system_design` (implementación + smoke tests)
@@ -781,7 +824,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 11 · Sesión 11 · SYM-004 + LOAD-038/WEB-039/REG-040 (formalize) + hardcodes audit — Symbol Tool + IDs formalizados + auditoría de outputs
+## Sesión 11 · SYM-004 + LOAD-038/WEB-039/REG-040 (formalize) + hardcodes audit — Symbol Tool + IDs formalizados + auditoría de outputs
 
 **Fecha:** 2026-04-17
 **Subagente:** `architect_system_design` (implementación SYM-004), orquestador directo (formalización IDs), `debug_review_code` (auditoría hardcodes), agente paralelo (fix hardcodes en curso)
@@ -841,7 +884,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 10.5 · Mini-sesión post-10 · SEM-020 extensions (WP Loader Gaps) + ticket RES-003 — get_header/get_footer zero-arg + path_template + accepts_array
+## Sesión 10.5 · Mini-sesión post-10 · SEM-020 extensions (WP Loader Gaps) + ticket RES-003 — get_header/get_footer zero-arg + path_template + accepts_array
 
 **Fecha:** 2026-04-17
 **Subagente:** `architect_system_design` (diagnóstico REDO), `architect_system_design` (implementación)
@@ -904,7 +947,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 10 · Sesión 10 · CONS-029 + LLM-VIEW-028 — consolidación metadata + atlas.compact.json pooled
+## Sesión 10 · CONS-029 + LLM-VIEW-028 — consolidación metadata + atlas.compact.json pooled
 
 **Fecha:** 2026-04-17
 **Subagente:** `architect_system_design`
@@ -959,7 +1002,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 9 · Sesión 9 · INIT-032 + FIX-027 + SEM-020 — re-exports `__init__.py` + inline script scan + semantic loader resolution
+## Sesión 9 · INIT-032 + FIX-027 + SEM-020 — re-exports `__init__.py` + inline script scan + semantic loader resolution
 
 **Fecha:** 2026-04-17
 **Subagente:** `architect_system_design`
@@ -1054,7 +1097,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 8.5 · Mini-sesión post-8 · TIER-035 + GRAPH-036 — jerarquía visual de externals + highlight de entry points
+## Sesión 8.5 · Mini-sesión post-8 · TIER-035 + GRAPH-036 — jerarquía visual de externals + highlight de entry points
 
 **Fecha:** 2026-04-17
 **Subagente:** `architect_system_design`
@@ -1112,7 +1155,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 8.5-bis · Meta-sesión de diagnóstico post-S8.5 — confirmación de NO-regresión en edges
+## Sesión 8.5-bis · Meta-sesión de diagnóstico post-S8.5 — confirmación de NO-regresión en edges
 
 **Fecha:** 2026-04-17
 **Subagente:** `Explore` (elección subóptima — ver hallazgo #2)
@@ -1144,7 +1187,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 8 · Sesión 8 · NET-022 + NET-023 + NET-022b + content filter — URL→host + imports auto-promoted + stdlib hidden + href content filter
+## Sesión 8 · NET-022 + NET-023 + NET-022b + content filter — URL→host + imports auto-promoted + stdlib hidden + href content filter
 
 **Fecha:** 2026-04-16 / 2026-04-17 (commit `0d09711`)
 **Subagente:** `architect_system_design` (reporte formal **no archivado** en `~/.claude/results/` — reconstruido desde commit message + `git show --stat 0d09711` + memory files; nivel de confianza medio-alto en el código, medio en métricas cuantitativas exactas)
@@ -1217,7 +1260,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 7 · Sesión 7 · FIX-030 + UX-031 + VAL-014 — dotfiles ignored + template UX + config validation (+ ajuste md-split pase 2)
+## Sesión 7 · FIX-030 + UX-031 + VAL-014 — dotfiles ignored + template UX + config validation (+ ajuste md-split pase 2)
 
 **Fecha:** 2026-04-16
 **Subagente:** `architect_system_design`
@@ -1321,7 +1364,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 6C · Mini-sesión post-6B · Fixes dinamismo + viewer vis-network + log catch-up
+## Sesión 6C · Mini-sesión post-6B · Fixes dinamismo + viewer vis-network + log catch-up
 
 **Fecha:** 2026-04-16
 **Subagente:** `architect_system_design`
@@ -1414,7 +1457,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 6 · Auditoría + Gap-check post-6B — meta-sesión sin código
+## Sesión 6 · Auditoría + Gap-check post-6B — meta-sesión sin código
 
 **Fecha:** 2026-04-16
 **Subagente:** `architect_system_design` (2 corridas consecutivas: audit + gap-check)
@@ -1467,7 +1510,7 @@ Sin cambios de scan (no se modificó código de scanners ni resolvers, solo docs
 
 ---
 
-## NIVEL 6B · Sesión 6B · GRF-013 + EDG-023 + AST-024 — HTML graph viewer + edge labels + asset filtering
+## Sesión 6B · GRF-013 + EDG-023 + AST-024 — HTML graph viewer + edge labels + asset filtering
 
 **Fecha:** 2026-04-16
 **Subagente:** `architect_system_design`
@@ -1516,7 +1559,7 @@ Implementación 6B creó `compass/graph_emitter.py` (nuevo, stdlib-only, espeja 
 
 ---
 
-## NIVEL 6A · Sesión 6A · SCR-009 + DIF-010 + CYC-011 — Score breakdown + diff + ciclos
+## Sesión 6A · SCR-009 + DIF-010 + CYC-011 — Score breakdown + diff + ciclos
 
 **Fecha:** 2026-04-16
 **Subagente:** `architect_system_design`
@@ -1557,7 +1600,7 @@ Implementación 6B creó `compass/graph_emitter.py` (nuevo, stdlib-only, espeja 
 
 ---
 
-## NIVEL 5.7 · Mini-sesión pre-6 · DEF-025 — Definitions cleanup stack → language
+## Sesión 5.7 · Mini-sesión pre-6 · DEF-025 — Definitions cleanup stack → language
 
 **Fecha:** 2026-04-16
 **Subagente:** `architect_system_design`
@@ -1599,7 +1642,7 @@ Implementación 6B creó `compass/graph_emitter.py` (nuevo, stdlib-only, espeja 
 
 ---
 
-## NIVEL 5.6 · Mini-sesión pre-6 · FIX-026 — Template UX + diagnóstico inbound APIs
+## Sesión 5.6 · Mini-sesión pre-6 · FIX-026 — Template UX + diagnóstico inbound APIs
 
 **Fecha:** 2026-04-16
 **Subagente:** `architect_system_design`
@@ -1695,7 +1738,7 @@ Nota importante: la atribución de api/admin-login.php, session-check.php, sessi
 
 ---
 
-## NIVEL 5.5 · Mini-sesión pre-6 · HTML-019 + PHP-inbound-019 + GRF-021 — HTML scanner + PHP __DIR__ + Graph cleanup
+## Sesión 5.5 · Mini-sesión pre-6 · HTML-019 + PHP-inbound-019 + GRF-021 — HTML scanner + PHP __DIR__ + Graph cleanup
 
 **Fecha:** 2026-04-15
 **Subagente:** `architect_system_design`
@@ -1769,7 +1812,7 @@ Limpieza de patterns: `RegexFallbackScanner` ahora ignora patterns sin grupo de 
 
 ---
 
-## NIVEL 5 · Sesión 5 · DYN-007 + INC-008 + DEF-017 — Dynamic deps + Incremental + Language filter
+## Sesión 5 · DYN-007 + INC-008 + DEF-017 — Dynamic deps + Incremental + Language filter
 
 **Fecha:** 2026-04-15
 **Subagente:** `architect_system_design`
@@ -1841,7 +1884,7 @@ Tres tareas en una sola sesión, ejecución en orden DEF-017 → INC-008 → DYN
 
 ---
 
-## NIVEL 4 · Sesión 4 · RES-002 + SCN-003 — Path Resolver + Scanner dispatcher
+## Sesión 4 · RES-002 + SCN-003 — Path Resolver + Scanner dispatcher
 
 **Fecha:** 2026-04-15
 **Subagente:** `architect_system_design`
@@ -1917,7 +1960,7 @@ Se implementó `PathResolver` (clase con `resolve(raw, language, source_file) ->
 
 ---
 
-## NIVEL 3 · Mini-sesión · STK-001b — Extension hints al config
+## Sesión 3 · Mini-sesión · STK-001b — Extension hints al config
 
 **Fecha:** 2026-04-15
 **Subagente:** `architect_system_design`
@@ -1951,7 +1994,7 @@ Refactor puro para cerrar el hallazgo #2 de Sesión 3. Se movió el dict hardcod
 
 ---
 
-## NIVEL 3 · Sesión 3 · STK-001 + MST-006 — Stack Detection + Multi-stack
+## Sesión 3 · STK-001 + MST-006 — Stack Detection + Multi-stack
 
 **Fecha:** 2026-04-15
 **Subagente:** `architect_system_design`
@@ -2017,7 +2060,7 @@ Se creó `compass/stack_detector.py` (~190 líneas) con clase `StackDetector` im
 
 ---
 
-## NIVEL 2 · Sesión 2 · CFG-005 + IGN-016 — Config schema v2 + ignore patterns
+## Sesión 2 · CFG-005 + IGN-016 — Config schema v2 + ignore patterns
 
 **Fecha:** 2026-04-15
 **Subagente:** `architect_system_design`
@@ -2093,7 +2136,7 @@ Ambas tareas se ejecutaron en un solo commit lógico porque comparten `mapper_co
 
 ---
 
-## NIVEL 1 · Sesión 1 · MOD-000 — Modularización
+## Sesión 1 · MOD-000 — Modularización
 
 **Fecha:** 2026-04-15
 **Subagente:** `architect_system_design`
